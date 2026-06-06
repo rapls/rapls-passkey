@@ -30,9 +30,6 @@ final class Endpoints {
 	/** REST namespace. */
 	private const NS = 'rapls-passkey/v1';
 
-	/** Login nonce action. */
-	public const LOGIN_NONCE = 'rapls_passkey_login';
-
 	/**
 	 * @param RegistrationManager  $registration Registration ceremony.
 	 * @param AssertionManager     $assertion    Authentication ceremony.
@@ -117,21 +114,51 @@ final class Endpoints {
 	}
 
 	/**
-	 * Public gate for the anonymous login routes: a dedicated nonce plus a
-	 * per-IP rate limit.
+	 * Public gate for the anonymous login routes.
+	 *
+	 * The login ceremony must work whether or not a user is currently logged in,
+	 * so it cannot rely on a user-bound WordPress nonce. CSRF is instead defeated
+	 * by WebAuthn itself (origin binding, a single-use server challenge, and the
+	 * need for the authenticator's private key). We add a same-origin check and a
+	 * per-IP rate limit as defence in depth.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return bool|WP_Error
 	 */
 	public function public_login_gate( WP_REST_Request $request ) {
-		$nonce = $request->get_header( 'x_rapls_nonce' );
-		if ( ! $nonce || ! wp_verify_nonce( $nonce, self::LOGIN_NONCE ) ) {
-			return new WP_Error( 'rapls_passkey_bad_nonce', __( '不正なリクエストです。ページを再読み込みしてください。', 'rapls-passkey' ), array( 'status' => 403 ) );
+		if ( ! $this->same_origin( $request ) ) {
+			return new WP_Error( 'rapls_passkey_bad_origin', __( '不正なリクエストです。', 'rapls-passkey' ), array( 'status' => 403 ) );
 		}
 		if ( ! $this->rate_ok( 'login', 30, 300 ) ) {
 			return new WP_Error( 'rapls_passkey_rate_limited', __( '試行回数が多すぎます。しばらくしてからお試しください。', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
 		return true;
+	}
+
+	/**
+	 * Confirm the request originates from this site (Origin/Referer host match).
+	 * Absent both headers we allow it — WebAuthn still binds the ceremony to the
+	 * real origin during verification.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool
+	 */
+	private function same_origin( WP_REST_Request $request ): bool {
+		$source = $request->get_header( 'origin' );
+		if ( ! $source ) {
+			$source = $request->get_header( 'referer' );
+		}
+		if ( ! $source ) {
+			return true;
+		}
+
+		$source_host = wp_parse_url( $source, PHP_URL_HOST );
+		$allowed     = array(
+			wp_parse_url( home_url(), PHP_URL_HOST ),
+			wp_parse_url( site_url(), PHP_URL_HOST ),
+		);
+
+		return in_array( $source_host, $allowed, true );
 	}
 
 	// --- Registration --------------------------------------------------------

@@ -7,8 +7,6 @@
 
 namespace RaplsPasskey\Login;
 
-use RaplsPasskey\Rest\Endpoints;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -53,7 +51,6 @@ final class LoginForm {
 			'raplsPasskeyLogin',
 			array(
 				'restUrl'    => esc_url_raw( rest_url( 'rapls-passkey/v1/' ) ),
-				'nonce'      => wp_create_nonce( Endpoints::LOGIN_NONCE ),
 				'redirectTo' => $redirect_to,
 				'i18n'       => array(
 					'authenticating' => __( '認証しています…', 'rapls-passkey' ),

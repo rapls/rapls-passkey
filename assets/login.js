@@ -28,7 +28,6 @@
 			credentials: 'same-origin',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-RAPLS-Nonce': cfg.nonce,
 			},
 			body: JSON.stringify( body ),
 		} );

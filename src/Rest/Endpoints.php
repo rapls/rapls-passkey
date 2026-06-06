@@ -359,7 +359,9 @@ final class Endpoints {
 			error_log( '[rapls-passkey] ' . $code . ' — ' . $reason ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 		$data = array( 'status' => $status );
-		if ( null !== $reason && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if ( null !== $reason ) {
+			// TEMP(debug): always expose the reason on this local dev site to
+			// diagnose the login flow. Revert to a WP_DEBUG gate before release.
 			$data['reason'] = $reason;
 		}
 		return new WP_Error( $code, $message, $data );

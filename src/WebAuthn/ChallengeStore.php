@@ -27,8 +27,8 @@ final class ChallengeStore {
 	/** Transient key prefix. */
 	private const PREFIX = 'rapls_passkey_cer_';
 
-	/** Ceremony lifetime in seconds. */
-	private const TTL = 300;
+	/** Ceremony lifetime in seconds (covers slower cross-device ceremonies). */
+	private const TTL = 600;
 
 	/**
 	 * Persist ceremony options and return the opaque state id.
@@ -38,7 +38,8 @@ final class ChallengeStore {
 	 */
 	public function put( string $payload ): string {
 		$state = Base64UrlSafe::encodeUnpadded( random_bytes( 32 ) );
-		set_transient( self::PREFIX . $state, $payload, self::TTL );
+		$ok    = set_transient( self::PREFIX . $state, $payload, self::TTL );
+		error_log( '[rapls-passkey] ChallengeStore::put state=' . $state . ' stored=' . ( $ok ? 'yes' : 'no' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		return $state;
 	}
 
@@ -50,11 +51,13 @@ final class ChallengeStore {
 	 */
 	public function take( string $state ): ?string {
 		if ( '' === $state || ! preg_match( '/^[A-Za-z0-9_-]{1,128}$/', $state ) ) {
+			error_log( '[rapls-passkey] ChallengeStore::take rejected state format: "' . $state . '"' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return null;
 		}
 		$key     = self::PREFIX . $state;
 		$payload = get_transient( $key );
 		delete_transient( $key );
+		error_log( '[rapls-passkey] ChallengeStore::take state=' . $state . ' found=' . ( is_string( $payload ) ? 'yes' : 'no' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		return is_string( $payload ) ? $payload : null;
 	}

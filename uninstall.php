@@ -1,0 +1,20 @@
+<?php
+/**
+ * Uninstall cleanup.
+ *
+ * Removes the plugin's custom table and options. Runs only when the user
+ * deletes the plugin from the admin.
+ *
+ * @package RaplsPasskey
+ */
+
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	exit;
+}
+
+require_once __DIR__ . '/src/Credentials/Schema.php';
+
+\RaplsPasskey\Credentials\Schema::drop();
+
+delete_option( 'rapls_passkey_activated_at' );
+delete_option( 'rapls_passkey_schema_version' );

@@ -71,17 +71,17 @@ final class Schema {
 		 *
 		 * credential_id stores the base64url-encoded WebAuthn credential id and
 		 * carries a UNIQUE index so the same authenticator cannot be registered
-		 * twice. public_key holds the credential public key (serialised).
+		 * twice. credential_data holds the full serialised CredentialRecord
+		 * (public key, transports, aaguid, trust path, counter, …) as JSON — the
+		 * source of truth round-tripped through web-auth's serializer. sign_count
+		 * is denormalised for display and updated after every assertion.
 		 */
 		$sql = "CREATE TABLE {$credentials} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			user_id bigint(20) unsigned NOT NULL,
 			credential_id varchar(255) NOT NULL,
-			public_key longtext NOT NULL,
+			credential_data longtext NOT NULL,
 			sign_count bigint(20) unsigned NOT NULL DEFAULT 0,
-			transports varchar(255) DEFAULT NULL,
-			aaguid varchar(36) DEFAULT NULL,
-			attestation_type varchar(32) NOT NULL DEFAULT 'none',
 			label varchar(191) DEFAULT NULL,
 			created_at datetime NOT NULL,
 			last_used_at datetime DEFAULT NULL,

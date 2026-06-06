@@ -60,7 +60,7 @@ $sql = $GLOBALS['__dbdelta_sql'][0] ?? '';
 
 check( 'install() issues one dbDelta statement', count( $GLOBALS['__dbdelta_sql'] ) === 1 );
 check( 'CREATE TABLE targets the credentials table', strpos( $sql, 'CREATE TABLE wp_rapls_passkey_credentials' ) !== false );
-foreach ( array( 'user_id', 'credential_id', 'public_key', 'sign_count', 'aaguid', 'attestation_type', 'label' ) as $col ) {
+foreach ( array( 'user_id', 'credential_id', 'credential_data', 'sign_count', 'label', 'last_used_at' ) as $col ) {
 	check( "column {$col} is defined", strpos( $sql, $col ) !== false );
 }
 check( 'credential_id has a UNIQUE key', strpos( $sql, 'UNIQUE KEY credential_id' ) !== false );

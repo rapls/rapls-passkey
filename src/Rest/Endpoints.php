@@ -1,0 +1,346 @@
+<?php
+/**
+ * REST endpoints for the registration and authentication ceremonies.
+ *
+ * @package RaplsPasskey
+ */
+
+namespace RaplsPasskey\Rest;
+
+use ParagonIE\ConstantTime\Base64UrlSafe;
+use RaplsPasskey\Credentials\CredentialRepository;
+use RaplsPasskey\WebAuthn\AssertionManager;
+use RaplsPasskey\WebAuthn\Codec;
+use RaplsPasskey\WebAuthn\RegistrationManager;
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Wires the four ceremony endpoints plus credential deletion under the
+ * `rapls-passkey/v1` namespace.
+ */
+final class Endpoints {
+
+	/** REST namespace. */
+	private const NS = 'rapls-passkey/v1';
+
+	/** Login nonce action. */
+	public const LOGIN_NONCE = 'rapls_passkey_login';
+
+	/**
+	 * @param RegistrationManager  $registration Registration ceremony.
+	 * @param AssertionManager     $assertion    Authentication ceremony.
+	 * @param CredentialRepository $repository   Credential storage.
+	 * @param Codec                $codec        Serialisation bridge.
+	 */
+	public function __construct(
+		private RegistrationManager $registration,
+		private AssertionManager $assertion,
+		private CredentialRepository $repository,
+		private Codec $codec
+	) {}
+
+	/**
+	 * Hook route registration.
+	 */
+	public function register(): void {
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+	}
+
+	/**
+	 * Declare the routes.
+	 */
+	public function register_routes(): void {
+		register_rest_route(
+			self::NS,
+			'/register/options',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'register_options' ),
+				'permission_callback' => array( $this, 'require_logged_in' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/register/verify',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'register_verify' ),
+				'permission_callback' => array( $this, 'require_logged_in' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/login/options',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'login_options' ),
+				'permission_callback' => array( $this, 'public_login_gate' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/login/verify',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'login_verify' ),
+				'permission_callback' => array( $this, 'public_login_gate' ),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/credentials/(?P<id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_credential' ),
+				'permission_callback' => array( $this, 'require_logged_in' ),
+			)
+		);
+	}
+
+	// --- Permission callbacks ------------------------------------------------
+
+	/**
+	 * Logged-in gate. WordPress core also enforces the X-WP-Nonce cookie nonce
+	 * for these routes.
+	 *
+	 * @return bool
+	 */
+	public function require_logged_in(): bool {
+		return is_user_logged_in();
+	}
+
+	/**
+	 * Public gate for the anonymous login routes: a dedicated nonce plus a
+	 * per-IP rate limit.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool|WP_Error
+	 */
+	public function public_login_gate( WP_REST_Request $request ) {
+		$nonce = $request->get_header( 'x_rapls_nonce' );
+		if ( ! $nonce || ! wp_verify_nonce( $nonce, self::LOGIN_NONCE ) ) {
+			return new WP_Error( 'rapls_passkey_bad_nonce', __( '不正なリクエストです。ページを再読み込みしてください。', 'rapls-passkey' ), array( 'status' => 403 ) );
+		}
+		if ( ! $this->rate_ok( 'login', 30, 300 ) ) {
+			return new WP_Error( 'rapls_passkey_rate_limited', __( '試行回数が多すぎます。しばらくしてからお試しください。', 'rapls-passkey' ), array( 'status' => 429 ) );
+		}
+		return true;
+	}
+
+	// --- Registration --------------------------------------------------------
+
+	/**
+	 * Issue creation options for the current user.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function register_options(): WP_REST_Response {
+		$user    = wp_get_current_user();
+		$records = array();
+		foreach ( $this->repository->find_by_user( (int) $user->ID ) as $credential ) {
+			$records[] = $this->codec->record_from_json( $credential->record_json );
+		}
+
+		$result = $this->registration->create_options(
+			(int) $user->ID,
+			$user->user_login,
+			$user->display_name,
+			$records
+		);
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * Verify and store a newly registered credential.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function register_verify( WP_REST_Request $request ) {
+		$state           = (string) $request->get_param( 'state' );
+		$credential_json = $this->credential_json( $request );
+		$label           = sanitize_text_field( (string) $request->get_param( 'label' ) );
+		$label           = '' !== $label ? mb_substr( $label, 0, 100 ) : null;
+
+		try {
+			$record = $this->registration->verify( $state, $credential_json );
+		} catch ( \Throwable $e ) {
+			return new WP_Error( 'rapls_passkey_register_failed', __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ), array( 'status' => 400 ) );
+		}
+
+		$credential_id = Base64UrlSafe::encodeUnpadded( $record->publicKeyCredentialId );
+		if ( null !== $this->repository->find_by_credential_id( $credential_id ) ) {
+			return new WP_Error( 'rapls_passkey_already_registered', __( 'このパスキーはすでに登録されています。', 'rapls-passkey' ), array( 'status' => 409 ) );
+		}
+
+		$id = $this->repository->insert(
+			(int) wp_get_current_user()->ID,
+			$credential_id,
+			$this->codec->record_to_json( $record ),
+			$record->counter,
+			$label
+		);
+
+		if ( 0 === $id ) {
+			return new WP_Error( 'rapls_passkey_store_failed', __( 'パスキーの保存に失敗しました。', 'rapls-passkey' ), array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response(
+			array(
+				'success'    => true,
+				'credential' => array(
+					'id'         => $id,
+					'label'      => $label,
+					'created_at' => gmdate( 'Y-m-d H:i:s' ),
+				),
+			)
+		);
+	}
+
+	// --- Authentication ------------------------------------------------------
+
+	/**
+	 * Issue request options. When a username is supplied its credentials are
+	 * allow-listed; unknown users still receive options (no enumeration).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function login_options( WP_REST_Request $request ): WP_REST_Response {
+		$username = sanitize_text_field( (string) $request->get_param( 'username' ) );
+		$records  = array();
+
+		if ( '' !== $username ) {
+			$user = get_user_by( 'login', $username );
+			if ( ! $user && is_email( $username ) ) {
+				$user = get_user_by( 'email', $username );
+			}
+			if ( $user ) {
+				foreach ( $this->repository->find_by_user( (int) $user->ID ) as $credential ) {
+					$records[] = $this->codec->record_from_json( $credential->record_json );
+				}
+			}
+		}
+
+		return rest_ensure_response( $this->assertion->create_options( $records ) );
+	}
+
+	/**
+	 * Verify an assertion and, on success, log the owner in.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function login_verify( WP_REST_Request $request ) {
+		$state           = (string) $request->get_param( 'state' );
+		$credential_json = $this->credential_json( $request );
+
+		try {
+			$credential_id = $this->codec->credential_id_from_json( $credential_json );
+		} catch ( \Throwable $e ) {
+			return $this->login_error();
+		}
+
+		$stored = $this->repository->find_by_credential_id( $credential_id );
+		if ( null === $stored ) {
+			return $this->login_error();
+		}
+
+		try {
+			$record  = $this->codec->record_from_json( $stored->record_json );
+			$updated = $this->assertion->verify( $state, $credential_json, $record );
+		} catch ( \Throwable $e ) {
+			return $this->login_error();
+		}
+
+		$this->repository->touch( $stored->id, $this->codec->record_to_json( $updated ), $updated->counter );
+
+		$user = get_user_by( 'id', $stored->user_id );
+		if ( ! $user ) {
+			return $this->login_error();
+		}
+
+		wp_set_current_user( $user->ID );
+		wp_set_auth_cookie( $user->ID, true );
+		do_action( 'wp_login', $user->user_login, $user );
+
+		$redirect = wp_validate_redirect(
+			(string) $request->get_param( 'redirect_to' ),
+			admin_url()
+		);
+
+		return rest_ensure_response(
+			array(
+				'success'  => true,
+				'redirect' => $redirect,
+			)
+		);
+	}
+
+	// --- Credential management ----------------------------------------------
+
+	/**
+	 * Delete one of the current user's credentials.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function delete_credential( WP_REST_Request $request ): WP_REST_Response {
+		$id      = (int) $request->get_param( 'id' );
+		$deleted = $this->repository->delete( $id, (int) wp_get_current_user()->ID );
+
+		return rest_ensure_response( array( 'success' => $deleted ) );
+	}
+
+	// --- Helpers -------------------------------------------------------------
+
+	/**
+	 * Normalise the `credential` body param (sent as an object) to a JSON string.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return string
+	 */
+	private function credential_json( WP_REST_Request $request ): string {
+		$credential = $request->get_param( 'credential' );
+		if ( is_string( $credential ) ) {
+			return $credential;
+		}
+		return (string) wp_json_encode( $credential );
+	}
+
+	/**
+	 * A deliberately generic auth failure (no detail to avoid oracle behaviour).
+	 *
+	 * @return WP_Error
+	 */
+	private function login_error(): WP_Error {
+		return new WP_Error( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), array( 'status' => 400 ) );
+	}
+
+	/**
+	 * Simple per-IP fixed-window rate limit backed by a transient.
+	 *
+	 * @param string $bucket Action bucket.
+	 * @param int    $max    Max requests per window.
+	 * @param int    $window Window length in seconds.
+	 * @return bool True when the request is within budget.
+	 */
+	private function rate_ok( string $bucket, int $max, int $window ): bool {
+		$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
+		$key = 'rapls_passkey_rl_' . md5( $bucket . '|' . $ip );
+		$n   = (int) get_transient( $key );
+		if ( $n >= $max ) {
+			return false;
+		}
+		set_transient( $key, $n + 1, $window );
+		return true;
+	}
+}

@@ -7,7 +7,17 @@
 
 namespace RaplsPasskey;
 
+use RaplsPasskey\Admin\ProfileUi;
+use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
+use RaplsPasskey\Login\LoginForm;
+use RaplsPasskey\Rest\Endpoints;
+use RaplsPasskey\WebAuthn\AssertionManager;
+use RaplsPasskey\WebAuthn\Ceremonies;
+use RaplsPasskey\WebAuthn\ChallengeStore;
+use RaplsPasskey\WebAuthn\Codec;
+use RaplsPasskey\WebAuthn\RegistrationManager;
+use RaplsPasskey\WebAuthn\RelyingParty;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -70,6 +80,32 @@ final class Plugin {
 		// The WebAuthn core lives in web-auth/webauthn-lib; degrade loudly without it.
 		if ( ! $this->webauthn_library_available() ) {
 			add_action( 'admin_notices', array( $this, 'render_missing_library_notice' ) );
+			return;
+		}
+
+		$this->wire_passkey_subsystems();
+	}
+
+	/**
+	 * Construct and register the registration/authentication subsystems.
+	 *
+	 * Runs only when the WebAuthn library is present (guarded by boot()).
+	 */
+	private function wire_passkey_subsystems(): void {
+		$rp         = RelyingParty::from_site();
+		$codec      = new Codec();
+		$challenges = new ChallengeStore();
+		$ceremonies = new Ceremonies( $rp );
+		$repository = new CredentialRepository();
+
+		$registration = new RegistrationManager( $rp, $codec, $challenges, $ceremonies );
+		$assertion    = new AssertionManager( $rp, $codec, $challenges, $ceremonies );
+
+		( new Endpoints( $registration, $assertion, $repository, $codec ) )->register();
+		( new LoginForm() )->register();
+
+		if ( is_admin() ) {
+			( new ProfileUi( $repository ) )->register();
 		}
 	}
 

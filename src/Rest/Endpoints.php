@@ -305,12 +305,13 @@ final class Endpoints {
 		wp_set_auth_cookie( $user->ID, true );
 		do_action( 'wp_login', $user->user_login, $user );
 
-		$redirect = wp_validate_redirect(
-			(string) $request->get_param( 'redirect_to' ),
-			admin_url()
-		);
-
-		error_log( '[rapls-passkey] login_verify SUCCESS user_id=' . $user->ID . ' login=' . $user->user_login . ' redirect=' . $redirect ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		$requested = trim( (string) $request->get_param( 'redirect_to' ) );
+		$redirect  = '' !== $requested ? wp_validate_redirect( $requested, admin_url() ) : admin_url();
+		if ( '' === $redirect ) {
+			// wp_validate_redirect() treats an empty/relative location as valid and
+			// returns it unchanged, so guard against an empty result explicitly.
+			$redirect = admin_url();
+		}
 
 		return rest_ensure_response(
 			array(

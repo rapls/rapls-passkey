@@ -200,7 +200,7 @@ final class Endpoints {
 		try {
 			$record = $this->registration->verify( $state, $credential_json );
 		} catch ( \Throwable $e ) {
-			return new WP_Error( 'rapls_passkey_register_failed', __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ), array( 'status' => 400 ) );
+			return $this->fail( 'rapls_passkey_register_failed', __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
 		}
 
 		$credential_id = Base64UrlSafe::encodeUnpadded( $record->publicKeyCredentialId );
@@ -273,26 +273,26 @@ final class Endpoints {
 		try {
 			$credential_id = $this->codec->credential_id_from_json( $credential_json );
 		} catch ( \Throwable $e ) {
-			return $this->login_error();
+			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'parse: ' . $e->getMessage() );
 		}
 
 		$stored = $this->repository->find_by_credential_id( $credential_id );
 		if ( null === $stored ) {
-			return $this->login_error();
+			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'credential_not_found: ' . $credential_id );
 		}
 
 		try {
 			$record  = $this->codec->record_from_json( $stored->record_json );
 			$updated = $this->assertion->verify( $state, $credential_json, $record );
 		} catch ( \Throwable $e ) {
-			return $this->login_error();
+			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
 		}
 
 		$this->repository->touch( $stored->id, $this->codec->record_to_json( $updated ), $updated->counter );
 
 		$user = get_user_by( 'id', $stored->user_id );
 		if ( ! $user ) {
-			return $this->login_error();
+			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'user_not_found: ' . $stored->user_id );
 		}
 
 		wp_set_current_user( $user->ID );
@@ -344,12 +344,25 @@ final class Endpoints {
 	}
 
 	/**
-	 * A deliberately generic auth failure (no detail to avoid oracle behaviour).
+	 * Build an error response. The user-facing message stays generic (no oracle),
+	 * but the real reason is logged and, when WP_DEBUG is on, returned as `reason`
+	 * to aid local debugging.
 	 *
+	 * @param string      $code    Error code.
+	 * @param string      $message User-facing message.
+	 * @param int         $status  HTTP status.
+	 * @param string|null $reason  Internal reason (logged; exposed only with WP_DEBUG).
 	 * @return WP_Error
 	 */
-	private function login_error(): WP_Error {
-		return new WP_Error( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), array( 'status' => 400 ) );
+	private function fail( string $code, string $message, int $status, ?string $reason = null ): WP_Error {
+		if ( null !== $reason ) {
+			error_log( '[rapls-passkey] ' . $code . ' — ' . $reason ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
+		$data = array( 'status' => $status );
+		if ( null !== $reason && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			$data['reason'] = $reason;
+		}
+		return new WP_Error( $code, $message, $data );
 	}
 
 	/**

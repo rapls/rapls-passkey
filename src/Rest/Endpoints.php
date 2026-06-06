@@ -127,9 +127,11 @@ final class Endpoints {
 	 */
 	public function public_login_gate( WP_REST_Request $request ) {
 		if ( ! $this->same_origin( $request ) ) {
+			error_log( '[rapls-passkey] gate reject bad_origin route=' . $request->get_route() . ' origin=' . $request->get_header( 'origin' ) . ' referer=' . $request->get_header( 'referer' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return new WP_Error( 'rapls_passkey_bad_origin', __( '不正なリクエストです。', 'rapls-passkey' ), array( 'status' => 403 ) );
 		}
-		if ( ! $this->rate_ok( 'login', 30, 300 ) ) {
+		if ( ! $this->rate_ok( 'login', 100, 300 ) ) {
+			error_log( '[rapls-passkey] gate reject rate_limited route=' . $request->get_route() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return new WP_Error( 'rapls_passkey_rate_limited', __( '試行回数が多すぎます。しばらくしてからお試しください。', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
 		return true;
@@ -170,6 +172,7 @@ final class Endpoints {
 	 */
 	public function register_options(): WP_REST_Response {
 		$user    = wp_get_current_user();
+		error_log( '[rapls-passkey] register_options user_id=' . $user->ID ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		$records = array();
 		foreach ( $this->repository->find_by_user( (int) $user->ID ) as $credential ) {
 			$records[] = $this->codec->record_from_json( $credential->record_json );
@@ -196,6 +199,7 @@ final class Endpoints {
 		$credential_json = $this->credential_json( $request );
 		$label           = sanitize_text_field( (string) $request->get_param( 'label' ) );
 		$label           = '' !== $label ? mb_substr( $label, 0, 100 ) : null;
+		error_log( '[rapls-passkey] register_verify start state=' . $state ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		try {
 			$record = $this->registration->verify( $state, $credential_json );
@@ -243,6 +247,7 @@ final class Endpoints {
 	 */
 	public function login_options( WP_REST_Request $request ): WP_REST_Response {
 		$username = sanitize_text_field( (string) $request->get_param( 'username' ) );
+		error_log( '[rapls-passkey] login_options username="' . $username . '"' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		$records  = array();
 
 		if ( '' !== $username ) {
@@ -269,6 +274,7 @@ final class Endpoints {
 	public function login_verify( WP_REST_Request $request ) {
 		$state           = (string) $request->get_param( 'state' );
 		$credential_json = $this->credential_json( $request );
+		error_log( '[rapls-passkey] login_verify start state=' . $state ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		try {
 			$credential_id = $this->codec->credential_id_from_json( $credential_json );
@@ -303,6 +309,8 @@ final class Endpoints {
 			(string) $request->get_param( 'redirect_to' ),
 			admin_url()
 		);
+
+		error_log( '[rapls-passkey] login_verify SUCCESS user_id=' . $user->ID . ' login=' . $user->user_login . ' redirect=' . $redirect ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		return rest_ensure_response(
 			array(

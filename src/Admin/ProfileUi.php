@@ -69,6 +69,8 @@ final class ProfileUi {
 					'success'     => __( 'パスキーを登録しました。', 'rapls-passkey' ),
 					'failed'      => __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ),
 					'unsupported' => __( 'このブラウザはパスキーに対応していません。', 'rapls-passkey' ),
+					'cancelled'   => __( '登録がキャンセルされたか、時間切れになりました。もう一度お試しください。', 'rapls-passkey' ),
+					'duplicate'   => __( 'この認証器にはすでにパスキーが登録されています。', 'rapls-passkey' ),
 					'confirmDel'  => __( 'このパスキーを削除しますか?', 'rapls-passkey' ),
 					'labelPrompt' => __( 'このパスキーの名前(任意):', 'rapls-passkey' ),
 				),
@@ -86,6 +88,10 @@ final class ProfileUi {
 		$credentials = $this->repository->find_by_user( (int) $user->ID );
 		?>
 		<h2 id="rapls-passkey"><?php esc_html_e( 'パスキー', 'rapls-passkey' ); ?></h2>
+		<style>
+			#rapls-passkey-list th,
+			#rapls-passkey-list td { padding-left: 14px; }
+		</style>
 		<table class="form-table" role="presentation">
 			<tr>
 				<th><?php esc_html_e( '登録済みのパスキー', 'rapls-passkey' ); ?></th>

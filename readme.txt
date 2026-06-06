@@ -3,7 +3,7 @@ Contributors: rapls
 Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
-Requires PHP: 8.1
+Requires PHP: 8.2
 Stable tag: 0.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,7 +21,7 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 
 = 要件 =
 
-* PHP 8.1 以上
+* PHP 8.2 以上
 * WordPress 6.0 以上
 * HTTPS(localhost を除く)
 

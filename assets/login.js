@@ -15,6 +15,13 @@
 		}
 	}
 
+	function friendly( e ) {
+		if ( e && e.name === 'NotAllowedError' ) {
+			return cfg.i18n.cancelled;
+		}
+		return ( e && e.message ) || cfg.i18n.failed;
+	}
+
 	async function postJson( path, body ) {
 		const res = await fetch( cfg.restUrl + path, {
 			method: 'POST',
@@ -56,7 +63,7 @@
 			} );
 			window.location.href = result.redirect || window.location.href;
 		} catch ( e ) {
-			status( ( e && e.message ) || cfg.i18n.failed );
+			status( friendly( e ) );
 		}
 	}
 

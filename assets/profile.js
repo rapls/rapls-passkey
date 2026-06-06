@@ -14,6 +14,16 @@
 		}
 	}
 
+	function friendly( e ) {
+		if ( e && e.name === 'NotAllowedError' ) {
+			return cfg.i18n.cancelled;
+		}
+		if ( e && e.name === 'InvalidStateError' ) {
+			return cfg.i18n.duplicate;
+		}
+		return ( e && e.message ) || cfg.i18n.failed;
+	}
+
 	async function request( path, options ) {
 		const res = await fetch( cfg.restUrl + path, Object.assign(
 			{
@@ -58,7 +68,7 @@
 			status( cfg.i18n.success );
 			window.location.reload();
 		} catch ( e ) {
-			status( ( e && e.message ) || cfg.i18n.failed );
+			status( friendly( e ) );
 		}
 	}
 

@@ -59,6 +59,7 @@ final class LoginForm {
 					'authenticating' => __( '認証しています…', 'rapls-passkey' ),
 					'failed'         => __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ),
 					'unsupported'    => __( 'このブラウザはパスキーに対応していません。', 'rapls-passkey' ),
+					'cancelled'      => __( '認証がキャンセルされたか、時間切れになりました。もう一度お試しください。', 'rapls-passkey' ),
 					'needUsername'   => __( 'ユーザー名またはメールアドレスを入力してください。', 'rapls-passkey' ),
 				),
 			)

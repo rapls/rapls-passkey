@@ -14,7 +14,7 @@ WordPress のログインをパスキー(WebAuthn / FIDO2)で行う WordPress �
 
 ## 要件
 
-- PHP 8.1 以上
+- PHP 8.2 以上
 - WordPress 6.0 以上
 - HTTPS(localhost を除く)
 - WebAuthn ライブラリ: `web-auth/webauthn-lib`

@@ -38,8 +38,7 @@ final class ChallengeStore {
 	 */
 	public function put( string $payload ): string {
 		$state = Base64UrlSafe::encodeUnpadded( random_bytes( 32 ) );
-		$ok    = set_transient( self::PREFIX . $state, $payload, self::TTL );
-		error_log( '[rapls-passkey] ChallengeStore::put state=' . $state . ' stored=' . ( $ok ? 'yes' : 'no' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		set_transient( self::PREFIX . $state, $payload, self::TTL );
 		return $state;
 	}
 
@@ -51,13 +50,11 @@ final class ChallengeStore {
 	 */
 	public function take( string $state ): ?string {
 		if ( '' === $state || ! preg_match( '/^[A-Za-z0-9_-]{1,128}$/', $state ) ) {
-			error_log( '[rapls-passkey] ChallengeStore::take rejected state format: "' . $state . '"' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return null;
 		}
 		$key     = self::PREFIX . $state;
 		$payload = get_transient( $key );
 		delete_transient( $key );
-		error_log( '[rapls-passkey] ChallengeStore::take state=' . $state . ' found=' . ( is_string( $payload ) ? 'yes' : 'no' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		return is_string( $payload ) ? $payload : null;
 	}

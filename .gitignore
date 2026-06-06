@@ -1,0 +1,21 @@
+# --- GitHub に同期しない(ローカル開発専用) ---
+
+# 設計ドキュメント
+/docs/
+
+# Claude Code 関連
+/CLAUDE.md
+/.claude/
+
+# CI 関連
+/.ci/
+/.github/
+
+# --- 一般的な除外 ---
+/vendor/
+/node_modules/
+*.log
+.DS_Store
+
+# ビルド成果物
+/rapls-passkey.zip

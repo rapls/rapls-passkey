@@ -14,6 +14,7 @@ use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Frontend\Blocks;
 use RaplsPasskey\Frontend\Shortcodes;
+use RaplsPasskey\Integrations\WooCommerce;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
 use RaplsPasskey\Recovery\Bypass;
@@ -124,6 +125,9 @@ final class Plugin {
 		$shortcodes = new Shortcodes( $repository );
 		$shortcodes->register();
 		( new Blocks( $shortcodes ) )->register();
+
+		// WooCommerce "My account" / checkout login (inert without WooCommerce).
+		( new WooCommerce( $shortcodes ) )->register();
 
 		if ( is_admin() ) {
 			( new ProfileUi( $repository ) )->register();

@@ -70,5 +70,12 @@ $GLOBALS['__opt']['rapls_passkey_settings']['recaptcha_secret_key'] = 'SECRET';
 $GLOBALS['__force_recaptcha'] = false;
 check( 'recaptcha vetoable via filter', Settings::recaptcha_active() === false );
 
+// Max passkeys (0 = unlimited by default).
+check( 'max_passkeys unlimited by default', Settings::max_passkeys() === 0 );
+$GLOBALS['__opt']['rapls_passkey_settings']['max_passkeys'] = 3;
+check( 'max_passkeys read from options', Settings::max_passkeys() === 3 );
+$GLOBALS['__opt']['rapls_passkey_settings']['max_passkeys'] = -5;
+check( 'max_passkeys clamped to 0', Settings::max_passkeys() === 0 );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

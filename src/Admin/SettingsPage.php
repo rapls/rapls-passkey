@@ -73,6 +73,7 @@ final class SettingsPage {
 			'recaptcha_secret_key' => isset( $input['recaptcha_secret_key'] ) ? sanitize_text_field( $input['recaptcha_secret_key'] ) : '',
 			'recaptcha_threshold'  => $threshold,
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
+			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
 		);
 	}
 
@@ -90,6 +91,17 @@ final class SettingsPage {
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
+				<h2><?php esc_html_e( 'パスキー', 'rapls-passkey' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="rapls-max-passkeys"><?php esc_html_e( '1ユーザーあたりの登録上限', 'rapls-passkey' ); ?></label></th>
+						<td>
+							<input type="number" step="1" min="0" id="rapls-max-passkeys" name="<?php echo esc_attr( Settings::OPTION ); ?>[max_passkeys]" value="<?php echo esc_attr( (string) $s['max_passkeys'] ); ?>">
+							<p class="description"><?php esc_html_e( 'ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮し、2 以上を推奨します。', 'rapls-passkey' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
 				<h2><?php esc_html_e( 'reCAPTCHA v3(パスワードログイン保護)', 'rapls-passkey' ); ?></h2>
 				<p class="description"><?php esc_html_e( 'パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログインには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレットを入力し、有効化してください。', 'rapls-passkey' ); ?></p>
 				<table class="form-table" role="presentation">

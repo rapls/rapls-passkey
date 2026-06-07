@@ -11,6 +11,7 @@ use ParagonIE\ConstantTime\Base64UrlSafe;
 use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\WebAuthn\AssertionManager;
+use RaplsPasskey\Support\Settings;
 use RaplsPasskey\WebAuthn\Codec;
 use RaplsPasskey\WebAuthn\RegistrationManager;
 use WP_Error;
@@ -167,10 +168,16 @@ final class Endpoints {
 	/**
 	 * Issue creation options for the current user.
 	 *
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|WP_Error
 	 */
-	public function register_options(): WP_REST_Response {
-		$user    = wp_get_current_user();
+	public function register_options() {
+		$user = wp_get_current_user();
+
+		$limit = $this->limit_error( (int) $user->ID );
+		if ( null !== $limit ) {
+			return $limit;
+		}
+
 		$records = array();
 		foreach ( $this->repository->find_by_user( (int) $user->ID ) as $credential ) {
 			$records[] = $this->codec->record_from_json( $credential->record_json );
@@ -193,6 +200,11 @@ final class Endpoints {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function register_verify( WP_REST_Request $request ) {
+		$limit = $this->limit_error( (int) wp_get_current_user()->ID );
+		if ( null !== $limit ) {
+			return $limit;
+		}
+
 		$state           = (string) $request->get_param( 'state' );
 		$credential_json = $this->credential_json( $request );
 		$label           = sanitize_text_field( (string) $request->get_param( 'label' ) );
@@ -341,6 +353,32 @@ final class Endpoints {
 	}
 
 	// --- Helpers -------------------------------------------------------------
+
+	/**
+	 * Return a WP_Error when the user is at the configured passkey limit, else
+	 * null. A limit of 0 means unlimited.
+	 *
+	 * @param int $user_id User id.
+	 * @return WP_Error|null
+	 */
+	private function limit_error( int $user_id ): ?WP_Error {
+		$max = Settings::max_passkeys();
+		if ( $max <= 0 ) {
+			return null;
+		}
+		if ( count( $this->repository->find_by_user( $user_id ) ) < $max ) {
+			return null;
+		}
+		return new WP_Error(
+			'rapls_passkey_limit_reached',
+			sprintf(
+				/* translators: %d: maximum number of passkeys. */
+				__( '登録できるパスキーは最大 %d 個です。不要なパスキーを削除してから登録してください。', 'rapls-passkey' ),
+				$max
+			),
+			array( 'status' => 409 )
+		);
+	}
 
 	/**
 	 * Normalise the `credential` body param (sent as an object) to a JSON string.

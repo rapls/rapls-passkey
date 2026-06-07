@@ -32,6 +32,8 @@ final class Settings {
 			'recaptcha_secret_key' => '',
 			'recaptcha_threshold'  => 0.5,
 			'audit_enabled'        => true,
+			// Max passkeys a user may register (0 = unlimited).
+			'max_passkeys'         => 0,
 		);
 	}
 
@@ -113,5 +115,23 @@ final class Settings {
 	 */
 	public static function audit_enabled(): bool {
 		return (bool) self::get( 'audit_enabled' );
+	}
+
+	/**
+	 * Maximum passkeys a single user may register (0 = unlimited).
+	 *
+	 * @return int
+	 */
+	public static function max_passkeys(): int {
+		$max = (int) self::get( 'max_passkeys' );
+
+		/**
+		 * Filter the per-user passkey registration limit.
+		 *
+		 * @param int $max Maximum passkeys per user (0 = unlimited).
+		 */
+		$max = (int) apply_filters( 'rapls_passkey_max_passkeys', $max );
+
+		return max( 0, $max );
 	}
 }

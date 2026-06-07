@@ -31,7 +31,24 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 2. プラグイン管理画面から「Rapls Passkey」を有効化します。
 3. プロフィール画面からパスキーを登録します。
 
+== Frequently Asked Questions ==
+
+= パスキーを紛失してログインできない場合は? =
+
+現在はパスワードログインも併用できるため、通常はパスワードでサインインし、プロフィール画面から不要なパスキーを削除・再登録してください。
+
+サーバーから直接操作する場合は WP-CLI を使えます。
+
+    wp rapls-passkey list --user=admin
+    wp rapls-passkey remove <id>
+
+緊急時は wp-config.php に次を追加するとパスキーの強制を一時的に無効化できます(復旧後は必ず削除してください)。
+
+    define( 'RAPLS_PASSKEY_BYPASS', true );
+
 == Changelog ==
 
 = 0.1.0 =
 * 初期スキャフォールド。プラグインの起動・認証情報テーブル・依存関係チェック。
+* パスキーの登録・ログイン(同一端末・クロスデバイス・オートフィル対応)。
+* WP-CLI による管理/復旧コマンドと緊急バイパス定数。

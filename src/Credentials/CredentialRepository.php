@@ -125,6 +125,25 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * Delete a credential by row id, regardless of owner. For trusted
+	 * server-side recovery (WP-CLI / admin tooling) only — the REST path uses
+	 * the owner-scoped delete().
+	 *
+	 * @param int $id Row id.
+	 * @return bool True if a row was deleted.
+	 */
+	public function delete_by_id( int $id ): bool {
+		global $wpdb;
+		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			Schema::credentials_table(),
+			array( 'id' => $id ),
+			array( '%d' )
+		);
+
+		return (bool) $deleted;
+	}
+
+	/**
 	 * Map a DB row to a Credential.
 	 *
 	 * @param array<string,mixed> $row Row.

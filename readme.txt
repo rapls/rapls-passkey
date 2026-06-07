@@ -64,3 +64,6 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * Wordfence / SiteGuard WP Plugin / CloudSecure WP Security 等の検出と共存。
 * REST API をログイン済みユーザーに制限するセキュリティプラグイン環境でも、パスキー用エンドポイントのみ許可して動作を維持。
 * ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。
+* 1ユーザーあたりのパスキー登録上限を設定可能。管理者は他ユーザーのパスキーを削除可能。
+* 二要素認証プラグイン(Automattic Two-Factor / WP 2FA)と共存。パスキーログインを多要素認証として扱います。
+* Content-Security-Policy を壊しません。独自の CSP ヘッダーを注入せず、インラインのイベントハンドラーも使用しません。

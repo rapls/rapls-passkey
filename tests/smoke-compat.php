@@ -49,5 +49,11 @@ $detected = Compat::detect();
 check( 'detects Wordfence by constant', in_array( 'Wordfence', $detected, true ) );
 check( 'still detects SiteGuard alongside', in_array( 'SiteGuard WP Plugin', $detected, true ) );
 
+// 2FA plugins via slug.
+$GLOBALS['__opt']['active_plugins'] = array( 'two-factor/two-factor.php', 'wp-2fa/wp-2fa.php' );
+$detected = Compat::detect();
+check( 'detects Two-Factor by slug', in_array( 'Two-Factor', $detected, true ) );
+check( 'detects WP 2FA by slug', in_array( 'WP 2FA', $detected, true ) );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

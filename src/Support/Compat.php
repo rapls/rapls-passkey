@@ -47,6 +47,14 @@ final class Compat {
 				'checks' => array( 'IP_GEO_BLOCK_NAME' ),
 				'slug'   => 'cloudsecure-wp-security/',
 			),
+			'Two-Factor'              => array(
+				'checks' => array( 'Two_Factor_Core' ),
+				'slug'   => 'two-factor/',
+			),
+			'WP 2FA'                  => array(
+				'checks' => array( 'WP2FA\\WP2FA' ),
+				'slug'   => 'wp-2fa/',
+			),
 		);
 	}
 

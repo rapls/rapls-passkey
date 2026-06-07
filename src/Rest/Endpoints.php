@@ -314,6 +314,15 @@ final class Endpoints {
 		wp_set_auth_cookie( $user->ID, true );
 		do_action( 'wp_login', $user->user_login, $user );
 
+		/**
+		 * Fires after a successful passkey login, once the auth cookie is set.
+		 * Integrations (e.g. 2FA coexistence) hook this to mark the session.
+		 *
+		 * @param \WP_User $user    The user who logged in.
+		 * @param string   $context Login context.
+		 */
+		do_action( 'rapls_passkey/after_login', $user, 'login' );
+
 		AuditLog::record( AuditLog::LOGIN, (int) $user->ID, 'cred=' . $stored->id );
 
 		$requested = trim( (string) $request->get_param( 'redirect_to' ) );

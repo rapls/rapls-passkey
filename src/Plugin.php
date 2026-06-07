@@ -14,6 +14,7 @@ use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Frontend\Blocks;
 use RaplsPasskey\Frontend\Shortcodes;
+use RaplsPasskey\Integrations\TwoFactor;
 use RaplsPasskey\Integrations\WooCommerce;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
@@ -128,6 +129,9 @@ final class Plugin {
 
 		// WooCommerce "My account" / checkout login (inert without WooCommerce).
 		( new WooCommerce( $shortcodes ) )->register();
+
+		// 2FA coexistence: a passkey login satisfies MFA (inert without a 2FA plugin).
+		( new TwoFactor() )->register();
 
 		if ( is_admin() ) {
 			( new ProfileUi( $repository ) )->register();

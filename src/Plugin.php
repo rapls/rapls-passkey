@@ -16,6 +16,7 @@ use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
 use RaplsPasskey\Recovery\Bypass;
 use RaplsPasskey\Rest\Endpoints;
+use RaplsPasskey\Security\RestAccess;
 use RaplsPasskey\WebAuthn\AssertionManager;
 use RaplsPasskey\WebAuthn\Ceremonies;
 use RaplsPasskey\WebAuthn\ChallengeStore;
@@ -114,6 +115,7 @@ final class Plugin {
 		$assertion    = new AssertionManager( $rp, $codec, $challenges, $ceremonies );
 
 		( new Endpoints( $registration, $assertion, $repository, $codec ) )->register();
+		( new RestAccess( 'rapls-passkey/v1' ) )->register();
 		( new LoginForm() )->register();
 
 		if ( is_admin() ) {

@@ -54,7 +54,27 @@ final class RelyingParty {
 			$name = $host;
 		}
 
-		return new self( $host, $name, $origin );
+		/**
+		 * Filter the RP ID. Must be the host or a registrable parent domain of it
+		 * (e.g. "example.com" for "site1.example.com"). Pro uses this to share one
+		 * RP ID across a subdomain multisite network so passkeys work network-wide.
+		 *
+		 * @param string $host The site host (default RP ID).
+		 * @param string $home The site home URL.
+		 */
+		$id = (string) apply_filters( 'rapls_passkey_rp_id', $host, $home );
+		if ( '' === $id ) {
+			$id = $host;
+		}
+
+		/**
+		 * Filter the RP display name shown by authenticators.
+		 *
+		 * @param string $name Default RP name.
+		 */
+		$name = (string) apply_filters( 'rapls_passkey_rp_name', $name );
+
+		return new self( $id, $name, $origin );
 	}
 
 	/**

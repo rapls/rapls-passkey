@@ -56,15 +56,22 @@ function check( $label, $cond ) {
 check( 'table name uses the wpdb prefix', Schema::credentials_table() === 'wp_rapls_passkey_credentials' );
 
 Schema::install();
-$sql = $GLOBALS['__dbdelta_sql'][0] ?? '';
+$sql      = $GLOBALS['__dbdelta_sql'][0] ?? '';
+$auditSql = $GLOBALS['__dbdelta_sql'][1] ?? '';
 
-check( 'install() issues one dbDelta statement', count( $GLOBALS['__dbdelta_sql'] ) === 1 );
+check( 'install() issues two dbDelta statements', count( $GLOBALS['__dbdelta_sql'] ) === 2 );
 check( 'CREATE TABLE targets the credentials table', strpos( $sql, 'CREATE TABLE wp_rapls_passkey_credentials' ) !== false );
 foreach ( array( 'user_id', 'credential_id', 'credential_data', 'sign_count', 'label', 'last_used_at' ) as $col ) {
 	check( "column {$col} is defined", strpos( $sql, $col ) !== false );
 }
 check( 'credential_id has a UNIQUE key', strpos( $sql, 'UNIQUE KEY credential_id' ) !== false );
 check( 'user_id has an index', strpos( $sql, 'KEY user_id' ) !== false );
+
+check( 'audit table name uses the wpdb prefix', Schema::audit_table() === 'wp_rapls_passkey_audit' );
+check( 'CREATE TABLE targets the audit table', strpos( $auditSql, 'CREATE TABLE wp_rapls_passkey_audit' ) !== false );
+foreach ( array( 'event', 'detail', 'ip', 'created_at' ) as $col ) {
+	check( "audit column {$col} is defined", strpos( $auditSql, $col ) !== false );
+}
 
 // Drop must short-circuit on $wpdb and remove the table.
 $GLOBALS['__deleted_options'] = array();

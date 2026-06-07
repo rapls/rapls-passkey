@@ -33,6 +33,8 @@ function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $compon
 function get_bloginfo( $key ) { return 'Example Site'; }
 function wp_specialchars_decode( $text, $quotes = null ) { return html_entity_decode( (string) $text, ENT_QUOTES ); }
 function is_admin() { return true; }
+function get_option( $k, $d = false ) { return $d; }
+function apply_filters( $tag, $value ) { return $value; }
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 

@@ -8,10 +8,12 @@
 namespace RaplsPasskey;
 
 use RaplsPasskey\Admin\ProfileUi;
+use RaplsPasskey\Admin\SettingsPage;
 use RaplsPasskey\Cli\Commands;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Login\LoginForm;
+use RaplsPasskey\Login\Recaptcha;
 use RaplsPasskey\Recovery\Bypass;
 use RaplsPasskey\Rest\Endpoints;
 use RaplsPasskey\WebAuthn\AssertionManager;
@@ -79,10 +81,13 @@ final class Plugin {
 		// Keep the schema current after plugin updates (no manual reactivation).
 		add_action( 'admin_init', array( Schema::class, 'maybe_upgrade' ) );
 
-		// Recovery tooling must work even when the WebAuthn library is missing,
-		// so wire it before the dependency guard below.
+		// These work independently of the WebAuthn library (recovery tooling,
+		// admin settings, and password-form reCAPTCHA), so wire them before the
+		// dependency guard below.
 		( new Bypass() )->register();
 		( new Commands( new CredentialRepository() ) )->register();
+		( new SettingsPage() )->register();
+		( new Recaptcha() )->register();
 
 		// The WebAuthn core lives in web-auth/webauthn-lib; degrade loudly without it.
 		if ( ! $this->webauthn_library_available() ) {

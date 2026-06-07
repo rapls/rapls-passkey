@@ -22,8 +22,8 @@ final class Activator {
 	 * Create the custom table and store activation state.
 	 */
 	public static function activate(): void {
-		Schema::install();
-		update_option( 'rapls_passkey_schema_version', '1', false );
+		// Installs on first activation and migrates when the schema version moves.
+		Schema::maybe_upgrade();
 
 		if ( false === get_option( 'rapls_passkey_activated_at' ) ) {
 			add_option( 'rapls_passkey_activated_at', gmdate( 'Y-m-d H:i:s' ), '', false );

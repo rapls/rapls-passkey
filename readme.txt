@@ -52,3 +52,5 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * 初期スキャフォールド。プラグインの起動・認証情報テーブル・依存関係チェック。
 * パスキーの登録・ログイン(同一端末・クロスデバイス・オートフィル対応)。
 * WP-CLI による管理/復旧コマンドと緊急バイパス定数。
+* 設定画面。パスワードログイン向け reCAPTCHA v3、監査ログ。
+* Wordfence / SiteGuard WP Plugin / CloudSecure WP Security 等の検出と共存。

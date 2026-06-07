@@ -27,7 +27,7 @@ final class Schema {
 	/**
 	 * Current schema version. Bump when a table definition changes.
 	 */
-	private const VERSION = '1';
+	private const VERSION = '2';
 
 	/**
 	 * Fully-qualified credentials table name.
@@ -37,6 +37,16 @@ final class Schema {
 	public static function credentials_table(): string {
 		global $wpdb;
 		return $wpdb->prefix . 'rapls_passkey_credentials';
+	}
+
+	/**
+	 * Fully-qualified audit log table name.
+	 *
+	 * @return string
+	 */
+	public static function audit_table(): string {
+		global $wpdb;
+		return $wpdb->prefix . 'rapls_passkey_audit';
 	}
 
 	/**
@@ -63,6 +73,7 @@ final class Schema {
 
 		$charset_collate = $wpdb->get_charset_collate();
 		$credentials     = self::credentials_table();
+		$audit           = self::audit_table();
 
 		/*
 		 * dbDelta is whitespace- and format-sensitive: two spaces after KEY,
@@ -91,6 +102,25 @@ final class Schema {
 		) {$charset_collate};";
 
 		dbDelta( $sql );
+
+		/*
+		 * Audit log: one row per security-relevant event (registration, login,
+		 * removal, recovery). user_id is 0 for events without a known user.
+		 */
+		$audit_sql = "CREATE TABLE {$audit} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			event varchar(40) NOT NULL,
+			detail varchar(255) DEFAULT NULL,
+			ip varchar(45) DEFAULT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY user_id (user_id),
+			KEY event (event),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+
+		dbDelta( $audit_sql );
 	}
 
 	/**
@@ -99,9 +129,10 @@ final class Schema {
 	public static function drop(): void {
 		global $wpdb;
 
-		// Table name is built from $wpdb->prefix, not user input.
-		$table = self::credentials_table();
-		$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// Table names are built from $wpdb->prefix, not user input.
+		foreach ( array( self::credentials_table(), self::audit_table() ) as $table ) {
+			$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
 		delete_option( self::VERSION_OPTION );
 	}
 }

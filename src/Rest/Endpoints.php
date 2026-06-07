@@ -8,6 +8,7 @@
 namespace RaplsPasskey\Rest;
 
 use ParagonIE\ConstantTime\Base64UrlSafe;
+use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\WebAuthn\AssertionManager;
 use RaplsPasskey\WebAuthn\Codec;
@@ -220,6 +221,8 @@ final class Endpoints {
 			return new WP_Error( 'rapls_passkey_store_failed', __( 'パスキーの保存に失敗しました。', 'rapls-passkey' ), array( 'status' => 500 ) );
 		}
 
+		AuditLog::record( AuditLog::REGISTERED, (int) wp_get_current_user()->ID, 'id=' . $id );
+
 		return rest_ensure_response(
 			array(
 				'success'    => true,
@@ -299,6 +302,8 @@ final class Endpoints {
 		wp_set_auth_cookie( $user->ID, true );
 		do_action( 'wp_login', $user->user_login, $user );
 
+		AuditLog::record( AuditLog::LOGIN, (int) $user->ID, 'cred=' . $stored->id );
+
 		$requested = trim( (string) $request->get_param( 'redirect_to' ) );
 		$redirect  = '' !== $requested ? wp_validate_redirect( $requested, admin_url() ) : admin_url();
 		if ( '' === $redirect ) {
@@ -325,7 +330,12 @@ final class Endpoints {
 	 */
 	public function delete_credential( WP_REST_Request $request ): WP_REST_Response {
 		$id      = (int) $request->get_param( 'id' );
-		$deleted = $this->repository->delete( $id, (int) wp_get_current_user()->ID );
+		$user_id = (int) wp_get_current_user()->ID;
+		$deleted = $this->repository->delete( $id, $user_id );
+
+		if ( $deleted ) {
+			AuditLog::record( AuditLog::REMOVED, $user_id, 'id=' . $id );
+		}
 
 		return rest_ensure_response( array( 'success' => $deleted ) );
 	}

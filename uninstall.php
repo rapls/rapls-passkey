@@ -18,3 +18,4 @@ require_once __DIR__ . '/src/Credentials/Schema.php';
 
 delete_option( 'rapls_passkey_activated_at' );
 delete_option( 'rapls_passkey_schema_version' );
+delete_option( 'rapls_passkey_settings' );

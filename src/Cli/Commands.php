@@ -7,6 +7,7 @@
 
 namespace RaplsPasskey\Cli;
 
+use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 use WP_CLI;
 
@@ -96,6 +97,7 @@ final class Commands {
 		}
 
 		if ( $this->repository->delete_by_id( $id ) ) {
+			AuditLog::record( AuditLog::REMOVED, 0, 'wp-cli id=' . $id );
 			WP_CLI::success( sprintf( 'Removed passkey #%d.', $id ) );
 		} else {
 			WP_CLI::error( sprintf( 'No passkey found with id %d.', $id ) );

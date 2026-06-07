@@ -34,7 +34,10 @@ class WPDB_Mem {
 	}
 	public function delete( $table, $where, $f = null ) {
 		foreach ( $this->rows as $id => $row ) {
-			if ( (int) $row['user_id'] === (int) $where['user_id'] && (int) $id === (int) $where['id'] ) {
+			$id_ok   = (int) $id === (int) $where['id'];
+			// delete_by_id() omits user_id; owner-scoped delete() includes it.
+			$user_ok = ! isset( $where['user_id'] ) || (int) $row['user_id'] === (int) $where['user_id'];
+			if ( $id_ok && $user_ok ) {
 				unset( $this->rows[ $id ] );
 				return 1;
 			}
@@ -45,9 +48,14 @@ class WPDB_Mem {
 		return array( 'q' => $query, 'args' => $args );
 	}
 	public function get_row( $prepared, $output = OBJECT ) {
-		$cid = $prepared['args'][0];
+		$arg    = $prepared['args'][0];
+		$by_id  = is_string( $prepared['q'] ) && strpos( $prepared['q'], 'WHERE id =' ) !== false;
 		foreach ( $this->rows as $row ) {
-			if ( (string) $row['credential_id'] === (string) $cid ) {
+			if ( $by_id ) {
+				if ( (int) $row['id'] === (int) $arg ) {
+					return $this->cols( $row );
+				}
+			} elseif ( (string) $row['credential_id'] === (string) $arg ) {
 				return $this->cols( $row );
 			}
 		}
@@ -121,9 +129,18 @@ $after = $repo->find_by_credential_id( 'credBBB' );
 check( 'touch updates record + counter', $after->sign_count === 6 && $after->record_json === '{"r":2,"u":1}' );
 check( 'touch sets last_used_at', ! empty( $after->last_used_at ) );
 
+// find_by_id (used by admin delete path).
+$by_id = $repo->find_by_id( $id3 );
+check( 'find_by_id returns the right row', $by_id && $by_id->user_id === 9 && $by_id->credential_id === 'credCCC' );
+check( 'find_by_id null when missing', $repo->find_by_id( 99999 ) === null );
+
 check( 'delete scoped to owner fails for wrong user', $repo->delete( $id1, 9 ) === false );
 check( 'delete works for owner', $repo->delete( $id1, 7 ) === true );
 check( 'deleted row is gone', $repo->find_by_credential_id( 'credAAA' ) === null );
+
+// delete_by_id (admin/CLI path) ignores ownership.
+check( 'delete_by_id removes another user\'s row', $repo->delete_by_id( $id3 ) === true );
+check( 'delete_by_id row is gone', $repo->find_by_id( $id3 ) === null );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

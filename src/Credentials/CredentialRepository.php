@@ -104,6 +104,23 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * Look up a credential by its row id.
+	 *
+	 * @param int $id Row id.
+	 * @return Credential|null
+	 */
+	public function find_by_id( int $id ): ?Credential {
+		global $wpdb;
+		$table = Schema::credentials_table();
+		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ),
+			ARRAY_A
+		);
+
+		return $row ? self::hydrate( $row ) : null;
+	}
+
+	/**
 	 * Delete a credential, scoped to its owner so users can only remove their own.
 	 *
 	 * @param int $id      Row id.

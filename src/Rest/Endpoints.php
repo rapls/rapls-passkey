@@ -335,21 +335,44 @@ final class Endpoints {
 	// --- Credential management ----------------------------------------------
 
 	/**
-	 * Delete one of the current user's credentials.
+	 * Delete a credential. Users may remove their own; users with the `edit_users`
+	 * capability may remove anyone's (for admin management on the profile screen).
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|WP_Error
 	 */
-	public function delete_credential( WP_REST_Request $request ): WP_REST_Response {
+	public function delete_credential( WP_REST_Request $request ) {
 		$id      = (int) $request->get_param( 'id' );
 		$user_id = (int) wp_get_current_user()->ID;
-		$deleted = $this->repository->delete( $id, $user_id );
 
-		if ( $deleted ) {
+		// Owner path: remove one's own credential.
+		if ( $this->repository->delete( $id, $user_id ) ) {
 			AuditLog::record( AuditLog::REMOVED, $user_id, 'id=' . $id );
+			return rest_ensure_response( array( 'success' => true ) );
 		}
 
-		return rest_ensure_response( array( 'success' => $deleted ) );
+		// Admin path: remove another user's credential.
+		if ( current_user_can( 'edit_users' ) ) {
+			$credential = $this->repository->find_by_id( $id );
+			if ( null === $credential ) {
+				return rest_ensure_response( array( 'success' => false ) );
+			}
+			$deleted = $this->repository->delete_by_id( $id );
+			if ( $deleted ) {
+				AuditLog::record(
+					AuditLog::REMOVED,
+					(int) $credential->user_id,
+					'id=' . $id . ' by-admin=' . $user_id
+				);
+			}
+			return rest_ensure_response( array( 'success' => $deleted ) );
+		}
+
+		return new WP_Error(
+			'rapls_passkey_forbidden',
+			__( 'このパスキーを削除する権限がありません。', 'rapls-passkey' ),
+			array( 'status' => 403 )
+		);
 	}
 
 	// --- Helpers -------------------------------------------------------------

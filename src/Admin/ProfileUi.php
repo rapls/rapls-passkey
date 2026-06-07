@@ -85,6 +85,7 @@ final class ProfileUi {
 	 */
 	public function render( WP_User $user ): void {
 		$is_self     = ( get_current_user_id() === (int) $user->ID );
+		$can_delete  = $is_self || current_user_can( 'edit_user', (int) $user->ID );
 		$credentials = $this->repository->find_by_user( (int) $user->ID );
 		?>
 		<h2 id="rapls-passkey"><?php esc_html_e( 'パスキー', 'rapls-passkey' ); ?></h2>
@@ -115,7 +116,7 @@ final class ProfileUi {
 									<td><?php echo esc_html( $credential->created_at ); ?></td>
 									<td><?php echo esc_html( $credential->last_used_at ? $credential->last_used_at : '—' ); ?></td>
 									<td>
-										<?php if ( $is_self ) : ?>
+										<?php if ( $can_delete ) : ?>
 											<button type="button" class="button-link delete rapls-passkey-delete"><?php esc_html_e( '削除', 'rapls-passkey' ); ?></button>
 										<?php endif; ?>
 									</td>

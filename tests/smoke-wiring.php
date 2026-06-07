@@ -28,6 +28,7 @@ function add_filter( $hook, $cb, $priority = 10, $args = 1 ) {
 	$GLOBALS['__hooks'][] = array( 'filter', $hook );
 	return true;
 }
+function add_shortcode( $tag, $cb ) { $GLOBALS['__hooks'][] = array( 'shortcode', $tag ); return true; }
 function home_url( $path = '' ) { return 'https://example.test'; }
 function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $component ); }
 function get_bloginfo( $key ) { return 'Example Site'; }

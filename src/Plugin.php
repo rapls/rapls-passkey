@@ -12,6 +12,8 @@ use RaplsPasskey\Admin\SettingsPage;
 use RaplsPasskey\Cli\Commands;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
+use RaplsPasskey\Frontend\Blocks;
+use RaplsPasskey\Frontend\Shortcodes;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
 use RaplsPasskey\Recovery\Bypass;
@@ -117,6 +119,11 @@ final class Plugin {
 		( new Endpoints( $registration, $assertion, $repository, $codec ) )->register();
 		( new RestAccess( 'rapls-passkey/v1' ) )->register();
 		( new LoginForm() )->register();
+
+		// Front-end embedding: shortcodes and the matching Gutenberg blocks.
+		$shortcodes = new Shortcodes( $repository );
+		$shortcodes->register();
+		( new Blocks( $shortcodes ) )->register();
 
 		if ( is_admin() ) {
 			( new ProfileUi( $repository ) )->register();

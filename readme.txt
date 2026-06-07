@@ -17,7 +17,15 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * パスワードレスでフィッシング耐性のあるログイン
 * 同一デバイスのパスキー(Touch ID / Windows Hello)に対応
 * スマートフォンのパスキー(iOS パスワード / 1Password など)によるクロスデバイス認証に対応
+* 任意のページに埋め込めるショートコードと Gutenberg ブロック(ログイン / パスキー管理)
 * 日本市場向けの丁寧な日本語 UI
+
+= ショートコード =
+
+任意の固定ページ・投稿・ウィジェットに埋め込めます。Gutenberg では「パスキーでログイン」「パスキーの管理」ブロックとしても利用できます。
+
+* `[rapls_passkey_login]` — ログアウト中の訪問者向けのパスキーログインボタン。`redirect`(成功後の遷移先 URL)と `label`(ボタン文言)属性に対応。
+* `[rapls_passkey_register]` — ログイン中のユーザーが自分のパスキーを登録・削除できる管理 UI。
 
 = 要件 =
 
@@ -54,3 +62,5 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * WP-CLI による管理/復旧コマンドと緊急バイパス定数。
 * 設定画面。パスワードログイン向け reCAPTCHA v3、監査ログ。
 * Wordfence / SiteGuard WP Plugin / CloudSecure WP Security 等の検出と共存。
+* REST API をログイン済みユーザーに制限するセキュリティプラグイン環境でも、パスキー用エンドポイントのみ許可して動作を維持。
+* ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。

@@ -8,6 +8,7 @@
 namespace RaplsPasskey\Admin;
 
 use RaplsPasskey\Audit\AuditLog;
+use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Support\Compat;
 use RaplsPasskey\Support\Settings;
 
@@ -90,6 +91,8 @@ final class SettingsPage {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Rapls Passkey 設定', 'rapls-passkey' ); ?></h1>
 
+				<?php $this->render_adoption(); ?>
+
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
 				<h2><?php esc_html_e( 'パスキー', 'rapls-passkey' ); ?></h2>
@@ -166,6 +169,35 @@ final class SettingsPage {
 			<?php $this->render_audit(); ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Passkey adoption summary (how many users have enrolled).
+	 */
+	private function render_adoption(): void {
+		$stats       = ( new CredentialRepository() )->stats();
+		$counts      = count_users();
+		$total_users = isset( $counts['total_users'] ) ? (int) $counts['total_users'] : 0;
+		$pct         = $total_users > 0 ? (int) round( $stats['users'] / $total_users * 100 ) : 0;
+
+		echo '<h2>' . esc_html__( '導入状況', 'rapls-passkey' ) . '</h2>';
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: 1: users with a passkey, 2: total users, 3: percentage. */
+				__( 'パスキーを登録済みのユーザー: %1$d / %2$d 人(%3$d%%)', 'rapls-passkey' ),
+				$stats['users'],
+				$total_users,
+				$pct
+			)
+		) . '</p>';
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: %d: total number of registered passkeys. */
+				__( '登録済みパスキーの総数: %d 個', 'rapls-passkey' ),
+				$stats['total']
+			)
+		) . '</p>';
+		echo '<p class="description">' . esc_html__( '各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。', 'rapls-passkey' ) . '</p>';
 	}
 
 	/**

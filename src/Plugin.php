@@ -9,6 +9,7 @@ namespace RaplsPasskey;
 
 use RaplsPasskey\Admin\ProfileUi;
 use RaplsPasskey\Admin\SettingsPage;
+use RaplsPasskey\Admin\UsersColumn;
 use RaplsPasskey\Cli\Commands;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
@@ -142,6 +143,7 @@ final class Plugin {
 
 		if ( is_admin() ) {
 			( new ProfileUi( $repository ) )->register();
+			( new UsersColumn( $repository ) )->register();
 		}
 	}
 

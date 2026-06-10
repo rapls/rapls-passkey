@@ -179,6 +179,47 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * Passkey count and most-recent use per user, keyed by user id. Only users
+	 * with at least one passkey appear. Used to fill the Users-list column in a
+	 * single query (no per-row lookups).
+	 *
+	 * @return array<int,array{count:int,last_used:?string}>
+	 */
+	public function counts_by_user(): array {
+		global $wpdb;
+		$table = Schema::credentials_table();
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT user_id, COUNT(*) AS c, MAX(last_used_at) AS last_used FROM {$table} GROUP BY user_id",
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( $rows ?: array() as $row ) {
+			$out[ (int) $row['user_id'] ] = array(
+				'count'     => (int) $row['c'],
+				'last_used' => isset( $row['last_used'] ) && null !== $row['last_used'] ? (string) $row['last_used'] : null,
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * Site-wide adoption totals: total passkeys and number of distinct users
+	 * holding at least one.
+	 *
+	 * @return array{total:int,users:int}
+	 */
+	public function stats(): array {
+		global $wpdb;
+		$table = Schema::credentials_table();
+
+		return array(
+			'total' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			'users' => (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+	}
+
+	/**
 	 * Map a DB row to a Credential.
 	 *
 	 * @param array<string,mixed> $row Row.

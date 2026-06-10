@@ -7,6 +7,7 @@
 
 namespace RaplsPasskey\WebAuthn;
 
+use RaplsPasskey\Support\Settings;
 use Webauthn\AuthenticatorAssertionResponse;
 use Webauthn\AuthenticatorAssertionResponseValidator;
 use Webauthn\CredentialRecord;
@@ -56,7 +57,8 @@ final class AssertionManager {
 			random_bytes( 32 ),
 			$this->rp->id(),
 			$allow,
-			PublicKeyCredentialRequestOptions::USER_VERIFICATION_REQUIREMENT_PREFERRED
+			Settings::webauthn_user_verification(),
+			Settings::webauthn_timeout()
 		);
 
 		$json  = $this->codec->request_options_to_json( $options );

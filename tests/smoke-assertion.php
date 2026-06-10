@@ -17,6 +17,8 @@ $GLOBALS['__t'] = array();
 function set_transient( $k, $v, $ttl ) { $GLOBALS['__t'][ $k ] = $v; return true; }
 function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
 function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
+function get_option( $k, $d = false ) { return $d; } // Settings falls back to defaults.
+function apply_filters( $tag, $value ) { return $value; }
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 spl_autoload_register( function ( $class ) {
@@ -60,6 +62,7 @@ check( 'returns a state id', ! empty( $result['state'] ) );
 check( 'publicKey has a challenge', ! empty( $pk['challenge'] ) );
 check( 'rpId matches the RP', ( $pk['rpId'] ?? null ) === 'example.test' );
 check( 'userVerification is preferred', ( $pk['userVerification'] ?? null ) === 'preferred' );
+check( 'timeout reflects the setting (60000ms)', ( $pk['timeout'] ?? null ) === 60000 );
 
 $stored = $challenges->take( $result['state'] );
 check( 'challenge state was stored', is_string( $stored ) );

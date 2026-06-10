@@ -22,6 +22,8 @@ function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 $GLOBALS['__m'] = array();
 function get_user_meta( $id, $key, $single = false ) { return $GLOBALS['__m'][ "$id:$key" ] ?? ''; }
 function update_user_meta( $id, $key, $val ) { $GLOBALS['__m'][ "$id:$key" ] = $val; return true; }
+function get_option( $k, $d = false ) { return $d; } // Settings falls back to defaults.
+function apply_filters( $tag, $value ) { return $value; }
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 spl_autoload_register( function ( $class ) {
@@ -65,6 +67,8 @@ check( 'user.name is the username', isset( $pk['user']['name'] ) && $pk['user'][
 check( 'pubKeyCredParams advertises ES256 (-7)', isset( $pk['pubKeyCredParams'][0]['alg'] ) && $pk['pubKeyCredParams'][0]['alg'] === -7 );
 check( 'attestation is none', ( $pk['attestation'] ?? null ) === 'none' );
 check( 'residentKey is preferred', ( $pk['authenticatorSelection']['residentKey'] ?? null ) === 'preferred' );
+check( 'userVerification reflects the setting (preferred)', ( $pk['authenticatorSelection']['userVerification'] ?? null ) === 'preferred' );
+check( 'timeout reflects the setting (60000ms)', ( $pk['timeout'] ?? null ) === 60000 );
 
 // user.id is stable per user (UserHandle cached in meta).
 $result2 = $manager->create_options( 1, 'alice', 'Alice Example', array() );

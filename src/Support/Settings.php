@@ -36,6 +36,10 @@ final class Settings {
 			'max_passkeys'         => 0,
 			// Email the user on passkey registration/removal and new-device sign-in.
 			'notifications_enabled' => true,
+			// WebAuthn ceremony tuning.
+			'webauthn_timeout'           => 60,         // seconds; 0 = browser/library default.
+			'webauthn_user_verification' => 'preferred', // required | preferred | discouraged.
+			'webauthn_attachment'        => '',          // '' = any | platform | cross-platform.
 		);
 	}
 
@@ -134,6 +138,62 @@ final class Settings {
 		 * @param bool $enabled Whether notifications are enabled.
 		 */
 		return (bool) apply_filters( 'rapls_passkey_notifications_enabled', $enabled );
+	}
+
+	/**
+	 * WebAuthn ceremony timeout in milliseconds, or null for the library/browser
+	 * default. Stored in seconds for a friendlier admin field.
+	 *
+	 * @return int|null
+	 */
+	public static function webauthn_timeout(): ?int {
+		$ms = (int) self::get( 'webauthn_timeout' ) * 1000;
+
+		/**
+		 * Filter the WebAuthn ceremony timeout (milliseconds; 0 = default).
+		 *
+		 * @param int $ms Timeout in milliseconds.
+		 */
+		$ms = (int) apply_filters( 'rapls_passkey_webauthn_timeout', $ms );
+
+		return $ms > 0 ? $ms : null;
+	}
+
+	/**
+	 * User-verification requirement: required | preferred | discouraged.
+	 *
+	 * @return string
+	 */
+	public static function webauthn_user_verification(): string {
+		$uv = (string) self::get( 'webauthn_user_verification' );
+
+		/**
+		 * Filter the user-verification requirement.
+		 *
+		 * @param string $uv One of required|preferred|discouraged.
+		 */
+		$uv = (string) apply_filters( 'rapls_passkey_user_verification', $uv );
+
+		return in_array( $uv, array( 'required', 'preferred', 'discouraged' ), true ) ? $uv : 'preferred';
+	}
+
+	/**
+	 * Authenticator attachment preference for registration: null (any),
+	 * 'platform', or 'cross-platform'.
+	 *
+	 * @return string|null
+	 */
+	public static function webauthn_attachment(): ?string {
+		$attachment = (string) self::get( 'webauthn_attachment' );
+
+		/**
+		 * Filter the authenticator attachment preference.
+		 *
+		 * @param string $attachment '' (any), 'platform', or 'cross-platform'.
+		 */
+		$attachment = (string) apply_filters( 'rapls_passkey_authenticator_attachment', $attachment );
+
+		return in_array( $attachment, array( 'platform', 'cross-platform' ), true ) ? $attachment : null;
 	}
 
 	/**

@@ -9,6 +9,7 @@ namespace RaplsPasskey\WebAuthn;
 
 use Cose\Algorithms;
 use RaplsPasskey\Credentials\UserHandle;
+use RaplsPasskey\Support\Settings;
 use Webauthn\AuthenticatorAttestationResponse;
 use Webauthn\AuthenticatorAttestationResponseValidator;
 use Webauthn\AuthenticatorSelectionCriteria;
@@ -75,12 +76,13 @@ final class RegistrationManager {
 				PublicKeyCredentialParameters::create( 'public-key', Algorithms::COSE_ALGORITHM_RS256 ),
 			),
 			AuthenticatorSelectionCriteria::create(
-				null,
-				AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+				Settings::webauthn_attachment(),
+				Settings::webauthn_user_verification(),
 				AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED
 			),
 			PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
-			$exclude
+			$exclude,
+			Settings::webauthn_timeout()
 		);
 
 		$json  = $this->codec->creation_options_to_json( $options );

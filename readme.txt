@@ -61,6 +61,7 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * プライバシー(GDPR)対応: WordPress 標準の「個人データのエクスポート/消去」にパスキー・監査ログを連携。ユーザー削除時にも関連データを自動消去。
 * 「ユーザー」一覧に「パスキー」列を追加(登録数・最終使用・未登録を表示)。設定画面に導入状況(登録率・総数)サマリを追加。
 * ログインフォーム連携を拡張: Ultimate Member / MemberPress / Easy Digital Downloads / Theme My Login のログインフォームにパスキーボタンを表示(各プラグインが有効なときのみ。フィルターで個別制御可)。
+* WebAuthn 詳細設定を追加: タイムアウト・ユーザー検証(required/preferred/discouraged)・認証器の種類(内蔵/外付け)を設定画面およびフィルターで調整可能。
 
 = 0.2.0 =
 * ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。

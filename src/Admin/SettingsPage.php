@@ -76,6 +76,9 @@ final class SettingsPage {
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
 			'notifications_enabled' => ! empty( $input['notifications_enabled'] ),
+			'webauthn_timeout'     => isset( $input['webauthn_timeout'] ) ? max( 0, min( 600, (int) $input['webauthn_timeout'] ) ) : 60,
+			'webauthn_user_verification' => in_array( $input['webauthn_user_verification'] ?? '', array( 'required', 'preferred', 'discouraged' ), true ) ? $input['webauthn_user_verification'] : 'preferred',
+			'webauthn_attachment'  => in_array( $input['webauthn_attachment'] ?? '', array( 'platform', 'cross-platform' ), true ) ? $input['webauthn_attachment'] : '',
 		);
 	}
 
@@ -106,7 +109,40 @@ final class SettingsPage {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'reCAPTCHA v3(パスワードログイン保護)', 'rapls-passkey' ); ?></h2>
+				<h2><?php esc_html_e( '詳細設定(WebAuthn)', 'rapls-passkey' ); ?></h2>
+					<table class="form-table" role="presentation">
+						<tr>
+							<th scope="row"><label for="rapls-wa-timeout"><?php esc_html_e( 'タイムアウト(秒)', 'rapls-passkey' ); ?></label></th>
+							<td>
+								<input type="number" step="1" min="0" max="600" id="rapls-wa-timeout" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_timeout]" value="<?php echo esc_attr( (string) $s['webauthn_timeout'] ); ?>">
+								<p class="description"><?php esc_html_e( 'パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定(通常 60 秒程度)を使用します。', 'rapls-passkey' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="rapls-wa-uv"><?php esc_html_e( 'ユーザー検証', 'rapls-passkey' ); ?></label></th>
+							<td>
+								<select id="rapls-wa-uv" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_user_verification]">
+									<option value="preferred" <?php selected( $s['webauthn_user_verification'], 'preferred' ); ?>><?php esc_html_e( '推奨(preferred)', 'rapls-passkey' ); ?></option>
+									<option value="required" <?php selected( $s['webauthn_user_verification'], 'required' ); ?>><?php esc_html_e( '必須(required)', 'rapls-passkey' ); ?></option>
+									<option value="discouraged" <?php selected( $s['webauthn_user_verification'], 'discouraged' ); ?>><?php esc_html_e( '不要(discouraged)', 'rapls-passkey' ); ?></option>
+								</select>
+								<p class="description"><?php esc_html_e( '生体認証や PIN による本人確認をどの程度求めるか。「必須」は対応していない認証器を弾く可能性があります。通常は「推奨」のままを推奨します。', 'rapls-passkey' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><label for="rapls-wa-attachment"><?php esc_html_e( '認証器の種類', 'rapls-passkey' ); ?></label></th>
+							<td>
+								<select id="rapls-wa-attachment" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_attachment]">
+									<option value="" <?php selected( $s['webauthn_attachment'], '' ); ?>><?php esc_html_e( '指定なし(すべて許可)', 'rapls-passkey' ); ?></option>
+									<option value="platform" <?php selected( $s['webauthn_attachment'], 'platform' ); ?>><?php esc_html_e( '内蔵のみ(Touch ID / Windows Hello など)', 'rapls-passkey' ); ?></option>
+									<option value="cross-platform" <?php selected( $s['webauthn_attachment'], 'cross-platform' ); ?>><?php esc_html_e( '外付けのみ(セキュリティキー / 別端末)', 'rapls-passkey' ); ?></option>
+								</select>
+								<p class="description"><?php esc_html_e( '新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨します。', 'rapls-passkey' ); ?></p>
+							</td>
+						</tr>
+					</table>
+
+					<h2><?php esc_html_e( 'reCAPTCHA v3(パスワードログイン保護)', 'rapls-passkey' ); ?></h2>
 				<p class="description"><?php esc_html_e( 'パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログインには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレットを入力し、有効化してください。', 'rapls-passkey' ); ?></p>
 				<table class="form-table" role="presentation">
 					<tr>

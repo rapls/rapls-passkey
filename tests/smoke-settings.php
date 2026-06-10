@@ -77,5 +77,28 @@ check( 'max_passkeys read from options', Settings::max_passkeys() === 3 );
 $GLOBALS['__opt']['rapls_passkey_settings']['max_passkeys'] = -5;
 check( 'max_passkeys clamped to 0', Settings::max_passkeys() === 0 );
 
+// WebAuthn ceremony tuning — defaults.
+check( 'timeout default 60000ms', Settings::webauthn_timeout() === 60000 );
+check( 'user verification default preferred', Settings::webauthn_user_verification() === 'preferred' );
+check( 'attachment default any (null)', Settings::webauthn_attachment() === null );
+
+// From options (seconds stored, milliseconds returned).
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_timeout']           = 30;
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_user_verification'] = 'required';
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_attachment']        = 'platform';
+check( 'timeout from options (s -> ms)', Settings::webauthn_timeout() === 30000 );
+check( 'user verification from options', Settings::webauthn_user_verification() === 'required' );
+check( 'attachment from options', Settings::webauthn_attachment() === 'platform' );
+
+// 0 seconds => library default (null).
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_timeout'] = 0;
+check( 'timeout 0 means library default (null)', Settings::webauthn_timeout() === null );
+
+// Invalid stored values fall back to safe defaults.
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_user_verification'] = 'bogus';
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_attachment']        = 'bogus';
+check( 'invalid UV falls back to preferred', Settings::webauthn_user_verification() === 'preferred' );
+check( 'invalid attachment falls back to any (null)', Settings::webauthn_attachment() === null );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

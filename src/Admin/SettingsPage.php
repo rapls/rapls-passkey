@@ -76,6 +76,7 @@ final class SettingsPage {
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
 			'notifications_enabled' => ! empty( $input['notifications_enabled'] ),
+			'upgrade_prompt_enabled' => ! empty( $input['upgrade_prompt_enabled'] ),
 			'webauthn_timeout'     => isset( $input['webauthn_timeout'] ) ? max( 0, min( 600, (int) $input['webauthn_timeout'] ) ) : 60,
 			'webauthn_user_verification' => in_array( $input['webauthn_user_verification'] ?? '', array( 'required', 'preferred', 'discouraged' ), true ) ? $input['webauthn_user_verification'] : 'preferred',
 			'webauthn_attachment'  => in_array( $input['webauthn_attachment'] ?? '', array( 'platform', 'cross-platform' ), true ) ? $input['webauthn_attachment'] : '',
@@ -180,6 +181,19 @@ final class SettingsPage {
 								<label>
 									<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[notifications_enabled]" value="1" <?php checked( ! empty( $s['notifications_enabled'] ) ); ?>>
 									<?php esc_html_e( 'セキュリティ通知メールを送信する', 'rapls-passkey' ); ?>
+								</label>
+							</td>
+						</tr>
+					</table>
+
+					<h2><?php esc_html_e( 'パスキー登録のうながし', 'rapls-passkey' ); ?></h2>
+					<table class="form-table" role="presentation">
+						<tr>
+							<th scope="row"><?php esc_html_e( 'ログイン後の表示', 'rapls-passkey' ); ?></th>
+							<td>
+								<label>
+									<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[upgrade_prompt_enabled]" value="1" <?php checked( ! empty( $s['upgrade_prompt_enabled'] ) ); ?>>
+									<?php esc_html_e( 'パスワードでログインした直後に、パスキーの作成をその場でおすすめする(パスキー未登録のユーザーのみ)', 'rapls-passkey' ); ?>
 								</label>
 							</td>
 						</tr>

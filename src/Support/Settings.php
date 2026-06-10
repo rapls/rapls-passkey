@@ -36,6 +36,8 @@ final class Settings {
 			'max_passkeys'         => 0,
 			// Email the user on passkey registration/removal and new-device sign-in.
 			'notifications_enabled' => true,
+			// Offer to create a passkey right after an interactive (password) login.
+			'upgrade_prompt_enabled' => true,
 			// WebAuthn ceremony tuning.
 			'webauthn_timeout'           => 60,         // seconds; 0 = browser/library default.
 			'webauthn_user_verification' => 'preferred', // required | preferred | discouraged.
@@ -138,6 +140,23 @@ final class Settings {
 		 * @param bool $enabled Whether notifications are enabled.
 		 */
 		return (bool) apply_filters( 'rapls_passkey_notifications_enabled', $enabled );
+	}
+
+	/**
+	 * Whether to offer creating a passkey right after an interactive password
+	 * login (the post-login "upgrade" prompt).
+	 *
+	 * @return bool
+	 */
+	public static function upgrade_prompt_enabled(): bool {
+		$enabled = (bool) self::get( 'upgrade_prompt_enabled' );
+
+		/**
+		 * Filter whether the post-login passkey upgrade prompt is shown.
+		 *
+		 * @param bool $enabled Whether the upgrade prompt is enabled.
+		 */
+		return (bool) apply_filters( 'rapls_passkey_upgrade_prompt_enabled', $enabled );
 	}
 
 	/**

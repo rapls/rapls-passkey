@@ -63,6 +63,7 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * ログインフォーム連携を拡張: Ultimate Member / MemberPress / Easy Digital Downloads / Theme My Login のログインフォームにパスキーボタンを表示(各プラグインが有効なときのみ。フィルターで個別制御可)。
 * WebAuthn 詳細設定を追加: タイムアウト・ユーザー検証(required/preferred/discouraged)・認証器の種類(内蔵/外付け)を設定画面およびフィルターで調整可能。
 * 登録ポリシー用の拡張フックを追加(rapls_passkey/registration_policy・rapls_passkey/attestation_conveyance)。Pro の認証器ポリシーや独自のアテステーション検証に利用できます。
+* ログイン後のパスキー登録うながし: パスワードでログインした直後に、その場でパスキーの作成をおすすめ(未登録ユーザーのみ・一定期間に1回・設定で無効化可)。
 
 = 0.2.0 =
 * ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。

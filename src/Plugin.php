@@ -20,6 +20,7 @@ use RaplsPasskey\Integrations\TwoFactor;
 use RaplsPasskey\Integrations\WooCommerce;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
+use RaplsPasskey\Login\UpgradePrompt;
 use RaplsPasskey\Privacy\PersonalData;
 use RaplsPasskey\Recovery\Bypass;
 use RaplsPasskey\Rest\Endpoints;
@@ -127,6 +128,9 @@ final class Plugin {
 		( new Endpoints( $registration, $assertion, $repository, $codec ) )->register();
 		( new RestAccess( 'rapls-passkey/v1' ) )->register();
 		( new LoginForm() )->register();
+
+		// Offer to create a passkey right after an interactive (password) login.
+		( new UpgradePrompt( $repository ) )->register();
 
 		// Front-end embedding: shortcodes and the matching Gutenberg blocks.
 		$shortcodes = new Shortcodes( $repository );

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-10 10:26+0000\n"
+"POT-Creation-Date: 2026-06-10 13:22+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -317,8 +317,8 @@ msgid "認証しています…"
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:97 src/Login/LoginForm.php:57
-#: src/Rest/Endpoints.php:300 src/Rest/Endpoints.php:305
-#: src/Rest/Endpoints.php:312 src/Rest/Endpoints.php:319
+#: src/Rest/Endpoints.php:312 src/Rest/Endpoints.php:317
+#: src/Rest/Endpoints.php:324 src/Rest/Endpoints.php:331
 msgid "パスキーでの認証に失敗しました。"
 msgstr ""
 
@@ -374,16 +374,16 @@ msgstr ""
 msgid "このパスキーはすでに登録されています。"
 msgstr ""
 
-#: src/Rest/Endpoints.php:233
+#: src/Rest/Endpoints.php:245
 msgid "パスキーの保存に失敗しました。"
 msgstr ""
 
-#: src/Rest/Endpoints.php:401
+#: src/Rest/Endpoints.php:413
 msgid "このパスキーを削除する権限がありません。"
 msgstr ""
 
 #. translators: %d: maximum number of passkeys.
-#: src/Rest/Endpoints.php:427
+#: src/Rest/Endpoints.php:439
 msgid "登録できるパスキーは最大 %d 個です。不要なパスキーを削除してから登録してください。"
 msgstr ""
 

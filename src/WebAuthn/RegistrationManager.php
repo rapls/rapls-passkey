@@ -80,7 +80,7 @@ final class RegistrationManager {
 				Settings::webauthn_user_verification(),
 				AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED
 			),
-			PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
+			$this->attestation_conveyance(),
 			$exclude,
 			Settings::webauthn_timeout()
 		);
@@ -91,6 +91,25 @@ final class RegistrationManager {
 		return array(
 			'state'     => $state,
 			'publicKey' => json_decode( $json, true ),
+		);
+	}
+
+	/**
+	 * Attestation conveyance preference. Defaults to "none"; the default ceremony
+	 * only supports the "none" statement format, so requesting "direct" requires
+	 * also wiring attestation-statement support (advanced / Pro extension).
+	 *
+	 * @return string
+	 */
+	private function attestation_conveyance(): string {
+		/**
+		 * Filter the attestation conveyance preference.
+		 *
+		 * @param string $conveyance One of none|indirect|direct|enterprise.
+		 */
+		return (string) apply_filters(
+			'rapls_passkey/attestation_conveyance',
+			PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE
 		);
 	}
 

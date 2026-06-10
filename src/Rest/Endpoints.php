@@ -221,6 +221,18 @@ final class Endpoints {
 			return new WP_Error( 'rapls_passkey_already_registered', __( 'このパスキーはすでに登録されています。', 'rapls-passkey' ), array( 'status' => 409 ) );
 		}
 
+		/**
+		 * Let a policy (e.g. Pro's authenticator policy) veto a credential before
+		 * it is stored. Return a WP_Error to reject; any non-error value allows it.
+		 *
+		 * @param mixed                     $veto   Null by default; a WP_Error rejects.
+		 * @param \Webauthn\CredentialRecord $record The verified credential record.
+		 */
+		$veto = apply_filters( 'rapls_passkey/registration_policy', null, $record );
+		if ( is_wp_error( $veto ) ) {
+			return $veto;
+		}
+
 		$id = $this->repository->insert(
 			(int) wp_get_current_user()->ID,
 			$credential_id,

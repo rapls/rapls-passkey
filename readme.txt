@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.3.0 =
+* セキュリティ通知メール: パスキーの登録・削除、および新しい端末からのパスキーサインインを本人にメール通知(設定で無効化可、フィルターで個別制御可)。
 
 = 0.2.0 =
 * ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。

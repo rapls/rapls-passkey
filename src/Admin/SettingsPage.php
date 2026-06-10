@@ -74,6 +74,7 @@ final class SettingsPage {
 			'recaptcha_threshold'  => $threshold,
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
+			'notifications_enabled' => ! empty( $input['notifications_enabled'] ),
 		);
 	}
 
@@ -131,7 +132,21 @@ final class SettingsPage {
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( '監査ログ', 'rapls-passkey' ); ?></h2>
+				<h2><?php esc_html_e( 'セキュリティ通知メール', 'rapls-passkey' ); ?></h2>
+					<p class="description"><?php esc_html_e( 'パスキーの登録・削除、および新しい端末からのパスキーサインインを、対象ユーザー本人のメールアドレスに通知します。乗っ取りの早期発見に役立ちます。', 'rapls-passkey' ); ?></p>
+					<table class="form-table" role="presentation">
+						<tr>
+							<th scope="row"><?php esc_html_e( '送信', 'rapls-passkey' ); ?></th>
+							<td>
+								<label>
+									<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[notifications_enabled]" value="1" <?php checked( ! empty( $s['notifications_enabled'] ) ); ?>>
+									<?php esc_html_e( 'セキュリティ通知メールを送信する', 'rapls-passkey' ); ?>
+								</label>
+							</td>
+						</tr>
+					</table>
+
+					<h2><?php esc_html_e( '監査ログ', 'rapls-passkey' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><?php esc_html_e( '記録', 'rapls-passkey' ); ?></th>

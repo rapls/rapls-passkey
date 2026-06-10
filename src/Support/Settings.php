@@ -34,6 +34,8 @@ final class Settings {
 			'audit_enabled'        => true,
 			// Max passkeys a user may register (0 = unlimited).
 			'max_passkeys'         => 0,
+			// Email the user on passkey registration/removal and new-device sign-in.
+			'notifications_enabled' => true,
 		);
 	}
 
@@ -115,6 +117,23 @@ final class Settings {
 	 */
 	public static function audit_enabled(): bool {
 		return (bool) self::get( 'audit_enabled' );
+	}
+
+	/**
+	 * Whether security notification emails (registration, removal, new-device
+	 * sign-in) are sent to the affected user.
+	 *
+	 * @return bool
+	 */
+	public static function notifications_enabled(): bool {
+		$enabled = (bool) self::get( 'notifications_enabled' );
+
+		/**
+		 * Filter whether the plugin sends security notification emails.
+		 *
+		 * @param bool $enabled Whether notifications are enabled.
+		 */
+		return (bool) apply_filters( 'rapls_passkey_notifications_enabled', $enabled );
 	}
 
 	/**

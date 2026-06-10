@@ -20,6 +20,7 @@ use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
 use RaplsPasskey\Recovery\Bypass;
 use RaplsPasskey\Rest\Endpoints;
+use RaplsPasskey\Security\Notifications;
 use RaplsPasskey\Security\RestAccess;
 use RaplsPasskey\WebAuthn\AssertionManager;
 use RaplsPasskey\WebAuthn\Ceremonies;
@@ -132,6 +133,9 @@ final class Plugin {
 
 		// 2FA coexistence: a passkey login satisfies MFA (inert without a 2FA plugin).
 		( new TwoFactor() )->register();
+
+		// Security notification emails (registration / removal / new-device sign-in).
+		( new Notifications() )->register();
 
 		if ( is_admin() ) {
 			( new ProfileUi( $repository ) )->register();

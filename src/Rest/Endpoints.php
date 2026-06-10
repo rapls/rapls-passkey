@@ -235,6 +235,15 @@ final class Endpoints {
 
 		AuditLog::record( AuditLog::REGISTERED, (int) wp_get_current_user()->ID, 'id=' . $id );
 
+		/**
+		 * Fires after a passkey is registered and stored.
+		 *
+		 * @param int         $user_id User the passkey belongs to.
+		 * @param int         $id      Stored credential row id.
+		 * @param string|null $label   Optional passkey label.
+		 */
+		do_action( 'rapls_passkey/credential_registered', (int) wp_get_current_user()->ID, $id, $label );
+
 		return rest_ensure_response(
 			array(
 				'success'    => true,
@@ -357,6 +366,14 @@ final class Endpoints {
 		// Owner path: remove one's own credential.
 		if ( $this->repository->delete( $id, $user_id ) ) {
 			AuditLog::record( AuditLog::REMOVED, $user_id, 'id=' . $id );
+			/**
+			 * Fires after a passkey is removed.
+			 *
+			 * @param int $user_id  User the passkey belonged to.
+			 * @param int $id       Removed credential row id.
+			 * @param int $by_admin Admin user id if removed by an admin, else 0.
+			 */
+			do_action( 'rapls_passkey/credential_deleted', $user_id, $id, 0 );
 			return rest_ensure_response( array( 'success' => true ) );
 		}
 
@@ -373,6 +390,8 @@ final class Endpoints {
 					(int) $credential->user_id,
 					'id=' . $id . ' by-admin=' . $user_id
 				);
+				/** This filter-style action documents who removed the passkey (admin path). */
+				do_action( 'rapls_passkey/credential_deleted', (int) $credential->user_id, $id, $user_id );
 			}
 			return rest_ensure_response( array( 'success' => $deleted ) );
 		}

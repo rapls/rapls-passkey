@@ -18,6 +18,7 @@ use RaplsPasskey\Integrations\TwoFactor;
 use RaplsPasskey\Integrations\WooCommerce;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
+use RaplsPasskey\Privacy\PersonalData;
 use RaplsPasskey\Recovery\Bypass;
 use RaplsPasskey\Rest\Endpoints;
 use RaplsPasskey\Security\Notifications;
@@ -94,6 +95,8 @@ final class Plugin {
 		( new Commands( new CredentialRepository() ) )->register();
 		( new SettingsPage() )->register();
 		( new Recaptcha() )->register();
+		// Privacy (GDPR) export/erase must work even without the WebAuthn library.
+		( new PersonalData( new CredentialRepository() ) )->register();
 
 		// The WebAuthn core lives in web-auth/webauthn-lib; degrade loudly without it.
 		if ( ! $this->webauthn_library_available() ) {

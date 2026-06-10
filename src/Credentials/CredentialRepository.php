@@ -161,6 +161,24 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * Delete every credential belonging to a user (for the privacy eraser /
+	 * user deletion).
+	 *
+	 * @param int $user_id User id.
+	 * @return int Number of rows deleted.
+	 */
+	public function delete_all_for_user( int $user_id ): int {
+		global $wpdb;
+		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			Schema::credentials_table(),
+			array( 'user_id' => $user_id ),
+			array( '%d' )
+		);
+
+		return (int) $deleted;
+	}
+
+	/**
 	 * Map a DB row to a Credential.
 	 *
 	 * @param array<string,mixed> $row Row.

@@ -29,7 +29,7 @@ final class Notifications {
 	private const SEEN_COOKIE = 'rapls_pk_seen';
 
 	/** User meta: list of HMACs of known device tokens. */
-	private const SEEN_META = 'rapls_pk_seen_devices';
+	public const SEEN_META = 'rapls_pk_seen_devices';
 
 	/** Cap on remembered devices per user. */
 	private const SEEN_CAP = 20;

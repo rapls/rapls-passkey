@@ -71,6 +71,41 @@ final class AuditLog {
 	}
 
 	/**
+	 * All events for a single user, newest first (for the privacy exporter).
+	 *
+	 * @param int $user_id User id.
+	 * @param int $limit   Max rows.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function for_user( int $user_id, int $limit = 1000 ): array {
+		global $wpdb;
+		$table = Schema::audit_table();
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC LIMIT %d", $user_id, $limit ),
+			ARRAY_A
+		);
+
+		return $rows ? $rows : array();
+	}
+
+	/**
+	 * Delete every event for a user (for the privacy eraser / user deletion).
+	 *
+	 * @param int $user_id User id.
+	 * @return bool True if any row was deleted.
+	 */
+	public static function delete_for_user( int $user_id ): bool {
+		global $wpdb;
+		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			Schema::audit_table(),
+			array( 'user_id' => $user_id ),
+			array( '%d' )
+		);
+
+		return (bool) $deleted;
+	}
+
+	/**
 	 * Best-effort client IP for the log.
 	 *
 	 * @return string

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-10 09:56+0000\n"
+"POT-Creation-Date: 2026-06-10 10:04+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -13,14 +13,17 @@ msgstr ""
 "X-Domain: rapls-passkey\n"
 
 #: src/Admin/ProfileUi.php:103 src/Frontend/Shortcodes.php:174
+#: src/Privacy/PersonalData.php:98
 msgid "名前"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:104 src/Frontend/Shortcodes.php:175
+#: src/Privacy/PersonalData.php:102
 msgid "登録日時"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:105 src/Frontend/Shortcodes.php:176
+#: src/Privacy/PersonalData.php:106
 msgid "最終使用"
 msgstr ""
 
@@ -80,6 +83,7 @@ msgid "このパスキーの名前(任意):"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:91 src/Admin/SettingsPage.php:95
+#: src/Privacy/PersonalData.php:94
 msgid "パスキー"
 msgstr ""
 
@@ -175,11 +179,11 @@ msgstr ""
 msgid "記録されたイベントはありません。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:196
+#: src/Admin/SettingsPage.php:196 src/Privacy/PersonalData.php:128
 msgid "日時 (UTC)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:197
+#: src/Admin/SettingsPage.php:197 src/Privacy/PersonalData.php:124
 msgid "イベント"
 msgstr ""
 
@@ -254,8 +258,20 @@ msgstr ""
 msgid "reCAPTCHA の検証に失敗しました。"
 msgstr ""
 
-#: src/Plugin.php:169
+#: src/Plugin.php:172
 msgid "Rapls Passkey: WebAuthn ライブラリが読み込まれていません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効化されています。"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:110
+msgid "資格情報 ID"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:120
+msgid "パスキーの監査ログ"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:55 src/Privacy/PersonalData.php:70
+msgid "Rapls Passkey(パスキー)"
 msgstr ""
 
 #: src/Recovery/Bypass.php:51

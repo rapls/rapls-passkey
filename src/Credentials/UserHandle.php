@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class UserHandle {
 
 	/** User meta key holding the base64url handle. */
-	private const META = 'rapls_passkey_user_handle';
+	public const META = 'rapls_passkey_user_handle';
 
 	/**
 	 * Get (creating on first use) the base64url handle for a user.

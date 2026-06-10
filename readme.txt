@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,14 +56,17 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 
 == Changelog ==
 
+= 0.2.0 =
+* ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。
+* 1ユーザーあたりのパスキー登録上限を設定可能。管理者は他ユーザーのパスキーを削除可能。
+* 二要素認証プラグイン(Automattic Two-Factor / WP 2FA)と共存。パスキーログインを多要素認証として扱います。
+* REST API をログイン済みユーザーに制限するセキュリティプラグイン環境でも、パスキー用エンドポイントのみ許可して動作を維持。
+* Content-Security-Policy を壊しません。独自の CSP ヘッダーを注入せず、インラインのイベントハンドラーも使用しません。
+* マルチサイト向けに rapls_passkey_rp_id / rapls_passkey_rp_name フィルターを追加(共通 RP ID)。
+
 = 0.1.0 =
 * 初期スキャフォールド。プラグインの起動・認証情報テーブル・依存関係チェック。
 * パスキーの登録・ログイン(同一端末・クロスデバイス・オートフィル対応)。
 * WP-CLI による管理/復旧コマンドと緊急バイパス定数。
 * 設定画面。パスワードログイン向け reCAPTCHA v3、監査ログ。
 * Wordfence / SiteGuard WP Plugin / CloudSecure WP Security 等の検出と共存。
-* REST API をログイン済みユーザーに制限するセキュリティプラグイン環境でも、パスキー用エンドポイントのみ許可して動作を維持。
-* ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。
-* 1ユーザーあたりのパスキー登録上限を設定可能。管理者は他ユーザーのパスキーを削除可能。
-* 二要素認証プラグイン(Automattic Two-Factor / WP 2FA)と共存。パスキーログインを多要素認証として扱います。
-* Content-Security-Policy を壊しません。独自の CSP ヘッダーを注入せず、インラインのイベントハンドラーも使用しません。

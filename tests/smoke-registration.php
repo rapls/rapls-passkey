@@ -81,5 +81,14 @@ $options = $codec->creation_options_from_json( $stored );
 check( 'stored options deserialise back', $options->rp->id === 'example.test' );
 check( 'take() is single-use', $challenges->take( $result['state'] ) === null );
 
+// --- passwordless sign-up options (userless) ------------------------------
+$signup = $manager->create_signup_options( 'newuser', 'New User' );
+$spk    = $signup['publicKey'];
+check( 'signup returns a state id', ! empty( $signup['state'] ) );
+check( 'signup user.name is the requested name', ( $spk['user']['name'] ?? null ) === 'newuser' );
+check( 'signup has a challenge', ! empty( $spk['challenge'] ) );
+check( 'signup excludes nothing (new account)', empty( $spk['excludeCredentials'] ) );
+check( 'signup user.id differs from the existing user handle', ( $spk['user']['id'] ?? '' ) !== ( $pk['user']['id'] ?? '' ) );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

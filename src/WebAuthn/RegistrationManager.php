@@ -95,6 +95,50 @@ final class RegistrationManager {
 	}
 
 	/**
+	 * Build creation options for a passwordless sign-up — a user that does not
+	 * exist yet. A fresh random user handle is generated and lives only in the
+	 * ceremony options; the verified record's userHandle is what gets attached to
+	 * the account that is created after a successful attestation.
+	 *
+	 * @param string $username The requested account name.
+	 * @param string $display  Display name.
+	 * @return array{state:string,publicKey:array<string,mixed>}
+	 */
+	public function create_signup_options( string $username, string $display ): array {
+		$user = PublicKeyCredentialUserEntity::create(
+			$username,
+			random_bytes( 32 ),
+			'' !== $display ? $display : $username
+		);
+
+		$options = PublicKeyCredentialCreationOptions::create(
+			$this->rp->entity(),
+			$user,
+			random_bytes( 32 ),
+			array(
+				PublicKeyCredentialParameters::create( 'public-key', Algorithms::COSE_ALGORITHM_ES256 ),
+				PublicKeyCredentialParameters::create( 'public-key', Algorithms::COSE_ALGORITHM_RS256 ),
+			),
+			AuthenticatorSelectionCriteria::create(
+				Settings::webauthn_attachment(),
+				Settings::webauthn_user_verification(),
+				AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED
+			),
+			$this->attestation_conveyance(),
+			array(),
+			Settings::webauthn_timeout()
+		);
+
+		$json  = $this->codec->creation_options_to_json( $options );
+		$state = $this->challenges->put( $json );
+
+		return array(
+			'state'     => $state,
+			'publicKey' => json_decode( $json, true ),
+		);
+	}
+
+	/**
 	 * Attestation conveyance preference. Defaults to "none"; the default ceremony
 	 * only supports the "none" statement format, so requesting "direct" requires
 	 * also wiring attestation-statement support (advanced / Pro extension).

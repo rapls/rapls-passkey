@@ -114,6 +114,13 @@ final class UpgradePrompt {
 			'restUrl'  => esc_url_raw( rest_url( 'rapls-passkey/v1/' ) ),
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
 			'redirect' => $dest,
+			/**
+			 * Whether to attempt a silent automatic passkey upgrade (Conditional
+			 * Create) before showing the explicit button.
+			 *
+			 * @param bool $enabled Whether automatic upgrade is attempted.
+			 */
+			'conditionalCreate' => (bool) apply_filters( 'rapls_passkey_conditional_create', true ),
 			'i18n'     => array(
 				'registering' => __( 'パスキーを登録しています…', 'rapls-passkey' ),
 				'success'     => __( 'パスキーを登録しました。', 'rapls-passkey' ),

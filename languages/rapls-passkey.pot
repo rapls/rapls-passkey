@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-11 14:13+0000\n"
+"POT-Creation-Date: 2026-06-11 14:23+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -75,22 +75,22 @@ msgid "パスキーの登録は本人のプロフィール画面からのみ行�
 msgstr ""
 
 #: src/Admin/ProfileUi.php:68 src/Frontend/Shortcodes.php:98
-#: src/Login/UpgradePrompt.php:118
+#: src/Login/UpgradePrompt.php:125
 msgid "パスキーを登録しています…"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:69 src/Frontend/Shortcodes.php:99
-#: src/Login/UpgradePrompt.php:119
+#: src/Login/UpgradePrompt.php:126
 msgid "パスキーを登録しました。"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:70 src/Frontend/Shortcodes.php:100
-#: src/Login/UpgradePrompt.php:120 src/Rest/Endpoints.php:216
+#: src/Login/UpgradePrompt.php:127 src/Rest/Endpoints.php:216
 msgid "パスキーの登録に失敗しました。"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:71 src/Frontend/Shortcodes.php:101
-#: src/Login/LoginForm.php:58 src/Login/UpgradePrompt.php:121
+#: src/Login/LoginForm.php:58 src/Login/UpgradePrompt.php:128
 msgid "このブラウザはパスキーに対応していません。"
 msgstr ""
 
@@ -99,7 +99,7 @@ msgid "登録がキャンセルされたか、時間切れになりました。�
 msgstr ""
 
 #: src/Admin/ProfileUi.php:73 src/Frontend/Shortcodes.php:103
-#: src/Login/UpgradePrompt.php:123
+#: src/Login/UpgradePrompt.php:130
 msgid "この認証器にはすでにパスキーが登録されています。"
 msgstr ""
 
@@ -377,27 +377,27 @@ msgstr ""
 msgid "reCAPTCHA の検証に失敗しました。"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:122
+#: src/Login/UpgradePrompt.php:129
 msgid "キャンセルされました。"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:127
+#: src/Login/UpgradePrompt.php:134
 msgid "パスキーの設定"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:130
+#: src/Login/UpgradePrompt.php:137
 msgid "次回から、もっと速く安全にログイン"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:131
+#: src/Login/UpgradePrompt.php:138
 msgid "この端末にパスキーを設定すると、次回からパスワードなしで、指紋・顔認証・PIN ですばやくログインできます。フィッシングにも強くなります。"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:134
+#: src/Login/UpgradePrompt.php:141
 msgid "パスキーを作成"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:139
+#: src/Login/UpgradePrompt.php:146
 msgid "後で"
 msgstr ""
 

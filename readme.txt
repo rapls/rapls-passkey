@@ -65,6 +65,7 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
 * 登録ポリシー用の拡張フックを追加(rapls_passkey/registration_policy・rapls_passkey/attestation_conveyance)。Pro の認証器ポリシーや独自のアテステーション検証に利用できます。
 * ログイン後のパスキー登録うながし: パスワードでログインした直後に、その場でパスキーの作成をおすすめ(未登録ユーザーのみ・一定期間に1回・設定で無効化可)。
 * WooCommerce「マイアカウント」に「パスキー」タブを追加。会員が自分のパスキーを登録・削除できます(WooCommerce 有効時のみ)。
+* 監査ログの CSV エクスポート(設定画面からダウンロード。Excel 対応の UTF-8 BOM 付き)。
 
 = 0.2.0 =
 * ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。

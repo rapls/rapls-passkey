@@ -274,6 +274,12 @@ final class SettingsPage {
 			echo '<p>' . esc_html__( '記録されたイベントはありません。', 'rapls-passkey' ) . '</p>';
 			return;
 		}
+
+		$export_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=' . AuditExport::ACTION ),
+			AuditExport::ACTION
+		);
+		echo '<p><a class="button" href="' . esc_url( $export_url ) . '">' . esc_html__( 'CSV エクスポート', 'rapls-passkey' ) . '</a></p>';
 		echo '<table class="widefat striped"><thead><tr>';
 		echo '<th>' . esc_html__( '日時 (UTC)', 'rapls-passkey' ) . '</th>';
 		echo '<th>' . esc_html__( 'イベント', 'rapls-passkey' ) . '</th>';

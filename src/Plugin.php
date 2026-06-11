@@ -10,6 +10,7 @@ namespace RaplsPasskey;
 use RaplsPasskey\Admin\AuditExport;
 use RaplsPasskey\Admin\ProfileUi;
 use RaplsPasskey\Admin\SettingsPage;
+use RaplsPasskey\Admin\SiteHealth;
 use RaplsPasskey\Admin\UsersColumn;
 use RaplsPasskey\Cli\Commands;
 use RaplsPasskey\Credentials\CredentialRepository;
@@ -103,6 +104,7 @@ final class Plugin {
 		// Privacy (GDPR) export/erase must work even without the WebAuthn library.
 		( new PersonalData( new CredentialRepository() ) )->register();
 		( new AuditExport() )->register();
+		( new SiteHealth() )->register();
 
 		// The WebAuthn core lives in web-auth/webauthn-lib; degrade loudly without it.
 		if ( ! $this->webauthn_library_available() ) {

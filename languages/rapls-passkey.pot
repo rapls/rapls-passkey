@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-11 14:23+0000\n"
+"POT-Creation-Date: 2026-06-11 14:28+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -312,6 +312,64 @@ msgstr ""
 msgid "Rapls Passkey 設定"
 msgstr ""
 
+#: src/Admin/SiteHealth.php:100
+msgid "認証情報・監査ログのテーブルが存在します。"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:101
+msgid "プラグインのデータベーステーブルが見つかりません。プラグインを一度無効化してから再度有効化すると作成されます。"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:116
+msgid "既知のログイン系セキュリティプラグインは検出されていません。"
+msgstr ""
+
+#. translators: %s: comma-separated plugin names.
+#: src/Admin/SiteHealth.php:119
+msgid "セキュリティプラグインを検出しました: %s。REST API 制限環境でも動作するよう自動対応しています。"
+msgstr ""
+
+#. translators: 1: RP ID, 2: site host.
+#: src/Admin/SiteHealth.php:125
+msgid "現在の RP ID は「%1$s」、サイトのホストは「%2$s」です。RP ID はパスキーの有効範囲を決めます(rapls_passkey_rp_id フィルターで変更可)。"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:181
+msgid "セキュリティ"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:43 src/Admin/SiteHealth.php:75
+msgid "Rapls Passkey: HTTPS"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:47 src/Admin/SiteHealth.php:89
+msgid "Rapls Passkey: WebAuthn ライブラリ"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:51 src/Admin/SiteHealth.php:103
+msgid "Rapls Passkey: データベース"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:55 src/Admin/SiteHealth.php:130
+msgid "Rapls Passkey: RP ID"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:72
+msgid "サイトは安全なコンテキスト(HTTPS)で配信されています。"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:73
+msgid "パスキーには HTTPS(安全なコンテキスト)が必要です。SSL 証明書を導入し、サイトを HTTPS で配信してください(localhost を除く)。"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:86
+msgid "WebAuthn ライブラリが読み込まれています。"
+msgstr ""
+
+#: src/Admin/SiteHealth.php:87
+msgid "WebAuthn ライブラリが見つかりません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効になっています。"
+msgstr ""
+
 #: src/Admin/UsersColumn.php:77
 msgid "未登録"
 msgstr ""
@@ -401,7 +459,7 @@ msgstr ""
 msgid "後で"
 msgstr ""
 
-#: src/Plugin.php:188
+#: src/Plugin.php:190
 msgid "Rapls Passkey: WebAuthn ライブラリが読み込まれていません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効化されています。"
 msgstr ""
 

@@ -17,7 +17,10 @@ $GLOBALS['__t'] = array();
 function set_transient( $k, $v, $ttl ) { $GLOBALS['__t'][ $k ] = $v; return true; }
 function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
 function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
-function get_option( $k, $d = false ) { return $d; } // Settings falls back to defaults.
+function get_option( $k, $d = false ) {
+	if ( 'rapls_passkey_settings' === $k ) { return array( 'webauthn_hints' => array( 'hybrid' ) ); }
+	return $d;
+}
 function apply_filters( $tag, $value ) { return $value; }
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
@@ -63,6 +66,7 @@ check( 'publicKey has a challenge', ! empty( $pk['challenge'] ) );
 check( 'rpId matches the RP', ( $pk['rpId'] ?? null ) === 'example.test' );
 check( 'userVerification is preferred', ( $pk['userVerification'] ?? null ) === 'preferred' );
 check( 'timeout reflects the setting (60000ms)', ( $pk['timeout'] ?? null ) === 60000 );
+check( 'hints injected into the request options', ( $pk['hints'] ?? null ) === array( 'hybrid' ) );
 
 $stored = $challenges->take( $result['state'] );
 check( 'challenge state was stored', is_string( $stored ) );

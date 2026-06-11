@@ -90,8 +90,24 @@ final class RegistrationManager {
 
 		return array(
 			'state'     => $state,
-			'publicKey' => json_decode( $json, true ),
+			'publicKey' => self::with_hints( json_decode( $json, true ) ),
 		);
+	}
+
+	/**
+	 * Add the configured client UI hints to a public-key options array. Hints
+	 * only steer the browser UI and are not verified, so injecting them into the
+	 * client-facing options (not the stored ceremony) is sufficient.
+	 *
+	 * @param array<string,mixed> $public_key Public-key options.
+	 * @return array<string,mixed>
+	 */
+	private static function with_hints( array $public_key ): array {
+		$hints = Settings::webauthn_hints();
+		if ( array() !== $hints ) {
+			$public_key['hints'] = $hints;
+		}
+		return $public_key;
 	}
 
 	/**
@@ -134,7 +150,7 @@ final class RegistrationManager {
 
 		return array(
 			'state'     => $state,
-			'publicKey' => json_decode( $json, true ),
+			'publicKey' => self::with_hints( json_decode( $json, true ) ),
 		);
 	}
 

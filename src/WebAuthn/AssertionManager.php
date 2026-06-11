@@ -61,12 +61,20 @@ final class AssertionManager {
 			Settings::webauthn_timeout()
 		);
 
-		$json  = $this->codec->request_options_to_json( $options );
-		$state = $this->challenges->put( $json );
+		$json      = $this->codec->request_options_to_json( $options );
+		$state     = $this->challenges->put( $json );
+		$public_key = json_decode( $json, true );
+
+		// Client UI hints only steer the browser picker and are not verified, so
+		// they are added to the client-facing options, not the stored ceremony.
+		$hints = Settings::webauthn_hints();
+		if ( array() !== $hints ) {
+			$public_key['hints'] = $hints;
+		}
 
 		return array(
 			'state'     => $state,
-			'publicKey' => json_decode( $json, true ),
+			'publicKey' => $public_key,
 		);
 	}
 

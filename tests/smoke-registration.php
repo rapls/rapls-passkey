@@ -22,7 +22,10 @@ function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 $GLOBALS['__m'] = array();
 function get_user_meta( $id, $key, $single = false ) { return $GLOBALS['__m'][ "$id:$key" ] ?? ''; }
 function update_user_meta( $id, $key, $val ) { $GLOBALS['__m'][ "$id:$key" ] = $val; return true; }
-function get_option( $k, $d = false ) { return $d; } // Settings falls back to defaults.
+function get_option( $k, $d = false ) {
+	if ( 'rapls_passkey_settings' === $k ) { return array( 'webauthn_hints' => array( 'hybrid', 'security-key' ) ); }
+	return $d;
+}
 function apply_filters( $tag, $value ) { return $value; }
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
@@ -69,6 +72,7 @@ check( 'attestation is none', ( $pk['attestation'] ?? null ) === 'none' );
 check( 'residentKey is preferred', ( $pk['authenticatorSelection']['residentKey'] ?? null ) === 'preferred' );
 check( 'userVerification reflects the setting (preferred)', ( $pk['authenticatorSelection']['userVerification'] ?? null ) === 'preferred' );
 check( 'timeout reflects the setting (60000ms)', ( $pk['timeout'] ?? null ) === 60000 );
+check( 'hints injected into the options', ( $pk['hints'] ?? null ) === array( 'hybrid', 'security-key' ) );
 
 // user.id is stable per user (UserHandle cached in meta).
 $result2 = $manager->create_options( 1, 'alice', 'Alice Example', array() );

@@ -80,6 +80,9 @@ final class SettingsPage {
 			'webauthn_timeout'     => isset( $input['webauthn_timeout'] ) ? max( 0, min( 600, (int) $input['webauthn_timeout'] ) ) : 60,
 			'webauthn_user_verification' => in_array( $input['webauthn_user_verification'] ?? '', array( 'required', 'preferred', 'discouraged' ), true ) ? $input['webauthn_user_verification'] : 'preferred',
 			'webauthn_attachment'  => in_array( $input['webauthn_attachment'] ?? '', array( 'platform', 'cross-platform' ), true ) ? $input['webauthn_attachment'] : '',
+			'webauthn_hints'       => isset( $input['webauthn_hints'] ) && is_array( $input['webauthn_hints'] )
+				? array_values( array_intersect( array( 'security-key', 'client-device', 'hybrid' ), array_map( 'strval', $input['webauthn_hints'] ) ) )
+				: array(),
 		);
 	}
 
@@ -139,6 +142,26 @@ final class SettingsPage {
 									<option value="cross-platform" <?php selected( $s['webauthn_attachment'], 'cross-platform' ); ?>><?php esc_html_e( '外付けのみ(セキュリティキー / 別端末)', 'rapls-passkey' ); ?></option>
 								</select>
 								<p class="description"><?php esc_html_e( '新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨します。', 'rapls-passkey' ); ?></p>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'UI ヒント', 'rapls-passkey' ); ?></th>
+							<td>
+								<?php
+								$hints     = (array) ( $s['webauthn_hints'] ?? array() );
+								$hint_opts = array(
+									'client-device' => __( 'この端末のパスキー(client-device)', 'rapls-passkey' ),
+									'hybrid'        => __( '別の端末 / QR(hybrid)', 'rapls-passkey' ),
+									'security-key'  => __( 'セキュリティキー(security-key)', 'rapls-passkey' ),
+								);
+								foreach ( $hint_opts as $value => $label ) :
+									?>
+									<label style="display:block;margin:2px 0">
+										<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_hints][]" value="<?php echo esc_attr( $value ); ?>" <?php checked( in_array( $value, $hints, true ) ); ?>>
+										<?php echo esc_html( $label ); ?>
+									</label>
+								<?php endforeach; ?>
+								<p class="description"><?php esc_html_e( '対応ブラウザに対し、優先して案内する認証方法のヒントを与えます(順序も尊重されます)。未選択ならヒントなし。', 'rapls-passkey' ); ?></p>
 							</td>
 						</tr>
 					</table>

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-11 14:28+0000\n"
+"POT-Creation-Date: 2026-06-11 14:33+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -16,12 +16,12 @@ msgstr ""
 msgid "権限がありません。"
 msgstr ""
 
-#: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:284
+#: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:307
 #: src/Privacy/PersonalData.php:128
 msgid "日時 (UTC)"
 msgstr ""
 
-#: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:285
+#: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:308
 #: src/Privacy/PersonalData.php:124
 msgid "イベント"
 msgstr ""
@@ -34,7 +34,7 @@ msgstr ""
 msgid "ユーザー名"
 msgstr ""
 
-#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:287
+#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:310
 msgid "詳細"
 msgstr ""
 
@@ -111,7 +111,7 @@ msgstr ""
 msgid "このパスキーの名前(任意):"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:91 src/Admin/SettingsPage.php:102
+#: src/Admin/ProfileUi.php:91 src/Admin/SettingsPage.php:105
 #: src/Admin/UsersColumn.php:54 src/Integrations/WooCommerceAccount.php:86
 #: src/Integrations/WooCommerceAccount.php:101
 #: src/Privacy/PersonalData.php:94
@@ -122,185 +122,205 @@ msgstr ""
 msgid "登録済みのパスキー"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:105
+#: src/Admin/SettingsPage.php:108
 msgid "1ユーザーあたりの登録上限"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:108
+#: src/Admin/SettingsPage.php:111
 msgid "ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮し、2 以上を推奨します。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:113
+#: src/Admin/SettingsPage.php:116
 msgid "詳細設定(WebAuthn)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:116
+#: src/Admin/SettingsPage.php:119
 msgid "タイムアウト(秒)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:119
+#: src/Admin/SettingsPage.php:122
 msgid "パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定(通常 60 秒程度)を使用します。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:123
+#: src/Admin/SettingsPage.php:126
 msgid "ユーザー検証"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:126
+#: src/Admin/SettingsPage.php:129
 msgid "推奨(preferred)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:127
+#: src/Admin/SettingsPage.php:130
 msgid "必須(required)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:128
+#: src/Admin/SettingsPage.php:131
 msgid "不要(discouraged)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:130
+#: src/Admin/SettingsPage.php:133
 msgid "生体認証や PIN による本人確認をどの程度求めるか。「必須」は対応していない認証器を弾く可能性があります。通常は「推奨」のままを推奨します。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:134
+#: src/Admin/SettingsPage.php:137
 msgid "認証器の種類"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:137
+#: src/Admin/SettingsPage.php:140
 msgid "指定なし(すべて許可)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:138
+#: src/Admin/SettingsPage.php:141
 msgid "内蔵のみ(Touch ID / Windows Hello など)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:139
+#: src/Admin/SettingsPage.php:142
 msgid "外付けのみ(セキュリティキー / 別端末)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:141
+#: src/Admin/SettingsPage.php:144
 msgid "新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨します。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:146
-msgid "reCAPTCHA v3(パスワードログイン保護)"
+#: src/Admin/SettingsPage.php:148
+msgid "UI ヒント"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:147
-msgid "パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログインには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレットを入力し、有効化してください。"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:150
-msgid "有効化"
+#: src/Admin/SettingsPage.php:153
+msgid "この端末のパスキー(client-device)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:154
-msgid "reCAPTCHA を有効にする"
+msgid "別の端末 / QR(hybrid)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:159
-msgid "サイトキー"
+#: src/Admin/SettingsPage.php:155
+msgid "セキュリティキー(security-key)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:163
-msgid "シークレットキー"
+#: src/Admin/SettingsPage.php:164
+msgid "対応ブラウザに対し、優先して案内する認証方法のヒントを与えます(順序も尊重されます)。未選択ならヒントなし。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:167
-msgid "スコアしきい値"
+#: src/Admin/SettingsPage.php:169
+msgid "reCAPTCHA v3(パスワードログイン保護)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:170
+msgid "パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログインには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレットを入力し、有効化してください。"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:173
+msgid "有効化"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:177
+msgid "reCAPTCHA を有効にする"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:182
+msgid "サイトキー"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:186
+msgid "シークレットキー"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:190
+msgid "スコアしきい値"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:193
 msgid "0.0〜1.0。これ未満のスコアは拒否します(既定 0.5)。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:175
+#: src/Admin/SettingsPage.php:198
 msgid "セキュリティ通知メール"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:176
+#: src/Admin/SettingsPage.php:199
 msgid "パスキーの登録・削除、および新しい端末からのパスキーサインインを、対象ユーザー本人のメールアドレスに通知します。乗っ取りの早期発見に役立ちます。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:179
+#: src/Admin/SettingsPage.php:202
 msgid "送信"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:183
+#: src/Admin/SettingsPage.php:206
 msgid "セキュリティ通知メールを送信する"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:189
+#: src/Admin/SettingsPage.php:212
 msgid "パスキー登録のうながし"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:192
+#: src/Admin/SettingsPage.php:215
 msgid "ログイン後の表示"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:196
+#: src/Admin/SettingsPage.php:219
 msgid "パスワードでログインした直後に、パスキーの作成をその場でおすすめする(パスキー未登録のユーザーのみ)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:202
+#: src/Admin/SettingsPage.php:225
 msgid "監査ログ"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:205
+#: src/Admin/SettingsPage.php:228
 msgid "記録"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:209
+#: src/Admin/SettingsPage.php:232
 msgid "登録・ログイン・削除などのイベントを記録する"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:233
+#: src/Admin/SettingsPage.php:256
 msgid "導入状況"
 msgstr ""
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: src/Admin/SettingsPage.php:237
+#: src/Admin/SettingsPage.php:260
 msgid "パスキーを登録済みのユーザー: %1$d / %2$d 人(%3$d%%)"
 msgstr ""
 
 #. translators: %d: total number of registered passkeys.
-#: src/Admin/SettingsPage.php:246
+#: src/Admin/SettingsPage.php:269
 msgid "登録済みパスキーの総数: %d 個"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:250
+#: src/Admin/SettingsPage.php:273
 msgid "各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:258
+#: src/Admin/SettingsPage.php:281
 msgid "セキュリティプラグインとの互換"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:283
 msgid "既知のログイン系セキュリティプラグインは検出されませんでした。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:263
+#: src/Admin/SettingsPage.php:286
 msgid "次のプラグインを検出しました:"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:264
+#: src/Admin/SettingsPage.php:287
 msgid "Rapls Passkey は標準のログインフックのみを使用し、ログイン成功時に wp_login を発火するため、これらと共存できます。ログイン画面の CAPTCHA が重複する場合は、どちらか一方を無効にしてください(本プラグインの reCAPTCHA は上記設定で無効化できます)。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:271
+#: src/Admin/SettingsPage.php:294
 msgid "最近のイベント"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:274
+#: src/Admin/SettingsPage.php:297
 msgid "記録されたイベントはありません。"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:282
+#: src/Admin/SettingsPage.php:305
 msgid "CSV エクスポート"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:286
+#: src/Admin/SettingsPage.php:309
 msgid "ユーザー"
 msgstr ""
 
@@ -308,7 +328,7 @@ msgstr ""
 msgid "Rapls Passkey"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:96
+#: src/Admin/SettingsPage.php:99
 msgid "Rapls Passkey 設定"
 msgstr ""
 

@@ -42,6 +42,8 @@ final class Settings {
 			'webauthn_timeout'           => 60,         // seconds; 0 = browser/library default.
 			'webauthn_user_verification' => 'preferred', // required | preferred | discouraged.
 			'webauthn_attachment'        => '',          // '' = any | platform | cross-platform.
+			// Client UI hints (subset of: security-key, client-device, hybrid).
+			'webauthn_hints'             => array(),
 		);
 	}
 
@@ -213,6 +215,31 @@ final class Settings {
 		$attachment = (string) apply_filters( 'rapls_passkey_authenticator_attachment', $attachment );
 
 		return in_array( $attachment, array( 'platform', 'cross-platform' ), true ) ? $attachment : null;
+	}
+
+	/**
+	 * WebAuthn client UI hints, a validated subset of security-key,
+	 * client-device, hybrid (order preserved). Empty = no hint.
+	 *
+	 * @return string[]
+	 */
+	public static function webauthn_hints(): array {
+		$valid = array( 'security-key', 'client-device', 'hybrid' );
+		$hints = self::get( 'webauthn_hints' );
+		$hints = is_array( $hints ) ? array_values( array_filter( $hints, static function ( $h ) use ( $valid ) {
+			return in_array( $h, $valid, true );
+		} ) ) : array();
+
+		/**
+		 * Filter the WebAuthn client UI hints.
+		 *
+		 * @param string[] $hints Hint strings.
+		 */
+		$hints = (array) apply_filters( 'rapls_passkey_webauthn_hints', $hints );
+
+		return array_values( array_filter( $hints, static function ( $h ) use ( $valid ) {
+			return in_array( $h, $valid, true );
+		} ) );
 	}
 
 	/**

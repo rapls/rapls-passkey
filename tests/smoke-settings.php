@@ -100,5 +100,11 @@ $GLOBALS['__opt']['rapls_passkey_settings']['webauthn_attachment']        = 'bog
 check( 'invalid UV falls back to preferred', Settings::webauthn_user_verification() === 'preferred' );
 check( 'invalid attachment falls back to any (null)', Settings::webauthn_attachment() === null );
 
+// Hints: default empty, validated subset, order preserved, invalid dropped.
+unset( $GLOBALS['__opt']['rapls_passkey_settings']['webauthn_hints'] );
+check( 'hints default empty', Settings::webauthn_hints() === array() );
+$GLOBALS['__opt']['rapls_passkey_settings']['webauthn_hints'] = array( 'hybrid', 'bogus', 'security-key' );
+check( 'hints keep only valid values, in order', Settings::webauthn_hints() === array( 'hybrid', 'security-key' ) );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

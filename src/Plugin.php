@@ -18,6 +18,7 @@ use RaplsPasskey\Frontend\Shortcodes;
 use RaplsPasskey\Integrations\LoginForms;
 use RaplsPasskey\Integrations\TwoFactor;
 use RaplsPasskey\Integrations\WooCommerce;
+use RaplsPasskey\Integrations\WooCommerceAccount;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
 use RaplsPasskey\Login\UpgradePrompt;
@@ -139,6 +140,9 @@ final class Plugin {
 
 		// WooCommerce "My account" / checkout login (inert without WooCommerce).
 		( new WooCommerce( $shortcodes ) )->register();
+
+		// WooCommerce "My account" passkey management tab (inert without WooCommerce).
+		( new WooCommerceAccount( $shortcodes ) )->register();
 
 		// Other membership / e-commerce login forms (inert without those plugins).
 		( new LoginForms( $shortcodes ) )->register();

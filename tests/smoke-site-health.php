@@ -36,6 +36,22 @@ namespace {
 	function home_url() { return $GLOBALS['__home'] ?? 'https://example.test'; }
 	function wp_parse_url( $url, $c = -1 ) { return parse_url( $url, $c ); }
 
+	class FakeWpdb {
+		public $prefix = 'wp_';
+		public function prepare( $sql, ...$a ) {
+			foreach ( $a as $x ) { $sql = preg_replace( '/%s|%d/', is_int( $x ) ? (string) $x : "'$x'", $sql, 1 ); }
+			return $sql;
+		}
+		public function get_var( $sql ) {
+			if ( false !== strpos( $sql, 'SHOW TABLES LIKE' ) ) {
+				return preg_match( "/'([^']+)'/", $sql, $m ) ? $m[1] : null;
+			}
+			if ( false !== strpos( $sql, 'COUNT(*)' ) ) { return 5; }
+			return null;
+		}
+	}
+	$GLOBALS['wpdb'] = new FakeWpdb();
+
 	require dirname( __DIR__ ) . '/src/Admin/SiteHealth.php';
 
 	use RaplsPasskey\Admin\SiteHealth;
@@ -78,6 +94,15 @@ namespace {
 	// RP test is informational/good and reports the RP id.
 	check( 'rp test is good', $sh->test_rp()['status'] === 'good' );
 	check( 'rp description mentions the RP id', false !== strpos( $sh->test_rp()['description'], 'example.test' ) );
+
+	// --- Info tab (debug_information) ------------------------------------------
+	$info = $sh->add_debug_info( array() );
+	check( 'adds a Rapls Passkey info panel', isset( $info['rapls-passkey']['fields'] ) );
+	$fields = $info['rapls-passkey']['fields'];
+	check( 'info panel reports the RP id', ( $fields['rp_id']['value'] ?? '' ) === 'example.test' );
+	check( 'info panel reports the passkey count', ( $fields['registered']['value'] ?? '' ) === '5' );
+	check( 'info panel reports tables present', ( $fields['tables']['debug'] ?? '' ) === 'true' );
+	check( 'info panel keeps existing sections', array_key_exists( 'rapls-passkey', $sh->add_debug_info( array( 'core' => array() ) ) ) );
 
 	echo "\n  {$pass} passed, {$failc} failed\n";
 	exit( $failc === 0 ? 0 : 1 );

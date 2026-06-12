@@ -28,6 +28,65 @@ final class SiteHealth {
 	 */
 	public function register(): void {
 		add_filter( 'site_status_tests', array( $this, 'add_tests' ) );
+		add_filter( 'debug_information', array( $this, 'add_debug_info' ) );
+	}
+
+	/**
+	 * Add a "Rapls Passkey" panel to Site Health → Info (and the export). This is
+	 * the tab most admins look at; the pass/fail checks live under Status.
+	 *
+	 * @param array<string,mixed> $info Existing debug information.
+	 * @return array<string,mixed>
+	 */
+	public function add_debug_info( $info ): array {
+		$info = is_array( $info ) ? $info : array();
+
+		$secure   = is_ssl() || $this->is_local_host();
+		$library  = class_exists( '\\Webauthn\\PublicKeyCredentialSource' );
+		$tables   = $this->tables_exist();
+		$detected = Compat::detect();
+
+		$yes = __( 'はい', 'rapls-passkey' );
+		$no  = __( 'いいえ', 'rapls-passkey' );
+
+		$info['rapls-passkey'] = array(
+			'label'  => __( 'Rapls Passkey', 'rapls-passkey' ),
+			'fields' => array(
+				'version'         => array(
+					'label' => __( 'バージョン', 'rapls-passkey' ),
+					'value' => defined( 'RAPLS_PASSKEY_VERSION' ) ? RAPLS_PASSKEY_VERSION : '',
+				),
+				'https'           => array(
+					'label' => __( 'HTTPS / セキュアコンテキスト', 'rapls-passkey' ),
+					'value' => $secure ? $yes : $no,
+					'debug' => $secure ? 'true' : 'false',
+				),
+				'library'         => array(
+					'label' => __( 'WebAuthn ライブラリ', 'rapls-passkey' ),
+					'value' => $library ? __( '読み込み済み', 'rapls-passkey' ) : __( '未検出', 'rapls-passkey' ),
+					'debug' => $library ? 'true' : 'false',
+				),
+				'tables'          => array(
+					'label' => __( 'データベーステーブル', 'rapls-passkey' ),
+					'value' => $tables ? __( '存在します', 'rapls-passkey' ) : __( '未作成', 'rapls-passkey' ),
+					'debug' => $tables ? 'true' : 'false',
+				),
+				'rp_id'           => array(
+					'label' => 'RP ID',
+					'value' => RelyingParty::from_site()->id(),
+				),
+				'registered'      => array(
+					'label' => __( '登録済みパスキー総数', 'rapls-passkey' ),
+					'value' => (string) $this->total_credentials(),
+				),
+				'security_plugins' => array(
+					'label' => __( '検出したセキュリティプラグイン', 'rapls-passkey' ),
+					'value' => array() === $detected ? __( 'なし', 'rapls-passkey' ) : implode( ', ', $detected ),
+				),
+			),
+		);
+
+		return $info;
 	}
 
 	/**
@@ -197,6 +256,20 @@ final class SiteHealth {
 			return true;
 		}
 		return (bool) preg_match( '/\.(local|test|localhost)$/', $host );
+	}
+
+	/**
+	 * Total registered passkeys (0 if the table is missing).
+	 *
+	 * @return int
+	 */
+	private function total_credentials(): int {
+		if ( ! $this->tables_exist() ) {
+			return 0;
+		}
+		global $wpdb;
+		$table = Schema::credentials_table();
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB
 	}
 
 	/**

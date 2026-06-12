@@ -12,6 +12,7 @@
 // phpcs:disable
 
 namespace RaplsPasskey\Support {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	class Settings {
 		public static $on = true;
 		public static function upgrade_prompt_enabled(): bool { return self::$on; }

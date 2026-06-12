@@ -11,6 +11,7 @@
 // phpcs:disable
 
 namespace {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	define( 'ABSPATH', __DIR__ . '/' );
 	if ( ! defined( 'ARRAY_A' ) ) {
 		define( 'ARRAY_A', 'ARRAY_A' );

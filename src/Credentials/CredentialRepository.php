@@ -55,7 +55,7 @@ final class CredentialRepository {
 	public function find_by_credential_id( string $credential_id ): ?Credential {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE credential_id = %s", $credential_id ),
 			ARRAY_A
 		);
@@ -72,7 +72,7 @@ final class CredentialRepository {
 	public function find_by_user( int $user_id ): array {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC", $user_id ),
 			ARRAY_A
 		);
@@ -112,7 +112,7 @@ final class CredentialRepository {
 	public function find_by_id( int $id ): ?Credential {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ),
 			ARRAY_A
 		);
@@ -188,7 +188,7 @@ final class CredentialRepository {
 	public function counts_by_user(): array {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			"SELECT user_id, COUNT(*) AS c, MAX(last_used_at) AS last_used FROM {$table} GROUP BY user_id",
 			ARRAY_A
 		);
@@ -214,8 +214,8 @@ final class CredentialRepository {
 		$table = Schema::credentials_table();
 
 		return array(
-			'total' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			'users' => (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			'total' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			'users' => (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		);
 	}
 

@@ -6,15 +6,8 @@
 ( function () {
 	'use strict';
 
-	const node = document.getElementById( 'rapls-pk-upgrade-config' );
-	if ( ! node ) {
-		return;
-	}
-
-	let cfg;
-	try {
-		cfg = JSON.parse( node.textContent );
-	} catch ( e ) {
+	const cfg = window.raplsPkUpgrade;
+	if ( ! cfg ) {
 		return;
 	}
 

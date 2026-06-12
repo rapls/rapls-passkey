@@ -11,6 +11,7 @@
 // phpcs:disable
 
 namespace RaplsPasskey\Credentials {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	class Schema {
 		public static function credentials_table(): string { return 'wp_rapls_passkey_credentials'; }
 		public static function audit_table(): string { return 'wp_rapls_passkey_audit'; }

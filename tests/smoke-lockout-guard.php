@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * Exercises the lockout-prevention helpers and the emergency bypass switch
  * against an in-memory $wpdb and stubbed user functions.

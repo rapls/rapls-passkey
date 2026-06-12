@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-12 09:08+0000\n"
+"POT-Creation-Date: 2026-06-12 09:38+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -512,23 +512,23 @@ msgstr ""
 msgid "キャンセルされました。"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:134
+#: src/Login/UpgradePrompt.php:140
 msgid "パスキーの設定"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:137
+#: src/Login/UpgradePrompt.php:143
 msgid "次回から、もっと速く安全にログイン"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:138
+#: src/Login/UpgradePrompt.php:144
 msgid "この端末にパスキーを設定すると、次回からパスワードなしで、指紋・顔認証・PIN ですばやくログインできます。フィッシングにも強くなります。"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:141
+#: src/Login/UpgradePrompt.php:147
 msgid "パスキーを作成"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:146
+#: src/Login/UpgradePrompt.php:152
 msgid "後で"
 msgstr ""
 

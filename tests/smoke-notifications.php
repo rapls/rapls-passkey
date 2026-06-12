@@ -12,6 +12,7 @@
 // phpcs:disable
 
 namespace RaplsPasskey\Support {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	// Lightweight stand-in for the real Settings accessor.
 	class Settings {
 		public static $on = true;

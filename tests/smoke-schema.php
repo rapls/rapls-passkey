@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * Verifies the credential Schema composes its table name from $wpdb->prefix and
  * builds a dbDelta statement with the expected columns and keys. Runs standalone

@@ -14,6 +14,7 @@
 namespace Webauthn { class PublicKeyCredentialRpEntity { public static function create( $n, $i ) { return array( $n, $i ); } } }
 
 namespace {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	define( 'ABSPATH', __DIR__ . '/' );
 
 	$GLOBALS['__home']    = 'https://site1.example.com';

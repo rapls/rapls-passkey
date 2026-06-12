@@ -131,6 +131,12 @@ final class UpgradePrompt {
 			),
 		);
 
+		// Enqueue the ceremony scripts (printed by login_header) and pass config
+		// via wp_localize_script instead of inline tags.
+		wp_enqueue_script( 'rapls-passkey-webauthn', RAPLS_PASSKEY_URL . 'assets/webauthn.js', array(), RAPLS_PASSKEY_VERSION, false );
+		wp_enqueue_script( 'rapls-passkey-upgrade', RAPLS_PASSKEY_URL . 'assets/upgrade.js', array( 'rapls-passkey-webauthn' ), RAPLS_PASSKEY_VERSION, false );
+		wp_localize_script( 'rapls-passkey-upgrade', 'raplsPkUpgrade', $config );
+
 		login_header( __( 'パスキーの設定', 'rapls-passkey' ), '' );
 		?>
 		<div class="rapls-pk-upgrade">
@@ -146,9 +152,6 @@ final class UpgradePrompt {
 				<a id="rapls-pk-upgrade-skip" href="<?php echo esc_url( $dest ); ?>"><?php esc_html_e( '後で', 'rapls-passkey' ); ?></a>
 			</p>
 		</div>
-		<script type="application/json" id="rapls-pk-upgrade-config"><?php echo wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE ); ?></script>
-		<script src="<?php echo esc_url( RAPLS_PASSKEY_URL . 'assets/webauthn.js?ver=' . RAPLS_PASSKEY_VERSION ); ?>"></script>
-		<script src="<?php echo esc_url( RAPLS_PASSKEY_URL . 'assets/upgrade.js?ver=' . RAPLS_PASSKEY_VERSION ); ?>"></script>
 		<?php
 		login_footer();
 		exit;

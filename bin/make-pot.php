@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * Generate languages/<text-domain>.pot for this plugin without WP-CLI.
  *
@@ -77,7 +78,7 @@ if ( ! is_dir( $out_dir ) ) {
 $out_file = $out_dir . '/' . $domain . '.pot';
 file_put_contents( $out_file, render_pot( $entries, $name, $version, $domain ) );
 
-printf( "Wrote %s\n  %d strings from %d files.\n", $out_file, count( $entries ), count( $files ) );
+fwrite( STDOUT, sprintf( "Wrote %s\n  %d strings from %d files.\n", $out_file, count( $entries ), count( $files ) ) );
 
 // ---------------------------------------------------------------------------
 

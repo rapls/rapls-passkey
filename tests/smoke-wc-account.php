@@ -11,6 +11,7 @@
 // phpcs:disable
 
 namespace RaplsPasskey\Frontend {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	// Stand-in for the real (final) Shortcodes renderer.
 	class Shortcodes {
 		public function render_register( $atts ) { return '<div id="rapls-passkey-manage"></div>'; }

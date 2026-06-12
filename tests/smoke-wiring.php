@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * Boots the plugin singleton exactly as the `plugins_loaded` callback does, with
  * the real web-auth library loaded, to catch wiring errors (missing `use`

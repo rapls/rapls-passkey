@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * CSP hygiene: the plugin must not ship inline event handlers or inject a
  * Content-Security-Policy header (a passkey plugin breaking the site CSP is a

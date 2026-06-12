@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * Registration ceremony: creation-options generation, challenge storage, and
  * JSON round-tripping through web-auth. Uses the real library; WordPress

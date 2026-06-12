@@ -269,7 +269,7 @@ final class SiteHealth {
 		}
 		global $wpdb;
 		$table = Schema::credentials_table();
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 
 	/**
@@ -280,7 +280,7 @@ final class SiteHealth {
 	private function tables_exist(): bool {
 		global $wpdb;
 		foreach ( array( Schema::credentials_table(), Schema::audit_table() ) as $table ) {
-			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB
+			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			if ( $found !== $table ) {
 				return false;
 			}

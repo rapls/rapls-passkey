@@ -131,7 +131,7 @@ final class Schema {
 
 		// Table names are built from $wpdb->prefix, not user input.
 		foreach ( array( self::credentials_table(), self::audit_table() ) as $table ) {
-			$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
 		delete_option( self::VERSION_OPTION );
 	}

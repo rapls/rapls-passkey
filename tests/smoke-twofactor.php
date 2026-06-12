@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * TwoFactor coexistence: marks the just-created session as 2FA-verified, honours
  * the disable filter, and no-ops without a captured token.

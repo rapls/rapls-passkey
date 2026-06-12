@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
  * Authentication ceremony: request-options generation plus the CredentialRecord
  * storage round-trip (serialise -> deserialise) that backs assertion checks.

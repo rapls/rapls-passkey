@@ -11,6 +11,7 @@
 // phpcs:disable
 
 namespace RaplsPasskey\Audit {
+	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	// Minimal stand-in so AuditExport's require resolves without the DB layer.
 	class AuditLog {
 		public static function recent( $limit = 50 ) { return array(); }

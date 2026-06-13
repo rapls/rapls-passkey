@@ -65,6 +65,9 @@ namespace {
 	check( 'hooks Ultimate Member', isset( $GLOBALS['__actions']['um_after_login_fields'] ) );
 	check( 'hooks MemberPress', isset( $GLOBALS['__actions']['mepr-login-form-before-submit'] ) );
 	check( 'hooks Easy Digital Downloads', isset( $GLOBALS['__actions']['edd_login_fields_after'] ) );
+	check( 'hooks LifterLMS', isset( $GLOBALS['__actions']['llms_before_person_login_form'] ) );
+	check( 'hooks BuddyPress', isset( $GLOBALS['__actions']['bp_login_widget_form'] ) );
+	check( 'does not re-hook the core login_form action', ! isset( $GLOBALS['__actions']['login_form'] ) );
 
 	// --- render once, logged out ----------------------------------------------
 	$out = fire( 'um_after_login_fields' );
@@ -80,6 +83,12 @@ namespace {
 	// A different integration still renders independently.
 	$outEdd = fire( 'edd_login_fields_after' );
 	check( 'a different integration renders', false !== strpos( $outEdd, 'rapls-pk-integration-easy_digital_downloads' ) );
+
+	// The new LMS/community integrations render with their own wrapper class.
+	$outLlms = fire( 'llms_before_person_login_form' );
+	check( 'LifterLMS renders with its wrapper class', false !== strpos( $outLlms, 'rapls-pk-integration-lifterlms' ) );
+	$outBp = fire( 'bp_login_widget_form' );
+	check( 'BuddyPress renders with its wrapper class', false !== strpos( $outBp, 'rapls-pk-integration-buddypress' ) );
 
 	// --- logged-in gating ------------------------------------------------------
 	$lf2 = new LoginForms( new Shortcodes() );

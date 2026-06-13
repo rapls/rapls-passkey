@@ -23,6 +23,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The button reuses the same renderer and assets as [rapls_passkey_login], so
  * there is a single passkey ceremony to maintain. LoginPress and similar plugins
  * that merely restyle wp-login.php are already covered by the core login button.
+ *
+ * Only hooks distinct from the core `login_form` action are wired here: plugins
+ * whose forms reuse `login_form` (e.g. bbPress, LearnDash's wp_login_form-based
+ * forms) are already served by the core login button, and re-hooking it would
+ * double-render on wp-login.php. Add any other form via the
+ * `rapls_passkey_login_form_hooks` filter.
  */
 final class LoginForms {
 
@@ -57,6 +63,8 @@ final class LoginForms {
 				'memberpress'            => 'mepr-login-form-before-submit',
 				'easy_digital_downloads' => 'edd_login_fields_after',
 				'theme_my_login'         => 'tml_action_login',
+				'lifterlms'              => 'llms_before_person_login_form',
+				'buddypress'             => 'bp_login_widget_form',
 			)
 		);
 	}

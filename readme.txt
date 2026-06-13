@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.5.0 =
+* WP-CLI に `wp rapls-passkey stats`(サイト全体の導入状況: 総パスキー数・登録ユーザー数)を追加。既存の `list` / `remove` と合わせ、運用の自動化・棚卸しに利用できます。
 
 = 0.4.0 =
 * 認証器(プロバイダ)名の表示: パスキー一覧(プロフィール画面・[rapls_passkey_register] ショートコード)に「認証器」列を追加し、AAGUID から iCloud キーチェーン / Google Password Manager / Windows Hello / 1Password / YubiKey などの提供元名を表示。登録通知メールにも認証器名を記載。対応表は rapls_passkey/authenticator_names フィルターで拡張・上書き可能(提供元を秘匿する環境では「不明」と表示)。

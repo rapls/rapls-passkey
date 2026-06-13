@@ -105,6 +105,32 @@ final class Commands {
 	}
 
 	/**
+	 * Show site-wide passkey adoption totals.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp rapls-passkey stats
+	 *
+	 * @param array $args       Positional args (unused).
+	 * @param array $assoc_args Associative args (unused).
+	 * @return void
+	 */
+	public function stats( $args, $assoc_args ): void {
+		$stats = $this->repository->stats();
+		$rows  = array(
+			array(
+				'metric' => 'Total passkeys',
+				'value'  => (int) $stats['total'],
+			),
+			array(
+				'metric' => 'Users with a passkey',
+				'value'  => (int) $stats['users'],
+			),
+		);
+		WP_CLI\Utils\format_items( 'table', $rows, array( 'metric', 'value' ) );
+	}
+
+	/**
 	 * Resolve a --user value (id / login / email) to a WP_User or bail.
 	 *
 	 * @param string $value User identifier.

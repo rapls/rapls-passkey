@@ -7,6 +7,8 @@
 
 namespace RaplsPasskey\Login;
 
+use RaplsPasskey\Support\Help;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -73,6 +75,7 @@ final class LoginForm {
 				<?php esc_html_e( 'パスキーでログイン', 'rapls-passkey' ); ?>
 			</button>
 			<p id="rapls-passkey-login-status" style="margin:8px 0 0"></p>
+			<?php Help::render(); ?>
 		</div>
 		<?php
 	}

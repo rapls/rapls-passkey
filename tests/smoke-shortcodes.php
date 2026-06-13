@@ -28,6 +28,7 @@ function esc_html( $t ) { return $t; }
 function esc_attr( $t ) { return $t; }
 function esc_url( $t ) { return $t; }
 function esc_url_raw( $t ) { return $t; }
+function apply_filters( $tag, $value, ...$args ) { return $value; }
 function rest_url( $p = '' ) { return 'https://example.test/wp-json/' . $p; }
 function wp_create_nonce( $a ) { return 'nonce-' . $a; }
 function add_action() {}

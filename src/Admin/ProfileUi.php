@@ -9,6 +9,7 @@ namespace RaplsPasskey\Admin;
 
 use RaplsPasskey\Credentials\AuthenticatorNames;
 use RaplsPasskey\Credentials\CredentialRepository;
+use RaplsPasskey\Support\Help;
 use WP_User;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -134,6 +135,7 @@ final class ProfileUi {
 							<button type="button" class="button button-primary" id="rapls-passkey-register"><?php esc_html_e( 'パスキーを登録', 'rapls-passkey' ); ?></button>
 							<span id="rapls-passkey-status" style="margin-left:8px"></span>
 						</p>
+						<?php Help::render(); ?>
 					<?php else : ?>
 						<p class="description"><?php esc_html_e( 'パスキーの登録は本人のプロフィール画面からのみ行えます。', 'rapls-passkey' ); ?></p>
 					<?php endif; ?>

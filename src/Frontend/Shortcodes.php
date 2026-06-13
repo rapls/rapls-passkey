@@ -8,6 +8,7 @@
 namespace RaplsPasskey\Frontend;
 
 use RaplsPasskey\Credentials\CredentialRepository;
+use RaplsPasskey\Support\Help;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -142,6 +143,7 @@ final class Shortcodes {
 			</label>
 			<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-login-btn"><?php echo esc_html( (string) $atts['label'] ); ?></button>
 			<p class="rapls-pk-fe-status" id="rapls-pk-fe-login-status" role="status" aria-live="polite"></p>
+			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -198,6 +200,7 @@ final class Shortcodes {
 				<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-register-btn"><?php esc_html_e( 'パスキーを登録', 'rapls-passkey' ); ?></button>
 				<span class="rapls-pk-fe-status" id="rapls-pk-fe-register-status" role="status" aria-live="polite"></span>
 			</p>
+			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.8.0 =
+* パスキーの説明(教育)導線を追加。プロフィール画面・ログイン画面・ショートコードのログイン/管理に「パスキーとは?」の簡潔な説明(JavaScript 不要の開閉式)を表示します。rapls_passkey_learn_more_url フィルターで「詳しく」リンク先(自社ヘルプページ等)を指定できます。
 
 = 0.7.0 =
 * ログインフォーム連携に LifterLMS と BuddyPress を追加(各プラグインのログインフォームにパスキーボタンを表示。各プラグインが有効なときのみ)。bbPress や LearnDash など標準の login_form アクションを使うフォームは、ログイン画面のパスキーボタンで既に対応済みです(rapls_passkey_login_form_hooks フィルターで追加も可能)。

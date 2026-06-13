@@ -7,6 +7,8 @@
 
 namespace RaplsPasskey\Security;
 
+use RaplsPasskey\Credentials\AuthenticatorNames;
+use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Support\Settings;
 use WP_User;
 
@@ -51,7 +53,6 @@ final class Notifications {
 	 * @param string|null $label   Optional passkey label.
 	 */
 	public function on_registered( $user_id, $cred_id, $label = null ): void {
-		unset( $cred_id );
 		if ( ! Settings::notifications_enabled() ) {
 			return;
 		}
@@ -72,6 +73,11 @@ final class Notifications {
 		if ( is_string( $label ) && '' !== $label ) {
 			/* translators: %s: passkey label. */
 			$body .= sprintf( __( '名前: %s', 'rapls-passkey' ), $label ) . "\n";
+		}
+		$provider = $this->provider_name( (int) $cred_id );
+		if ( null !== $provider ) {
+			/* translators: %s: authenticator/provider name (e.g. iCloud Keychain). */
+			$body .= sprintf( __( '認証器: %s', 'rapls-passkey' ), $provider ) . "\n";
 		}
 		$body .= $this->context_lines() . "\n";
 		$body .= __( '心当たりがない場合は、すぐにパスワードを変更し、プロフィール画面から不明なパスキーを削除してください。', 'rapls-passkey' ) . "\n";
@@ -241,6 +247,23 @@ final class Notifications {
 		$name = '' !== $user->display_name ? $user->display_name : $user->user_login;
 		/* translators: %s: user display name. */
 		return sprintf( __( '%s さん', 'rapls-passkey' ), $name ) . "\n\n";
+	}
+
+	/**
+	 * Resolve the provider/authenticator name for a stored credential row.
+	 *
+	 * @param int $cred_id Credential row id.
+	 * @return string|null Provider name, or null when unknown.
+	 */
+	private function provider_name( int $cred_id ): ?string {
+		if ( $cred_id <= 0 ) {
+			return null;
+		}
+		$credential = ( new CredentialRepository() )->find_by_id( $cred_id );
+		if ( null === $credential ) {
+			return null;
+		}
+		return AuthenticatorNames::name_for_record( $credential->record_json );
 	}
 
 	/**

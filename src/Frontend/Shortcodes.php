@@ -172,6 +172,7 @@ final class Shortcodes {
 				<thead>
 					<tr>
 						<th><?php esc_html_e( '名前', 'rapls-passkey' ); ?></th>
+						<th><?php esc_html_e( '認証器', 'rapls-passkey' ); ?></th>
 						<th><?php esc_html_e( '登録日時', 'rapls-passkey' ); ?></th>
 						<th><?php esc_html_e( '最終使用', 'rapls-passkey' ); ?></th>
 						<th></th>
@@ -179,11 +180,12 @@ final class Shortcodes {
 				</thead>
 				<tbody>
 				<?php if ( empty( $credentials ) ) : ?>
-					<tr class="rapls-pk-fe-empty"><td colspan="4"><?php esc_html_e( '登録済みのパスキーはありません。', 'rapls-passkey' ); ?></td></tr>
+					<tr class="rapls-pk-fe-empty"><td colspan="5"><?php esc_html_e( '登録済みのパスキーはありません。', 'rapls-passkey' ); ?></td></tr>
 				<?php else : ?>
 					<?php foreach ( $credentials as $credential ) : ?>
 						<tr data-id="<?php echo esc_attr( (string) $credential->id ); ?>">
 							<td><?php echo esc_html( $credential->label ? $credential->label : __( '(名前なし)', 'rapls-passkey' ) ); ?></td>
+							<td><?php echo esc_html( \RaplsPasskey\Credentials\AuthenticatorNames::display( $credential->record_json, __( '不明', 'rapls-passkey' ) ) ); ?></td>
 							<td><?php echo esc_html( $credential->created_at ); ?></td>
 							<td><?php echo esc_html( $credential->last_used_at ? $credential->last_used_at : '—' ); ?></td>
 							<td><button type="button" class="rapls-pk-fe-delete"><?php esc_html_e( '削除', 'rapls-passkey' ); ?></button></td>

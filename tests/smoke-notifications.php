@@ -23,6 +23,32 @@ namespace RaplsPasskey\Support {
 namespace {
 	define( 'ABSPATH', __DIR__ . '/' );
 	define( 'YEAR_IN_SECONDS', 31536000 );
+	if ( ! defined( 'ARRAY_A' ) ) {
+		define( 'ARRAY_A', 'ARRAY_A' );
+	}
+
+	// Minimal $wpdb so the registered-email path can resolve a credential's
+	// provider name via CredentialRepository::find_by_id().
+	class FakeWpdb {
+		public $prefix = 'wp_';
+		public $rows = array();
+		public function prepare( $sql, ...$args ) { return $sql; }
+		public function get_row( $sql, $output = ARRAY_A ) {
+			// The test only ever looks up id 99.
+			return $this->rows[99] ?? null;
+		}
+	}
+	$GLOBALS['wpdb'] = new FakeWpdb();
+	$GLOBALS['wpdb']->rows[99] = array(
+		'id'              => 99,
+		'user_id'         => 1,
+		'credential_id'   => 'abc',
+		'credential_data' => json_encode( array( 'aaguid' => 'fbfc3007-154e-4ecc-8c0b-6e020557d7bd', 'counter' => 0 ) ),
+		'sign_count'      => 0,
+		'label'           => 'My Phone',
+		'created_at'      => '2026-06-10 12:00:00',
+		'last_used_at'    => null,
+	);
 
 	$GLOBALS['__mail']    = array();
 	$GLOBALS['__meta']    = array();
@@ -52,6 +78,10 @@ namespace {
 		return true;
 	}
 
+	require dirname( __DIR__ ) . '/src/Credentials/Schema.php';
+	require dirname( __DIR__ ) . '/src/Credentials/Credential.php';
+	require dirname( __DIR__ ) . '/src/Credentials/CredentialRepository.php';
+	require dirname( __DIR__ ) . '/src/Credentials/AuthenticatorNames.php';
 	require dirname( __DIR__ ) . '/src/Security/Notifications.php';
 
 	use RaplsPasskey\Security\Notifications;
@@ -88,6 +118,7 @@ namespace {
 	$n->on_registered( 1, 99, 'My Phone' );
 	check( 'registered email sent when enabled', mailcount() === 1 );
 	check( 'registered email goes to the user', lastmail()['to'] === 'alice@example.test' );
+	check( 'registered email names the authenticator', false !== strpos( lastmail()['body'], 'iCloud キーチェーン' ) );
 
 	// disabled globally
 	Settings::$on = false;

@@ -8,6 +8,7 @@
 namespace RaplsPasskey;
 
 use RaplsPasskey\Admin\AuditExport;
+use RaplsPasskey\Admin\DashboardWidget;
 use RaplsPasskey\Admin\ProfileUi;
 use RaplsPasskey\Admin\SettingsPage;
 use RaplsPasskey\Admin\SiteHealth;
@@ -160,6 +161,7 @@ final class Plugin {
 		if ( is_admin() ) {
 			( new ProfileUi( $repository ) )->register();
 			( new UsersColumn( $repository ) )->register();
+			( new DashboardWidget( $repository ) )->register();
 		}
 	}
 

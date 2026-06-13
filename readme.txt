@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.5.0
+Stable tag: 0.6.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)�
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.6.0 =
+* 管理ダッシュボードに「導入状況」ウィジェットを追加。登録済みパスキー数・パスキーを持つユーザー数と全体に占める割合・直近30日の活動(ログイン/新規登録)を一目で確認でき、ユーザー一覧と設定への導線も表示します(管理者のみ)。
 
 = 0.5.0 =
 * WP-CLI に `wp rapls-passkey stats`(サイト全体の導入状況: 総パスキー数・登録ユーザー数)を追加。既存の `list` / `remove` と合わせ、運用の自動化・棚卸しに利用できます。

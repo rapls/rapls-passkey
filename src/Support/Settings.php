@@ -86,7 +86,7 @@ final class Settings {
 	 * @return string
 	 */
 	public static function recaptcha_secret_key(): string {
-		return (string) self::get( 'recaptcha_secret_key' );
+		return \RaplsPasskey\Security\Secret::decrypt( (string) self::get( 'recaptcha_secret_key' ) );
 	}
 
 	/**

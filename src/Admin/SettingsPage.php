@@ -71,7 +71,7 @@ final class SettingsPage {
 		return array(
 			'recaptcha_enabled'    => ! empty( $input['recaptcha_enabled'] ),
 			'recaptcha_site_key'   => isset( $input['recaptcha_site_key'] ) ? sanitize_text_field( $input['recaptcha_site_key'] ) : '',
-			'recaptcha_secret_key' => isset( $input['recaptcha_secret_key'] ) ? sanitize_text_field( $input['recaptcha_secret_key'] ) : '',
+			'recaptcha_secret_key' => \RaplsPasskey\Security\Secret::encrypt( isset( $input['recaptcha_secret_key'] ) ? sanitize_text_field( $input['recaptcha_secret_key'] ) : '' ),
 			'recaptcha_threshold'  => $threshold,
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
@@ -184,7 +184,7 @@ final class SettingsPage {
 					</tr>
 					<tr>
 						<th scope="row"><label for="rapls-recaptcha-secret"><?php esc_html_e( 'Secret key', 'rapls-passkey' ); ?></label></th>
-						<td><input type="password" class="regular-text" id="rapls-recaptcha-secret" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_secret_key]" value="<?php echo esc_attr( (string) $s['recaptcha_secret_key'] ); ?>" autocomplete="off"></td>
+						<td><input type="password" class="regular-text" id="rapls-recaptcha-secret" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_secret_key]" value="<?php echo esc_attr( \RaplsPasskey\Security\Secret::decrypt( (string) $s['recaptcha_secret_key'] ) ); ?>" autocomplete="off"></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="rapls-recaptcha-threshold"><?php esc_html_e( 'Score threshold', 'rapls-passkey' ); ?></label></th>

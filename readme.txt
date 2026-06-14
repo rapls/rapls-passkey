@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.2
+Stable tag: 0.9.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.3 =
+* The stored reCAPTCHA secret key is now encrypted at rest (versioned, tagged ciphertext via libsodium, with an OpenSSL AES-256-GCM fallback) instead of plaintext. Existing keys keep working and are re-encrypted on the next save. Settings export decrypts secrets so a configuration stays portable between sites.
 
 = 0.9.2 =
 * Hardening: the audit-log CSV export now neutralises spreadsheet formula injection (cells beginning with =, +, -, @ are prefixed with an apostrophe), since a user-chosen login could otherwise be executed as a formula when the CSV is opened in Excel/Sheets.

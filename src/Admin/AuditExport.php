@@ -88,12 +88,12 @@ final class AuditExport {
 			fputcsv(
 				$handle,
 				array(
-					(string) ( $row['created_at'] ?? '' ),
-					(string) ( $row['event'] ?? '' ),
-					(string) ( $row['user_id'] ?? '' ),
-					(string) ( $row['user_login'] ?? '' ),
-					(string) ( $row['detail'] ?? '' ),
-					(string) ( $row['ip'] ?? '' ),
+					self::csv_safe( (string) ( $row['created_at'] ?? '' ) ),
+					self::csv_safe( (string) ( $row['event'] ?? '' ) ),
+					self::csv_safe( (string) ( $row['user_id'] ?? '' ) ),
+					self::csv_safe( (string) ( $row['user_login'] ?? '' ) ),
+					self::csv_safe( (string) ( $row['detail'] ?? '' ) ),
+					self::csv_safe( (string) ( $row['ip'] ?? '' ) ),
 				),
 				',',
 				'"',
@@ -106,5 +106,21 @@ final class AuditExport {
 		fclose( $handle );
 
 		return $csv;
+	}
+
+	/**
+	 * Neutralise spreadsheet formula injection: a cell beginning with =, +, -, @,
+	 * tab or CR can be executed as a formula by Excel/Sheets, so prefix it with an
+	 * apostrophe. Values here can include a user-chosen login, which is attacker
+	 * influenced.
+	 *
+	 * @param string $value Cell value.
+	 * @return string
+	 */
+	private static function csv_safe( string $value ): string {
+		if ( '' !== $value && in_array( $value[0], array( '=', '+', '-', '@', "\t", "\r" ), true ) ) {
+			return "'" . $value;
+		}
+		return $value;
 	}
 }

@@ -56,6 +56,14 @@ namespace {
 	$empty = $export->to_csv( array() );
 	check( 'empty export still has the header', false !== strpos( $empty, 'Event' ) );
 
+	// Formula-injection neutralisation: a login starting with = / @ / - / + is
+	// prefixed with an apostrophe so spreadsheets do not execute it.
+	$evil = $export->to_csv( array(
+		array( 'created_at' => '2026-06-10 09:00:00', 'event' => 'login', 'user_id' => 9, 'user_login' => '=cmd|calc', 'detail' => '@SUM(1)', 'ip' => '203.0.113.9' ),
+	) );
+	check( 'neutralises a formula-leading username', false !== strpos( $evil, "'=cmd|calc" ) && false === strpos( $evil, ',=cmd|calc' ) );
+	check( 'neutralises a formula-leading detail', false !== strpos( $evil, "'@SUM(1)" ) );
+
 	echo "\n  {$pass} passed, {$failc} failed\n";
 	exit( $failc === 0 ? 0 : 1 );
 }

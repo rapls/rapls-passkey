@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.1
+Stable tag: 0.9.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.2 =
+* Hardening: the audit-log CSV export now neutralises spreadsheet formula injection (cells beginning with =, +, -, @ are prefixed with an apostrophe), since a user-chosen login could otherwise be executed as a formula when the CSV is opened in Excel/Sheets.
 
 = 0.9.1 =
 * Hardening (from a security review): added a rapls_passkey/allow_login veto filter, consulted before a passkey/alternative-method login sets the auth cookie, so integrations that block users via the core authenticate filter can apply the same block to passkey logins. Expanded uninstall cleanup to also remove the plugin's per-user meta. No functional change for normal use.

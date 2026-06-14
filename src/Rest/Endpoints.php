@@ -331,6 +331,11 @@ final class Endpoints {
 			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'user_not_found: ' . $stored->user_id );
 		}
 
+		$blocked = \RaplsPasskey\Security\LoginGate::check( $user, 'login' );
+		if ( $blocked instanceof WP_Error ) {
+			return $blocked;
+		}
+
 		wp_set_current_user( $user->ID );
 		wp_set_auth_cookie( $user->ID, true );
 		do_action( 'wp_login', $user->user_login, $user );

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.0
+Stable tag: 0.9.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.1 =
+* Hardening (from a security review): added a rapls_passkey/allow_login veto filter, consulted before a passkey/alternative-method login sets the auth cookie, so integrations that block users via the core authenticate filter can apply the same block to passkey logins. Expanded uninstall cleanup to also remove the plugin's per-user meta. No functional change for normal use.
 
 = 0.9.0 =
 * Internationalization: all source strings are now in English, with Japanese provided as a bundled translation (languages/rapls-passkey-ja.po/.mo). The text domain remains rapls-passkey, so any locale can be translated. No functional change; the Japanese UI is unchanged for ja sites.

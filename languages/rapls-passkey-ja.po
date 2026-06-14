@@ -497,3 +497,5 @@ msgstr "reCAPTCHA v3(パスワードログイン保護)"
 msgid "reCAPTCHA verification failed."
 msgstr "reCAPTCHA の検証に失敗しました。"
 
+msgid "You cannot sign in to this account right now."
+msgstr "現在このアカウントにはログインできません。"

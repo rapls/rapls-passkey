@@ -107,10 +107,10 @@ final class Recaptcha {
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		if ( '' === $token ) {
-			return new WP_Error( 'rapls_passkey_recaptcha_missing', __( 'reCAPTCHA の確認に失敗しました。ページを再読み込みしてお試しください。', 'rapls-passkey' ) );
+			return new WP_Error( 'rapls_passkey_recaptcha_missing', __( 'reCAPTCHA could not be verified. Reload the page and try again.', 'rapls-passkey' ) );
 		}
 		if ( ! $this->token_passes( $token ) ) {
-			return new WP_Error( 'rapls_passkey_recaptcha_failed', __( 'reCAPTCHA の検証に失敗しました。', 'rapls-passkey' ) );
+			return new WP_Error( 'rapls_passkey_recaptcha_failed', __( 'reCAPTCHA verification failed.', 'rapls-passkey' ) );
 		}
 
 		return $user;

@@ -110,7 +110,7 @@ final class LoginForms {
 		$this->done[ $key ] = true;
 
 		echo '<div class="rapls-pk-integration rapls-pk-integration-' . esc_attr( $key ) . '">';
-		echo '<p class="rapls-pk-integration-heading">' . esc_html__( 'パスキーでログイン', 'rapls-passkey' ) . '</p>';
+		echo '<p class="rapls-pk-integration-heading">' . esc_html__( 'Sign in with a passkey', 'rapls-passkey' ) . '</p>';
 		// render_login() returns trusted, internally-escaped markup.
 		echo $this->shortcodes->render_login( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</div>';

@@ -1,6 +1,6 @@
 <?php
 /**
- * "パスキー" column on the Users list screen.
+ * "Passkey" column on the Users list screen.
  *
  * @package RaplsPasskey
  */
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Adds a column to Users → All Users showing, per user, how many passkeys they
- * have and when one was last used (or "未登録"). Counts are fetched once per
+ * have and when one was last used (or "Not registered"). Counts are fetched once per
  * page render, not per row.
  */
 final class UsersColumn {
@@ -51,7 +51,7 @@ final class UsersColumn {
 	 */
 	public function add_column( $columns ): array {
 		$columns = is_array( $columns ) ? $columns : array();
-		$columns[ self::COL ] = __( 'パスキー', 'rapls-passkey' );
+		$columns[ self::COL ] = __( 'Passkey', 'rapls-passkey' );
 		return $columns;
 	}
 
@@ -74,7 +74,7 @@ final class UsersColumn {
 
 		$info = $this->counts[ (int) $user_id ] ?? null;
 		if ( null === $info || $info['count'] < 1 ) {
-			return '<span aria-hidden="true" style="color:#b32d2e">●</span> ' . esc_html__( '未登録', 'rapls-passkey' );
+			return '<span aria-hidden="true" style="color:#b32d2e">●</span> ' . esc_html__( 'Not registered', 'rapls-passkey' );
 		}
 
 		$count = (int) $info['count'];
@@ -82,7 +82,7 @@ final class UsersColumn {
 		$cell .= esc_html(
 			sprintf(
 				/* translators: %d: number of passkeys. */
-				__( '%d 個', 'rapls-passkey' ),
+				__( '%d passkeys', 'rapls-passkey' ),
 				$count
 			)
 		);
@@ -92,7 +92,7 @@ final class UsersColumn {
 				. esc_html(
 					sprintf(
 						/* translators: %s: date a passkey was last used. */
-						__( '最終 %s', 'rapls-passkey' ),
+						__( 'Last %s', 'rapls-passkey' ),
 						mysql2date( (string) get_option( 'date_format' ), (string) $info['last_used'] )
 					)
 				)

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Adds a "パスキーでログイン" button to the login form and the script that
+ * Adds a "Sign in with a passkey" button to the login form and the script that
  * drives the assertion ceremony (username + passkey for the MVP).
  */
 final class LoginForm {
@@ -55,11 +55,11 @@ final class LoginForm {
 				'restUrl'    => esc_url_raw( rest_url( 'rapls-passkey/v1/' ) ),
 				'redirectTo' => $redirect_to,
 				'i18n'       => array(
-					'authenticating' => __( '認証しています…', 'rapls-passkey' ),
-					'failed'         => __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ),
-					'unsupported'    => __( 'このブラウザはパスキーに対応していません。', 'rapls-passkey' ),
-					'cancelled'      => __( '認証がキャンセルされたか、時間切れになりました。もう一度お試しください。', 'rapls-passkey' ),
-					'needUsername'   => __( 'ユーザー名またはメールアドレスを入力してください。', 'rapls-passkey' ),
+					'authenticating' => __( 'Authenticating...', 'rapls-passkey' ),
+					'failed'         => __( 'Passkey authentication failed.', 'rapls-passkey' ),
+					'unsupported'    => __( 'This browser does not support passkeys.', 'rapls-passkey' ),
+					'cancelled'      => __( 'Authentication was cancelled or timed out. Please try again.', 'rapls-passkey' ),
+					'needUsername'   => __( 'Please enter your username or email address.', 'rapls-passkey' ),
 				),
 			)
 		);
@@ -72,7 +72,7 @@ final class LoginForm {
 		?>
 		<div style="margin:0 0 16px">
 			<button type="button" class="button button-secondary" id="rapls-passkey-login-btn" style="width:100%">
-				<?php esc_html_e( 'パスキーでログイン', 'rapls-passkey' ); ?>
+				<?php esc_html_e( 'Sign in with a passkey', 'rapls-passkey' ); ?>
 			</button>
 			<p id="rapls-passkey-login-status" style="margin:8px 0 0"></p>
 			<?php Help::render(); ?>

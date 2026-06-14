@@ -129,10 +129,10 @@ final class Endpoints {
 	 */
 	public function public_login_gate( WP_REST_Request $request ) {
 		if ( ! $this->same_origin( $request ) ) {
-			return new WP_Error( 'rapls_passkey_bad_origin', __( '不正なリクエストです。', 'rapls-passkey' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rapls_passkey_bad_origin', __( 'Invalid request.', 'rapls-passkey' ), array( 'status' => 403 ) );
 		}
 		if ( ! $this->rate_ok( 'login', 30, 300 ) ) {
-			return new WP_Error( 'rapls_passkey_rate_limited', __( '試行回数が多すぎます。しばらくしてからお試しください。', 'rapls-passkey' ), array( 'status' => 429 ) );
+			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
 		return true;
 	}
@@ -213,12 +213,12 @@ final class Endpoints {
 		try {
 			$record = $this->registration->verify( $state, $credential_json );
 		} catch ( \Throwable $e ) {
-			return $this->fail( 'rapls_passkey_register_failed', __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
+			return $this->fail( 'rapls_passkey_register_failed', __( 'Failed to register the passkey.', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
 		}
 
 		$credential_id = Base64UrlSafe::encodeUnpadded( $record->publicKeyCredentialId );
 		if ( null !== $this->repository->find_by_credential_id( $credential_id ) ) {
-			return new WP_Error( 'rapls_passkey_already_registered', __( 'このパスキーはすでに登録されています。', 'rapls-passkey' ), array( 'status' => 409 ) );
+			return new WP_Error( 'rapls_passkey_already_registered', __( 'This passkey is already registered.', 'rapls-passkey' ), array( 'status' => 409 ) );
 		}
 
 		/**
@@ -242,7 +242,7 @@ final class Endpoints {
 		);
 
 		if ( 0 === $id ) {
-			return new WP_Error( 'rapls_passkey_store_failed', __( 'パスキーの保存に失敗しました。', 'rapls-passkey' ), array( 'status' => 500 ) );
+			return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
 		}
 
 		AuditLog::record( AuditLog::REGISTERED, (int) wp_get_current_user()->ID, 'id=' . $id );
@@ -309,26 +309,26 @@ final class Endpoints {
 		try {
 			$credential_id = $this->codec->credential_id_from_json( $credential_json );
 		} catch ( \Throwable $e ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'parse: ' . $e->getMessage() );
+			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'parse: ' . $e->getMessage() );
 		}
 
 		$stored = $this->repository->find_by_credential_id( $credential_id );
 		if ( null === $stored ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'credential_not_found: ' . $credential_id );
+			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'credential_not_found: ' . $credential_id );
 		}
 
 		try {
 			$record  = $this->codec->record_from_json( $stored->record_json );
 			$updated = $this->assertion->verify( $state, $credential_json, $record );
 		} catch ( \Throwable $e ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
+			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
 		}
 
 		$this->repository->touch( $stored->id, $this->codec->record_to_json( $updated ), $updated->counter );
 
 		$user = get_user_by( 'id', $stored->user_id );
 		if ( ! $user ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ), 400, 'user_not_found: ' . $stored->user_id );
+			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'user_not_found: ' . $stored->user_id );
 		}
 
 		wp_set_current_user( $user->ID );
@@ -410,7 +410,7 @@ final class Endpoints {
 
 		return new WP_Error(
 			'rapls_passkey_forbidden',
-			__( 'このパスキーを削除する権限がありません。', 'rapls-passkey' ),
+			__( 'You do not have permission to delete this passkey.', 'rapls-passkey' ),
 			array( 'status' => 403 )
 		);
 	}
@@ -436,7 +436,7 @@ final class Endpoints {
 			'rapls_passkey_limit_reached',
 			sprintf(
 				/* translators: %d: maximum number of passkeys. */
-				__( '登録できるパスキーは最大 %d 個です。不要なパスキーを削除してから登録してください。', 'rapls-passkey' ),
+				__( 'You can register at most %d passkeys. Remove an unused passkey before registering a new one.', 'rapls-passkey' ),
 				$max
 			),
 			array( 'status' => 409 )

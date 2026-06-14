@@ -42,8 +42,8 @@ namespace {
 	// --- default details variant, no link -------------------------------------
 	$d = Help::html();
 	check( 'details variant uses <details>', false !== strpos( $d, '<details' ) );
-	check( 'details variant has a summary', false !== strpos( $d, '<summary' ) && false !== strpos( $d, 'パスキーとは?' ) );
-	check( 'includes the intro text', false !== strpos( $d, 'パスワード不要' ) );
+	check( 'details variant has a summary', false !== strpos( $d, '<summary' ) && false !== strpos( $d, 'What is a passkey?' ) );
+	check( 'includes the intro text', false !== strpos( $d, 'no password' ) );
 	check( 'no learn-more link by default', false === strpos( $d, '<a ' ) );
 
 	// --- inline variant --------------------------------------------------------
@@ -53,7 +53,7 @@ namespace {
 	// --- learn-more link via filter -------------------------------------------
 	$GLOBALS['filters']['rapls_passkey_learn_more_url'] = function ( $v ) { return 'https://example.test/passkeys'; };
 	$withLink = Help::html();
-	check( 'filtered URL adds a learn-more link', false !== strpos( $withLink, 'https://example.test/passkeys' ) && false !== strpos( $withLink, '詳しく' ) );
+	check( 'filtered URL adds a learn-more link', false !== strpos( $withLink, 'https://example.test/passkeys' ) && false !== strpos( $withLink, 'Learn more' ) );
 	check( 'external link is rel/noopener', false !== strpos( $withLink, 'noopener' ) );
 	unset( $GLOBALS['filters']['rapls_passkey_learn_more_url'] );
 

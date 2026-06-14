@@ -4,7 +4,7 @@
  * Two paths share one ceremony:
  *  - Conditional UI (autofill): a background get() with mediation:'conditional'
  *    surfaces passkeys in the username field's autocomplete dropdown.
- *  - Explicit button: a modal get() triggered by the "パスキーでログイン" button.
+ *  - Explicit button: a modal get() triggered by the "Sign in with a passkey" button.
  */
 ( function () {
 	'use strict';

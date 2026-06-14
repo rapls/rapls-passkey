@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.8.0\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-13 13:41+0000\n"
+"POT-Creation-Date: 2026-06-14 09:09+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -13,357 +13,357 @@ msgstr ""
 "X-Domain: rapls-passkey\n"
 
 #: src/Admin/AuditExport.php:40
-msgid "権限がありません。"
+msgid "You do not have permission."
 msgstr ""
 
 #: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:307
 #: src/Privacy/PersonalData.php:128
-msgid "日時 (UTC)"
+msgid "Date/time (UTC)"
 msgstr ""
 
 #: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:308
 #: src/Privacy/PersonalData.php:124
-msgid "イベント"
+msgid "Event"
 msgstr ""
 
 #: src/Admin/AuditExport.php:77
-msgid "ユーザーID"
+msgid "User ID"
 msgstr ""
 
 #: src/Admin/AuditExport.php:78
-msgid "ユーザー名"
+msgid "Username"
 msgstr ""
 
 #: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:310
-msgid "詳細"
+msgid "Details"
 msgstr ""
 
 #: src/Admin/DashboardWidget.php:100
-msgid "ユーザー一覧"
+msgid "Users list"
 msgstr ""
 
 #: src/Admin/DashboardWidget.php:102
-msgid "設定"
+msgid "Settings"
 msgstr ""
 
 #: src/Admin/DashboardWidget.php:46
-msgid "Rapls Passkey: 導入状況"
+msgid "Rapls Passkey: Adoption"
 msgstr ""
 
 #: src/Admin/DashboardWidget.php:71
-msgid "登録済みパスキー"
+msgid "Registered passkeys"
 msgstr ""
 
 #: src/Admin/DashboardWidget.php:76
-msgid "パスキーを持つユーザー"
+msgid "Users with a passkey"
 msgstr ""
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
 #: src/Admin/DashboardWidget.php:80
-msgid "%1$s / %2$s(%3$d%%)"
+msgid "%1$s / %2$s (%3$d%%)"
 msgstr ""
 
 #: src/Admin/DashboardWidget.php:86
-msgid "直近30日"
+msgid "Last 30 days"
 msgstr ""
 
 #. translators: 1: passkey logins, 2: new registrations.
 #: src/Admin/DashboardWidget.php:90
-msgid "ログイン %1$s 件 / 新規登録 %2$s 件"
+msgid "%1$s logins / %2$s new registrations"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:100
-msgid "登録済みのパスキー"
+msgid "Your registered passkeys"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:105 src/Frontend/Shortcodes.php:176
 #: src/Privacy/PersonalData.php:98
-msgid "名前"
+msgid "Name"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:106 src/Frontend/Shortcodes.php:177
-msgid "認証器"
+msgid "Authenticator"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:107 src/Frontend/Shortcodes.php:178
 #: src/Privacy/PersonalData.php:102
-msgid "登録日時"
+msgid "Registered"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:108 src/Frontend/Shortcodes.php:179
 #: src/Privacy/PersonalData.php:106
-msgid "最終使用"
+msgid "Last used"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:114 src/Frontend/Shortcodes.php:185
-msgid "登録済みのパスキーはありません。"
+msgid "No passkeys are registered."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:118 src/Frontend/Shortcodes.php:107
 #: src/Frontend/Shortcodes.php:189
-msgid "(名前なし)"
+msgid "(no name)"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:119 src/Frontend/Shortcodes.php:190
-msgid "不明"
+msgid "Unknown"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:124 src/Frontend/Shortcodes.php:193
-msgid "削除"
+msgid "Delete"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:135 src/Frontend/Shortcodes.php:200
-msgid "パスキーを登録"
+msgid "Register a passkey"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:140
-msgid "パスキーの登録は本人のプロフィール画面からのみ行えます。"
+msgid "Passkeys can only be registered from your own profile screen."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:70 src/Frontend/Shortcodes.php:99
 #: src/Login/UpgradePrompt.php:125
-msgid "パスキーを登録しています…"
+msgid "Registering passkey..."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:71 src/Frontend/Shortcodes.php:100
 #: src/Login/UpgradePrompt.php:126
-msgid "パスキーを登録しました。"
+msgid "Passkey registered."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:72 src/Frontend/Shortcodes.php:101
 #: src/Login/UpgradePrompt.php:127 src/Rest/Endpoints.php:216
-msgid "パスキーの登録に失敗しました。"
+msgid "Failed to register the passkey."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:73 src/Frontend/Shortcodes.php:102
 #: src/Login/LoginForm.php:60 src/Login/UpgradePrompt.php:128
-msgid "このブラウザはパスキーに対応していません。"
+msgid "This browser does not support passkeys."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:74
-msgid "登録がキャンセルされたか、時間切れになりました。もう一度お試しください。"
+msgid "Registration was cancelled or timed out. Please try again."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:75 src/Frontend/Shortcodes.php:104
 #: src/Login/UpgradePrompt.php:130
-msgid "この認証器にはすでにパスキーが登録されています。"
+msgid "This authenticator already has a passkey registered."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:76 src/Frontend/Shortcodes.php:105
-msgid "このパスキーを削除しますか?"
+msgid "Delete this passkey?"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:77 src/Frontend/Shortcodes.php:106
-msgid "このパスキーの名前(任意):"
+msgid "Name for this passkey (optional):"
 msgstr ""
 
 #: src/Admin/ProfileUi.php:93 src/Admin/SettingsPage.php:105
 #: src/Admin/UsersColumn.php:54 src/Integrations/WooCommerceAccount.php:86
 #: src/Integrations/WooCommerceAccount.php:101
 #: src/Privacy/PersonalData.php:94
-msgid "パスキー"
+msgid "Passkey"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:108
-msgid "1ユーザーあたりの登録上限"
+msgid "Per-user registration limit"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:111
-msgid "ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮し、2 以上を推奨します。"
+msgid "Maximum number of passkeys a user can register. 0 means unlimited. We recommend 2 or more so passkeys can be used across multiple devices."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:116
-msgid "詳細設定(WebAuthn)"
+msgid "Advanced (WebAuthn)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:119
-msgid "タイムアウト(秒)"
+msgid "Timeout (seconds)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:122
-msgid "パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定(通常 60 秒程度)を使用します。"
+msgid "Timeout for the passkey registration and authentication dialogs. 0 uses the browser default (typically around 60 seconds)."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:126
-msgid "ユーザー検証"
+msgid "User verification"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:129
-msgid "推奨(preferred)"
+msgid "Preferred"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:130
-msgid "必須(required)"
+msgid "Required"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:131
-msgid "不要(discouraged)"
+msgid "Discouraged"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:133
-msgid "生体認証や PIN による本人確認をどの程度求めるか。「必須」は対応していない認証器を弾く可能性があります。通常は「推奨」のままを推奨します。"
+msgid "How strongly to require identity verification via biometrics or PIN. Required may reject authenticators that do not support it; leaving this at Preferred is usually recommended."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:137
-msgid "認証器の種類"
+msgid "Authenticator type"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:140
-msgid "指定なし(すべて許可)"
+msgid "No preference (allow all)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:141
-msgid "内蔵のみ(Touch ID / Windows Hello など)"
+msgid "Platform only (Touch ID / Windows Hello, etc.)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:142
-msgid "外付けのみ(セキュリティキー / 別端末)"
+msgid "Cross-platform only (security key / another device)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:144
-msgid "新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨します。"
+msgid "Which authenticator type to allow at registration (applies at registration only). No preference is usually recommended."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:148
-msgid "UI ヒント"
+msgid "UI hints"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:153
-msgid "この端末のパスキー(client-device)"
+msgid "Passkey on this device (client-device)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:154
-msgid "別の端末 / QR(hybrid)"
+msgid "Another device / QR (hybrid)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:155
-msgid "セキュリティキー(security-key)"
+msgid "Security key (security-key)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:164
-msgid "対応ブラウザに対し、優先して案内する認証方法のヒントを与えます(順序も尊重されます)。未選択ならヒントなし。"
+msgid "Give supported browsers hints about which sign-in methods to suggest first (order is respected). No hints are sent if none are selected."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:169
-msgid "reCAPTCHA v3(パスワードログイン保護)"
+msgid "reCAPTCHA v3 (password login protection)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:170
-msgid "パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログインには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレットを入力し、有効化してください。"
+msgid "Protect password logins with Google reCAPTCHA v3. It does not apply to passkey logins (brute force does not work against them). Enter your site key and secret, then enable it."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:173
-msgid "有効化"
+msgid "Enable"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:177
-msgid "reCAPTCHA を有効にする"
+msgid "Enable reCAPTCHA"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:182
-msgid "サイトキー"
+msgid "Site key"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:186
-msgid "シークレットキー"
+msgid "Secret key"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:190
-msgid "スコアしきい値"
+msgid "Score threshold"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:193
-msgid "0.0〜1.0。これ未満のスコアは拒否します(既定 0.5)。"
+msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:198
-msgid "セキュリティ通知メール"
+msgid "Security notification emails"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:199
-msgid "パスキーの登録・削除、および新しい端末からのパスキーサインインを、対象ユーザー本人のメールアドレスに通知します。乗っ取りの早期発見に役立ちます。"
+msgid "Email the affected user about passkey registration and removal, and about passkey sign-ins from a new device. Helps detect account takeover early."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:202
-msgid "送信"
+msgid "Send"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:206
-msgid "セキュリティ通知メールを送信する"
+msgid "Send security notification emails"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:212
-msgid "パスキー登録のうながし"
+msgid "Passkey enrolment prompt"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:215
-msgid "ログイン後の表示"
+msgid "After login"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:219
-msgid "パスワードでログインした直後に、パスキーの作成をその場でおすすめする(パスキー未登録のユーザーのみ)"
+msgid "Right after a password login, suggest creating a passkey on the spot (only for users without a passkey)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:225
-msgid "監査ログ"
+msgid "Audit log"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:228
-msgid "記録"
+msgid "Logging"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:232
-msgid "登録・ログイン・削除などのイベントを記録する"
+msgid "Record events such as registration, login, and removal"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:256
-msgid "導入状況"
+msgid "Adoption"
 msgstr ""
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
 #: src/Admin/SettingsPage.php:260
-msgid "パスキーを登録済みのユーザー: %1$d / %2$d 人(%3$d%%)"
+msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
 msgstr ""
 
 #. translators: %d: total number of registered passkeys.
 #: src/Admin/SettingsPage.php:269
-msgid "登録済みパスキーの総数: %d 個"
+msgid "Total registered passkeys: %d"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:273
-msgid "各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。"
+msgid "Per-user status is shown in the Passkey column of the Users list."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:281
-msgid "セキュリティプラグインとの互換"
+msgid "Compatibility with security plugins"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:283
-msgid "既知のログイン系セキュリティプラグインは検出されませんでした。"
+msgid "No known login-security plugins were detected."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:286
-msgid "次のプラグインを検出しました:"
+msgid "The following plugins were detected:"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:287
-msgid "Rapls Passkey は標準のログインフックのみを使用し、ログイン成功時に wp_login を発火するため、これらと共存できます。ログイン画面の CAPTCHA が重複する場合は、どちらか一方を無効にしてください(本プラグインの reCAPTCHA は上記設定で無効化できます)。"
+msgid "Rapls Passkey uses only the standard login hooks and fires wp_login on a successful sign-in, so it coexists with these. If the login screen shows a duplicate CAPTCHA, disable one of them (you can disable this plugin reCAPTCHA in the settings above)."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:294
-msgid "最近のイベント"
+msgid "Recent events"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:297
-msgid "記録されたイベントはありません。"
+msgid "No events have been recorded."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:305
-msgid "CSV エクスポート"
+msgid "Export CSV"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:309
-msgid "ユーザー"
+msgid "Users"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:41 src/Admin/SettingsPage.php:42
@@ -372,7 +372,7 @@ msgid "Rapls Passkey"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:99
-msgid "Rapls Passkey 設定"
+msgid "Rapls Passkey Settings"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:102 src/Admin/SiteHealth.php:134
@@ -380,11 +380,11 @@ msgid "Rapls Passkey: HTTPS"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:106 src/Admin/SiteHealth.php:148
-msgid "Rapls Passkey: WebAuthn ライブラリ"
+msgid "Rapls Passkey: WebAuthn library"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:110 src/Admin/SiteHealth.php:162
-msgid "Rapls Passkey: データベース"
+msgid "Rapls Passkey: Database"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:114 src/Admin/SiteHealth.php:189
@@ -392,323 +392,323 @@ msgid "Rapls Passkey: RP ID"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:131
-msgid "サイトは安全なコンテキスト(HTTPS)で配信されています。"
+msgid "The site is served over a secure context (HTTPS)."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:132
-msgid "パスキーには HTTPS(安全なコンテキスト)が必要です。SSL 証明書を導入し、サイトを HTTPS で配信してください(localhost を除く)。"
+msgid "Passkeys require HTTPS (a secure context). Install an SSL certificate and serve the site over HTTPS (except on localhost)."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:145
-msgid "WebAuthn ライブラリが読み込まれています。"
+msgid "The WebAuthn library is loaded."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:146
-msgid "WebAuthn ライブラリが見つかりません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効になっています。"
+msgid "The WebAuthn library was not found. Run `composer install` to install dependencies. Passkey authentication is disabled."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:159
-msgid "認証情報・監査ログのテーブルが存在します。"
+msgid "The credential and audit-log tables exist."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:160
-msgid "プラグインのデータベーステーブルが見つかりません。プラグインを一度無効化してから再度有効化すると作成されます。"
+msgid "The plugin database tables were not found. Deactivate and reactivate the plugin to create them."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:175
-msgid "既知のログイン系セキュリティプラグインは検出されていません。"
+msgid "No known login-security plugins are detected."
 msgstr ""
 
 #. translators: %s: comma-separated plugin names.
 #: src/Admin/SiteHealth.php:178
-msgid "セキュリティプラグインを検出しました: %s。REST API 制限環境でも動作するよう自動対応しています。"
+msgid "Detected security plugins: %s. The plugin adapts automatically to work even when the REST API is restricted."
 msgstr ""
 
 #. translators: 1: RP ID, 2: site host.
 #: src/Admin/SiteHealth.php:184
-msgid "現在の RP ID は「%1$s」、サイトのホストは「%2$s」です。RP ID はパスキーの有効範囲を決めます(rapls_passkey_rp_id フィルターで変更可)。"
+msgid "The current RP ID is %1$s and the site host is %2$s. The RP ID determines the scope of passkeys (changeable via the rapls_passkey_rp_id filter)."
 msgstr ""
 
 #: src/Admin/SiteHealth.php:240
-msgid "セキュリティ"
+msgid "Security"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:49
-msgid "はい"
+msgid "Yes"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:50
-msgid "いいえ"
+msgid "No"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:56
-msgid "バージョン"
+msgid "Version"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:60
-msgid "HTTPS / セキュアコンテキスト"
+msgid "HTTPS / secure context"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:65
-msgid "WebAuthn ライブラリ"
+msgid "WebAuthn library"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:66
-msgid "読み込み済み"
+msgid "Loaded"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:66
-msgid "未検出"
+msgid "Not found"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:70
-msgid "データベーステーブル"
+msgid "Database tables"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:71
-msgid "存在します"
+msgid "Present"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:71
-msgid "未作成"
+msgid "Not created"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:79
-msgid "登録済みパスキー総数"
+msgid "Total registered passkeys"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:83
-msgid "検出したセキュリティプラグイン"
+msgid "Detected security plugins"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:84
-msgid "なし"
+msgid "None"
 msgstr ""
 
 #: src/Admin/UsersColumn.php:77
-msgid "未登録"
+msgid "Not registered"
 msgstr ""
 
 #. translators: %d: number of passkeys.
 #: src/Admin/UsersColumn.php:85
-msgid "%d 個"
+msgid "%d passkeys"
 msgstr ""
 
 #. translators: %s: date a passkey was last used.
 #: src/Admin/UsersColumn.php:95
-msgid "最終 %s"
+msgid "Last %s"
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:103
-msgid "操作がキャンセルされたか、時間切れになりました。もう一度お試しください。"
+msgid "The operation was cancelled or timed out. Please try again."
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:123 src/Integrations/LoginForms.php:113
 #: src/Integrations/WooCommerce.php:65 src/Login/LoginForm.php:75
-msgid "パスキーでログイン"
+msgid "Sign in with a passkey"
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:130
-msgid "すでにログインしています。"
+msgid "You are already signed in."
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:141
-msgid "ユーザー名またはメールアドレス"
+msgid "Username or email address"
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:162
-msgid "パスキーを管理するにはログインしてください。"
+msgid "Please sign in to manage your passkeys."
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:97 src/Login/LoginForm.php:58
-msgid "認証しています…"
+msgid "Authenticating..."
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:98 src/Login/LoginForm.php:59
 #: src/Rest/Endpoints.php:312 src/Rest/Endpoints.php:317
 #: src/Rest/Endpoints.php:324 src/Rest/Endpoints.php:331
-msgid "パスキーでの認証に失敗しました。"
+msgid "Passkey authentication failed."
 msgstr ""
 
 #: src/Integrations/WooCommerce.php:68
-msgid "またはパスワードでログイン"
+msgid "Or sign in with a password"
 msgstr ""
 
 #: src/Login/LoginForm.php:61
-msgid "認証がキャンセルされたか、時間切れになりました。もう一度お試しください。"
+msgid "Authentication was cancelled or timed out. Please try again."
 msgstr ""
 
 #: src/Login/LoginForm.php:62
-msgid "ユーザー名またはメールアドレスを入力してください。"
+msgid "Please enter your username or email address."
 msgstr ""
 
 #: src/Login/Recaptcha.php:110
-msgid "reCAPTCHA の確認に失敗しました。ページを再読み込みしてお試しください。"
+msgid "reCAPTCHA could not be verified. Reload the page and try again."
 msgstr ""
 
 #: src/Login/Recaptcha.php:113
-msgid "reCAPTCHA の検証に失敗しました。"
+msgid "reCAPTCHA verification failed."
 msgstr ""
 
 #: src/Login/UpgradePrompt.php:129
-msgid "キャンセルされました。"
+msgid "Cancelled."
 msgstr ""
 
 #: src/Login/UpgradePrompt.php:140
-msgid "パスキーの設定"
+msgid "Set up a passkey"
 msgstr ""
 
 #: src/Login/UpgradePrompt.php:143
-msgid "次回から、もっと速く安全にログイン"
+msgid "Sign in faster and more securely next time"
 msgstr ""
 
 #: src/Login/UpgradePrompt.php:144
-msgid "この端末にパスキーを設定すると、次回からパスワードなしで、指紋・顔認証・PIN ですばやくログインできます。フィッシングにも強くなります。"
+msgid "Set up a passkey on this device to sign in quickly next time without a password, using your fingerprint, face, or PIN. It also resists phishing."
 msgstr ""
 
 #: src/Login/UpgradePrompt.php:147
-msgid "パスキーを作成"
+msgid "Create a passkey"
 msgstr ""
 
 #: src/Login/UpgradePrompt.php:152
-msgid "後で"
+msgid "Later"
 msgstr ""
 
 #: src/Plugin.php:192
-msgid "Rapls Passkey: WebAuthn ライブラリが読み込まれていません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効化されています。"
+msgid "Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to install dependencies. Passkey authentication is disabled."
 msgstr ""
 
 #: src/Privacy/PersonalData.php:110
-msgid "資格情報 ID"
+msgid "Credential ID"
 msgstr ""
 
 #: src/Privacy/PersonalData.php:120
-msgid "パスキーの監査ログ"
+msgid "Passkey audit log"
 msgstr ""
 
 #: src/Privacy/PersonalData.php:55 src/Privacy/PersonalData.php:70
-msgid "Rapls Passkey(パスキー)"
+msgid "Rapls Passkey (Passkey)"
 msgstr ""
 
 #: src/Recovery/Bypass.php:51
-msgid "Rapls Passkey: 緊急バイパス (RAPLS_PASSKEY_BYPASS) が有効です。パスキーの強制は無効化されています。復旧後は wp-config.php から定数を削除してください。"
+msgid "Rapls Passkey: The emergency bypass (RAPLS_PASSKEY_BYPASS) is enabled. Passkey enforcement is disabled. After recovery, remove the constant from wp-config.php."
 msgstr ""
 
 #: src/Rest/Endpoints.php:132
-msgid "不正なリクエストです。"
+msgid "Invalid request."
 msgstr ""
 
 #: src/Rest/Endpoints.php:135
-msgid "試行回数が多すぎます。しばらくしてからお試しください。"
+msgid "Too many attempts. Please try again later."
 msgstr ""
 
 #: src/Rest/Endpoints.php:221
-msgid "このパスキーはすでに登録されています。"
+msgid "This passkey is already registered."
 msgstr ""
 
 #: src/Rest/Endpoints.php:245
-msgid "パスキーの保存に失敗しました。"
+msgid "Failed to save the passkey."
 msgstr ""
 
 #: src/Rest/Endpoints.php:413
-msgid "このパスキーを削除する権限がありません。"
+msgid "You do not have permission to delete this passkey."
 msgstr ""
 
 #. translators: %d: maximum number of passkeys.
 #: src/Rest/Endpoints.php:439
-msgid "登録できるパスキーは最大 %d 個です。不要なパスキーを削除してから登録してください。"
+msgid "You can register at most %d passkeys. Remove an unused passkey before registering a new one."
 msgstr ""
 
 #. translators: %s: site name.
 #: src/Security/Notifications.php:110
-msgid "[%s] パスキーが削除されました"
+msgid "[%s] A passkey was removed"
 msgstr ""
 
 #: src/Security/Notifications.php:114
-msgid "サイト管理者により、お使いのアカウントのパスキーが1つ削除されました。"
+msgid "A site administrator removed one passkey from your account."
 msgstr ""
 
 #: src/Security/Notifications.php:116
-msgid "お使いのアカウントからパスキーが1つ削除されました。"
+msgid "One passkey was removed from your account."
 msgstr ""
 
 #: src/Security/Notifications.php:119
-msgid "心当たりがない場合は、すぐにパスワードを変更してください。"
+msgid "If this was not you, change your password immediately."
 msgstr ""
 
 #. translators: %s: site name.
 #: src/Security/Notifications.php:155
-msgid "[%s] リカバリーコードでサインインしました"
+msgid "[%s] You signed in with a recovery code"
 msgstr ""
 
 #: src/Security/Notifications.php:157
-msgid "リカバリーコードを使用してアカウントにサインインしました。"
+msgid "Your account was signed into using a recovery code."
 msgstr ""
 
 #. translators: %s: site name.
 #: src/Security/Notifications.php:160
-msgid "[%s] 新しい端末からサインインしました"
+msgid "[%s] New device sign-in"
 msgstr ""
 
 #: src/Security/Notifications.php:162
-msgid "これまでに記録のない端末またはブラウザから、パスキーでアカウントにサインインしました。"
+msgid "Your account was signed into with a passkey from a device or browser not seen before."
 msgstr ""
 
 #: src/Security/Notifications.php:165
-msgid "心当たりがない場合は、すぐにパスワードを変更し、不明なパスキーを削除してください。"
+msgid "If this was not you, change your password immediately and remove any unknown passkeys."
 msgstr ""
 
 #. translators: %s: user display name.
 #: src/Security/Notifications.php:249
-msgid "%s さん"
+msgid "Hello %s,"
 msgstr ""
 
 #. translators: %s: date and time.
 #: src/Security/Notifications.php:277
-msgid "日時: %s"
+msgid "Date/time: %s"
 msgstr ""
 
 #. translators: %s: IP address.
 #: src/Security/Notifications.php:284
-msgid "IP アドレス: %s"
+msgid "IP address: %s"
 msgstr ""
 
 #. translators: %s: browser user agent.
 #: src/Security/Notifications.php:290
-msgid "ブラウザ: %s"
+msgid "Browser: %s"
 msgstr ""
 
 #. translators: %s: site name.
 #: src/Security/Notifications.php:69
-msgid "[%s] 新しいパスキーが登録されました"
+msgid "[%s] A new passkey was registered"
 msgstr ""
 
 #: src/Security/Notifications.php:72
-msgid "お使いのアカウントに新しいパスキーが登録されました。"
+msgid "A new passkey was registered on your account."
 msgstr ""
 
 #. translators: %s: passkey label.
 #: src/Security/Notifications.php:75
-msgid "名前: %s"
+msgid "Name: %s"
 msgstr ""
 
 #. translators: %s: authenticator/provider name (e.g. iCloud Keychain).
 #: src/Security/Notifications.php:80
-msgid "認証器: %s"
+msgid "Authenticator: %s"
 msgstr ""
 
 #: src/Security/Notifications.php:83
-msgid "心当たりがない場合は、すぐにパスワードを変更し、プロフィール画面から不明なパスキーを削除してください。"
+msgid "If this was not you, change your password immediately and remove any unknown passkeys from your profile screen."
 msgstr ""
 
 #: src/Support/Help.php:43
-msgid "パスキーは、指紋・顔認証や端末のロック解除(PIN)でログインできる、パスワード不要のしくみです。フィッシングに強く、パスワードの使い回しや漏えいの心配がありません。"
+msgid "A passkey lets you sign in with your fingerprint, face, or device unlock (PIN) with no password. It resists phishing and avoids the risks of password reuse and leaks."
 msgstr ""
 
 #: src/Support/Help.php:53
-msgid "パスキーとは?"
+msgid "What is a passkey?"
 msgstr ""
 
 #: src/Support/Help.php:60
-msgid "詳しく"
+msgid "Learn more"
 msgstr ""

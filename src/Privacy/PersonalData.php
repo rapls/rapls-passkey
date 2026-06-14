@@ -52,7 +52,7 @@ final class PersonalData {
 	public function register_exporter( $exporters ): array {
 		$exporters = is_array( $exporters ) ? $exporters : array();
 		$exporters['rapls-passkey'] = array(
-			'exporter_friendly_name' => __( 'Rapls Passkey(パスキー)', 'rapls-passkey' ),
+			'exporter_friendly_name' => __( 'Rapls Passkey (Passkey)', 'rapls-passkey' ),
 			'callback'               => array( $this, 'export' ),
 		);
 		return $exporters;
@@ -67,7 +67,7 @@ final class PersonalData {
 	public function register_eraser( $erasers ): array {
 		$erasers = is_array( $erasers ) ? $erasers : array();
 		$erasers['rapls-passkey'] = array(
-			'eraser_friendly_name' => __( 'Rapls Passkey(パスキー)', 'rapls-passkey' ),
+			'eraser_friendly_name' => __( 'Rapls Passkey (Passkey)', 'rapls-passkey' ),
 			'callback'             => array( $this, 'erase' ),
 		);
 		return $erasers;
@@ -91,23 +91,23 @@ final class PersonalData {
 			foreach ( $this->repository->find_by_user( $uid ) as $c ) {
 				$data[] = array(
 					'group_id'    => 'rapls-passkey-credentials',
-					'group_label' => __( 'パスキー', 'rapls-passkey' ),
+					'group_label' => __( 'Passkey', 'rapls-passkey' ),
 					'item_id'     => 'rapls-passkey-credential-' . $c->id,
 					'data'        => array(
 						array(
-							'name'  => __( '名前', 'rapls-passkey' ),
+							'name'  => __( 'Name', 'rapls-passkey' ),
 							'value' => ( null !== $c->label && '' !== $c->label ) ? $c->label : '—',
 						),
 						array(
-							'name'  => __( '登録日時', 'rapls-passkey' ),
+							'name'  => __( 'Registered', 'rapls-passkey' ),
 							'value' => $c->created_at,
 						),
 						array(
-							'name'  => __( '最終使用', 'rapls-passkey' ),
+							'name'  => __( 'Last used', 'rapls-passkey' ),
 							'value' => $c->last_used_at ? $c->last_used_at : '—',
 						),
 						array(
-							'name'  => __( '資格情報 ID', 'rapls-passkey' ),
+							'name'  => __( 'Credential ID', 'rapls-passkey' ),
 							'value' => $c->credential_id,
 						),
 					),
@@ -117,15 +117,15 @@ final class PersonalData {
 			foreach ( AuditLog::for_user( $uid ) as $row ) {
 				$data[] = array(
 					'group_id'    => 'rapls-passkey-audit',
-					'group_label' => __( 'パスキーの監査ログ', 'rapls-passkey' ),
+					'group_label' => __( 'Passkey audit log', 'rapls-passkey' ),
 					'item_id'     => 'rapls-passkey-audit-' . (int) $row['id'],
 					'data'        => array(
 						array(
-							'name'  => __( 'イベント', 'rapls-passkey' ),
+							'name'  => __( 'Event', 'rapls-passkey' ),
 							'value' => (string) $row['event'],
 						),
 						array(
-							'name'  => __( '日時 (UTC)', 'rapls-passkey' ),
+							'name'  => __( 'Date/time (UTC)', 'rapls-passkey' ),
 							'value' => (string) $row['created_at'],
 						),
 						array(

@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Adds a "パスキー" tab to the WooCommerce "My account" area where customers can
+ * Adds a "Passkey" tab to the WooCommerce "My account" area where customers can
  * register and remove their passkeys, reusing the same renderer and assets as
  * [rapls_passkey_register]. Inert unless WooCommerce is active.
  */
@@ -69,7 +69,7 @@ final class WooCommerceAccount {
 	}
 
 	/**
-	 * Insert the "パスキー" menu item just before "Logout".
+	 * Insert the "Passkey" menu item just before "Logout".
 	 *
 	 * @param array<string,string> $items Menu items.
 	 * @return array<string,string>
@@ -83,7 +83,7 @@ final class WooCommerceAccount {
 			unset( $items['customer-logout'] );
 		}
 
-		$items[ self::ENDPOINT ] = __( 'パスキー', 'rapls-passkey' );
+		$items[ self::ENDPOINT ] = __( 'Passkey', 'rapls-passkey' );
 
 		if ( null !== $logout ) {
 			$items['customer-logout'] = $logout;
@@ -98,7 +98,7 @@ final class WooCommerceAccount {
 		if ( ! is_user_logged_in() ) {
 			return;
 		}
-		echo '<h3>' . esc_html__( 'パスキー', 'rapls-passkey' ) . '</h3>';
+		echo '<h3>' . esc_html__( 'Passkey', 'rapls-passkey' ) . '</h3>';
 		// render_register() returns trusted, internally-escaped markup.
 		echo $this->shortcodes->render_register( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}

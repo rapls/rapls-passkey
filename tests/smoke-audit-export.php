@@ -46,7 +46,7 @@ namespace {
 	$lines = array_values( array_filter( explode( "\n", trim( $csv ) ) ) );
 
 	check( 'has a header plus two data lines', count( $lines ) === 3 );
-	check( 'header lists the columns', false !== strpos( $lines[0], 'イベント' ) && false !== strpos( $lines[0], 'IP' ) );
+	check( 'header lists the columns', false !== strpos( $lines[0], 'Event' ) && false !== strpos( $lines[0], 'IP' ) );
 	check( 'a data row includes the username', false !== strpos( $csv, 'alice' ) );
 	check( 'a data row includes the event', false !== strpos( $csv, 'registered' ) );
 	// A field with a comma + quote must be CSV-quoted.
@@ -54,7 +54,7 @@ namespace {
 
 	// Empty input still yields a header line.
 	$empty = $export->to_csv( array() );
-	check( 'empty export still has the header', false !== strpos( $empty, 'イベント' ) );
+	check( 'empty export still has the header', false !== strpos( $empty, 'Event' ) );
 
 	echo "\n  {$pass} passed, {$failc} failed\n";
 	exit( $failc === 0 ? 0 : 1 );

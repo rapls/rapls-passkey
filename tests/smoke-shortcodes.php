@@ -89,7 +89,7 @@ check( 'login: enqueues frontend assets', in_array( 'rapls-passkey-frontend', $G
 check( 'login: nonce empty when logged out', isset( $GLOBALS['__localized']['nonce'] ) && $GLOBALS['__localized']['nonce'] === '' );
 
 $reg_out = $sc->render_register( array() );
-check( 'register: prompts to log in when logged out', strpos( $reg_out, 'ログインしてください' ) !== false );
+check( 'register: prompts to log in when logged out', strpos( $reg_out, 'Please sign in' ) !== false );
 check( 'register: does not render the register button when logged out', strpos( $reg_out, 'rapls-pk-fe-register-btn' ) === false );
 
 // --- Logged in. --- (fresh instance: assets enqueue once per request.)
@@ -97,19 +97,19 @@ $GLOBALS['__logged_in'] = true;
 $GLOBALS['__enqueued']  = array();
 $sc = new Shortcodes( new CredentialRepository() );
 $login_in = $sc->render_login( array() );
-check( 'login: shows "already logged in" note', strpos( $login_in, 'すでにログインしています' ) !== false );
+check( 'login: shows "already logged in" note', strpos( $login_in, 'already signed in' ) !== false );
 
 $reg_in = $sc->render_register( array() );
 check( 'register: renders the register button when logged in', strpos( $reg_in, 'rapls-pk-fe-register-btn' ) !== false );
-check( 'register: shows empty-state row with no credentials', strpos( $reg_in, '登録済みのパスキーはありません' ) !== false );
+check( 'register: shows empty-state row with no credentials', strpos( $reg_in, 'No passkeys are registered' ) !== false );
 check( 'register: nonce present when logged in', isset( $GLOBALS['__localized']['nonce'] ) && $GLOBALS['__localized']['nonce'] === 'nonce-wp_rest' );
 
 // --- Custom attributes. ---
-$custom = $sc->render_login( array( 'redirect' => 'https://example.test/members/', 'label' => 'ログイン' ) );
+$custom = $sc->render_login( array( 'redirect' => 'https://example.test/members/', 'label' => 'Login' ) );
 $GLOBALS['__logged_in'] = false;
-$custom = $sc->render_login( array( 'redirect' => 'https://example.test/members/', 'label' => 'ログイン' ) );
+$custom = $sc->render_login( array( 'redirect' => 'https://example.test/members/', 'label' => 'Login' ) );
 check( 'login: honours custom redirect attr', strpos( $custom, 'data-redirect="https://example.test/members/"' ) !== false );
-check( 'login: honours custom label attr', strpos( $custom, '>ログイン</button>' ) !== false );
+check( 'login: honours custom label attr', strpos( $custom, '>Login</button>' ) !== false );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

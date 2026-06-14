@@ -189,7 +189,7 @@ final class Plugin {
 			return;
 		}
 		echo '<div class="notice notice-error"><p>';
-		echo esc_html__( 'Rapls Passkey: WebAuthn ライブラリが読み込まれていません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効化されています。', 'rapls-passkey' );
+		echo esc_html__( 'Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to install dependencies. Passkey authentication is disabled.', 'rapls-passkey' );
 		echo '</p></div>';
 	}
 }

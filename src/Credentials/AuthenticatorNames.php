@@ -40,8 +40,8 @@ final class AuthenticatorNames {
 		$map = array(
 			// Platform & synced credential providers.
 			'ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4' => 'Google Password Manager',
-			'fbfc3007-154e-4ecc-8c0b-6e020557d7bd' => 'iCloud キーチェーン',
-			'dd4ec289-e01d-41c9-bb89-70fa845d4bf2' => 'iCloud キーチェーン(管理対象)',
+			'fbfc3007-154e-4ecc-8c0b-6e020557d7bd' => 'iCloud Keychain',
+			'dd4ec289-e01d-41c9-bb89-70fa845d4bf2' => 'iCloud Keychain (Managed)',
 			'08987058-cadc-4b81-b6e1-30de50dcbe96' => 'Windows Hello',
 			'9ddd1817-af5a-4672-a2b9-3e3dd95000a9' => 'Windows Hello',
 			'6028b017-b1d4-4c02-b4b3-afcdafc96bb2' => 'Windows Hello',
@@ -56,13 +56,13 @@ final class AuthenticatorNames {
 			'f3809540-7f14-49c1-a8b3-8f813b225541' => 'Enpass',
 
 			// Hardware security keys (Yubico).
-			'ee882879-721c-4913-9775-3dfcce97072a' => 'YubiKey 5 シリーズ',
-			'fa2b99dc-9e39-4257-8f92-4a30d23c4118' => 'YubiKey 5 シリーズ',
-			'cb69481e-8ff7-4039-93ec-0a2729a154a8' => 'YubiKey 5 シリーズ',
-			'2fc0579f-8113-47ea-b116-bb5a8db9202a' => 'YubiKey 5 シリーズ',
-			'73bb0cd4-e502-49b8-9c6f-b59445bf720b' => 'YubiKey 5 FIPS シリーズ',
-			'c1f9a0bc-1dd2-404a-b27f-8e29047a43fd' => 'YubiKey 5 FIPS シリーズ',
-			'd8522d9f-575b-4866-88a9-ba99fa02f35b' => 'YubiKey Bio シリーズ',
+			'ee882879-721c-4913-9775-3dfcce97072a' => 'YubiKey 5 Series',
+			'fa2b99dc-9e39-4257-8f92-4a30d23c4118' => 'YubiKey 5 Series',
+			'cb69481e-8ff7-4039-93ec-0a2729a154a8' => 'YubiKey 5 Series',
+			'2fc0579f-8113-47ea-b116-bb5a8db9202a' => 'YubiKey 5 Series',
+			'73bb0cd4-e502-49b8-9c6f-b59445bf720b' => 'YubiKey 5 FIPS Series',
+			'c1f9a0bc-1dd2-404a-b27f-8e29047a43fd' => 'YubiKey 5 FIPS Series',
+			'd8522d9f-575b-4866-88a9-ba99fa02f35b' => 'YubiKey Bio Series',
 			'f8a011f3-8c0a-4d15-8006-17111f9edc7d' => 'Security Key by Yubico',
 			'b92c3f9a-c014-4056-887f-140a2501163b' => 'Security Key by Yubico',
 		);

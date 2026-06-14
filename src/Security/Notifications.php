@@ -66,21 +66,21 @@ final class Notifications {
 		}
 
 		/* translators: %s: site name. */
-		$subject = sprintf( __( '[%s] 新しいパスキーが登録されました', 'rapls-passkey' ), $this->site_name() );
+		$subject = sprintf( __( '[%s] A new passkey was registered', 'rapls-passkey' ), $this->site_name() );
 
 		$body  = $this->greeting( $user );
-		$body .= __( 'お使いのアカウントに新しいパスキーが登録されました。', 'rapls-passkey' ) . "\n\n";
+		$body .= __( 'A new passkey was registered on your account.', 'rapls-passkey' ) . "\n\n";
 		if ( is_string( $label ) && '' !== $label ) {
 			/* translators: %s: passkey label. */
-			$body .= sprintf( __( '名前: %s', 'rapls-passkey' ), $label ) . "\n";
+			$body .= sprintf( __( 'Name: %s', 'rapls-passkey' ), $label ) . "\n";
 		}
 		$provider = $this->provider_name( (int) $cred_id );
 		if ( null !== $provider ) {
 			/* translators: %s: authenticator/provider name (e.g. iCloud Keychain). */
-			$body .= sprintf( __( '認証器: %s', 'rapls-passkey' ), $provider ) . "\n";
+			$body .= sprintf( __( 'Authenticator: %s', 'rapls-passkey' ), $provider ) . "\n";
 		}
 		$body .= $this->context_lines() . "\n";
-		$body .= __( '心当たりがない場合は、すぐにパスワードを変更し、プロフィール画面から不明なパスキーを削除してください。', 'rapls-passkey' ) . "\n";
+		$body .= __( 'If this was not you, change your password immediately and remove any unknown passkeys from your profile screen.', 'rapls-passkey' ) . "\n";
 
 		$this->send( $user, $subject, $body );
 	}
@@ -107,16 +107,16 @@ final class Notifications {
 		}
 
 		/* translators: %s: site name. */
-		$subject = sprintf( __( '[%s] パスキーが削除されました', 'rapls-passkey' ), $this->site_name() );
+		$subject = sprintf( __( '[%s] A passkey was removed', 'rapls-passkey' ), $this->site_name() );
 
 		$body = $this->greeting( $user );
 		if ( (int) $by_admin > 0 ) {
-			$body .= __( 'サイト管理者により、お使いのアカウントのパスキーが1つ削除されました。', 'rapls-passkey' ) . "\n\n";
+			$body .= __( 'A site administrator removed one passkey from your account.', 'rapls-passkey' ) . "\n\n";
 		} else {
-			$body .= __( 'お使いのアカウントからパスキーが1つ削除されました。', 'rapls-passkey' ) . "\n\n";
+			$body .= __( 'One passkey was removed from your account.', 'rapls-passkey' ) . "\n\n";
 		}
 		$body .= $this->context_lines() . "\n";
-		$body .= __( '心当たりがない場合は、すぐにパスワードを変更してください。', 'rapls-passkey' ) . "\n";
+		$body .= __( 'If this was not you, change your password immediately.', 'rapls-passkey' ) . "\n";
 
 		$this->send( $user, $subject, $body );
 	}
@@ -152,17 +152,17 @@ final class Notifications {
 
 		if ( $always ) {
 			/* translators: %s: site name. */
-			$subject = sprintf( __( '[%s] リカバリーコードでサインインしました', 'rapls-passkey' ), $this->site_name() );
+			$subject = sprintf( __( '[%s] You signed in with a recovery code', 'rapls-passkey' ), $this->site_name() );
 			$body    = $this->greeting( $user );
-			$body   .= __( 'リカバリーコードを使用してアカウントにサインインしました。', 'rapls-passkey' ) . "\n\n";
+			$body   .= __( 'Your account was signed into using a recovery code.', 'rapls-passkey' ) . "\n\n";
 		} else {
 			/* translators: %s: site name. */
-			$subject = sprintf( __( '[%s] 新しい端末からサインインしました', 'rapls-passkey' ), $this->site_name() );
+			$subject = sprintf( __( '[%s] New device sign-in', 'rapls-passkey' ), $this->site_name() );
 			$body    = $this->greeting( $user );
-			$body   .= __( 'これまでに記録のない端末またはブラウザから、パスキーでアカウントにサインインしました。', 'rapls-passkey' ) . "\n\n";
+			$body   .= __( 'Your account was signed into with a passkey from a device or browser not seen before.', 'rapls-passkey' ) . "\n\n";
 		}
 		$body .= $this->context_lines() . "\n";
-		$body .= __( '心当たりがない場合は、すぐにパスワードを変更し、不明なパスキーを削除してください。', 'rapls-passkey' ) . "\n";
+		$body .= __( 'If this was not you, change your password immediately and remove any unknown passkeys.', 'rapls-passkey' ) . "\n";
 
 		$this->send( $user, $subject, $body );
 	}
@@ -238,7 +238,7 @@ final class Notifications {
 	}
 
 	/**
-	 * "<name> さん" greeting line.
+	 * "Hello <name>," greeting line.
 	 *
 	 * @param WP_User $user User.
 	 * @return string
@@ -246,7 +246,7 @@ final class Notifications {
 	private function greeting( WP_User $user ): string {
 		$name = '' !== $user->display_name ? $user->display_name : $user->user_login;
 		/* translators: %s: user display name. */
-		return sprintf( __( '%s さん', 'rapls-passkey' ), $name ) . "\n\n";
+		return sprintf( __( 'Hello %s,', 'rapls-passkey' ), $name ) . "\n\n";
 	}
 
 	/**
@@ -274,20 +274,20 @@ final class Notifications {
 	private function context_lines(): string {
 		$lines = sprintf(
 			/* translators: %s: date and time. */
-			__( '日時: %s', 'rapls-passkey' ),
+			__( 'Date/time: %s', 'rapls-passkey' ),
 			wp_date( 'Y-m-d H:i:s (T)' )
 		) . "\n";
 
 		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 		if ( '' !== $ip ) {
 			/* translators: %s: IP address. */
-			$lines .= sprintf( __( 'IP アドレス: %s', 'rapls-passkey' ), $ip ) . "\n";
+			$lines .= sprintf( __( 'IP address: %s', 'rapls-passkey' ), $ip ) . "\n";
 		}
 
 		$ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 		if ( '' !== $ua ) {
 			/* translators: %s: browser user agent. */
-			$lines .= sprintf( __( 'ブラウザ: %s', 'rapls-passkey' ), mb_substr( $ua, 0, 200 ) ) . "\n";
+			$lines .= sprintf( __( 'Browser: %s', 'rapls-passkey' ), mb_substr( $ua, 0, 200 ) ) . "\n";
 		}
 
 		return $lines;

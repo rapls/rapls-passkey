@@ -96,63 +96,63 @@ final class SettingsPage {
 		$s = Settings::all();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Rapls Passkey 設定', 'rapls-passkey' ); ?></h1>
+			<h1><?php esc_html_e( 'Rapls Passkey Settings', 'rapls-passkey' ); ?></h1>
 
 				<?php $this->render_adoption(); ?>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::GROUP ); ?>
-				<h2><?php esc_html_e( 'パスキー', 'rapls-passkey' ); ?></h2>
+				<h2><?php esc_html_e( 'Passkey', 'rapls-passkey' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><label for="rapls-max-passkeys"><?php esc_html_e( '1ユーザーあたりの登録上限', 'rapls-passkey' ); ?></label></th>
+						<th scope="row"><label for="rapls-max-passkeys"><?php esc_html_e( 'Per-user registration limit', 'rapls-passkey' ); ?></label></th>
 						<td>
 							<input type="number" step="1" min="0" id="rapls-max-passkeys" name="<?php echo esc_attr( Settings::OPTION ); ?>[max_passkeys]" value="<?php echo esc_attr( (string) $s['max_passkeys'] ); ?>">
-							<p class="description"><?php esc_html_e( 'ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮し、2 以上を推奨します。', 'rapls-passkey' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Maximum number of passkeys a user can register. 0 means unlimited. We recommend 2 or more so passkeys can be used across multiple devices.', 'rapls-passkey' ); ?></p>
 						</td>
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( '詳細設定(WebAuthn)', 'rapls-passkey' ); ?></h2>
+				<h2><?php esc_html_e( 'Advanced (WebAuthn)', 'rapls-passkey' ); ?></h2>
 					<table class="form-table" role="presentation">
 						<tr>
-							<th scope="row"><label for="rapls-wa-timeout"><?php esc_html_e( 'タイムアウト(秒)', 'rapls-passkey' ); ?></label></th>
+							<th scope="row"><label for="rapls-wa-timeout"><?php esc_html_e( 'Timeout (seconds)', 'rapls-passkey' ); ?></label></th>
 							<td>
 								<input type="number" step="1" min="0" max="600" id="rapls-wa-timeout" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_timeout]" value="<?php echo esc_attr( (string) $s['webauthn_timeout'] ); ?>">
-								<p class="description"><?php esc_html_e( 'パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定(通常 60 秒程度)を使用します。', 'rapls-passkey' ); ?></p>
+								<p class="description"><?php esc_html_e( 'Timeout for the passkey registration and authentication dialogs. 0 uses the browser default (typically around 60 seconds).', 'rapls-passkey' ); ?></p>
 							</td>
 						</tr>
 						<tr>
-							<th scope="row"><label for="rapls-wa-uv"><?php esc_html_e( 'ユーザー検証', 'rapls-passkey' ); ?></label></th>
+							<th scope="row"><label for="rapls-wa-uv"><?php esc_html_e( 'User verification', 'rapls-passkey' ); ?></label></th>
 							<td>
 								<select id="rapls-wa-uv" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_user_verification]">
-									<option value="preferred" <?php selected( $s['webauthn_user_verification'], 'preferred' ); ?>><?php esc_html_e( '推奨(preferred)', 'rapls-passkey' ); ?></option>
-									<option value="required" <?php selected( $s['webauthn_user_verification'], 'required' ); ?>><?php esc_html_e( '必須(required)', 'rapls-passkey' ); ?></option>
-									<option value="discouraged" <?php selected( $s['webauthn_user_verification'], 'discouraged' ); ?>><?php esc_html_e( '不要(discouraged)', 'rapls-passkey' ); ?></option>
+									<option value="preferred" <?php selected( $s['webauthn_user_verification'], 'preferred' ); ?>><?php esc_html_e( 'Preferred', 'rapls-passkey' ); ?></option>
+									<option value="required" <?php selected( $s['webauthn_user_verification'], 'required' ); ?>><?php esc_html_e( 'Required', 'rapls-passkey' ); ?></option>
+									<option value="discouraged" <?php selected( $s['webauthn_user_verification'], 'discouraged' ); ?>><?php esc_html_e( 'Discouraged', 'rapls-passkey' ); ?></option>
 								</select>
-								<p class="description"><?php esc_html_e( '生体認証や PIN による本人確認をどの程度求めるか。「必須」は対応していない認証器を弾く可能性があります。通常は「推奨」のままを推奨します。', 'rapls-passkey' ); ?></p>
+								<p class="description"><?php esc_html_e( 'How strongly to require identity verification via biometrics or PIN. Required may reject authenticators that do not support it; leaving this at Preferred is usually recommended.', 'rapls-passkey' ); ?></p>
 							</td>
 						</tr>
 						<tr>
-							<th scope="row"><label for="rapls-wa-attachment"><?php esc_html_e( '認証器の種類', 'rapls-passkey' ); ?></label></th>
+							<th scope="row"><label for="rapls-wa-attachment"><?php esc_html_e( 'Authenticator type', 'rapls-passkey' ); ?></label></th>
 							<td>
 								<select id="rapls-wa-attachment" name="<?php echo esc_attr( Settings::OPTION ); ?>[webauthn_attachment]">
-									<option value="" <?php selected( $s['webauthn_attachment'], '' ); ?>><?php esc_html_e( '指定なし(すべて許可)', 'rapls-passkey' ); ?></option>
-									<option value="platform" <?php selected( $s['webauthn_attachment'], 'platform' ); ?>><?php esc_html_e( '内蔵のみ(Touch ID / Windows Hello など)', 'rapls-passkey' ); ?></option>
-									<option value="cross-platform" <?php selected( $s['webauthn_attachment'], 'cross-platform' ); ?>><?php esc_html_e( '外付けのみ(セキュリティキー / 別端末)', 'rapls-passkey' ); ?></option>
+									<option value="" <?php selected( $s['webauthn_attachment'], '' ); ?>><?php esc_html_e( 'No preference (allow all)', 'rapls-passkey' ); ?></option>
+									<option value="platform" <?php selected( $s['webauthn_attachment'], 'platform' ); ?>><?php esc_html_e( 'Platform only (Touch ID / Windows Hello, etc.)', 'rapls-passkey' ); ?></option>
+									<option value="cross-platform" <?php selected( $s['webauthn_attachment'], 'cross-platform' ); ?>><?php esc_html_e( 'Cross-platform only (security key / another device)', 'rapls-passkey' ); ?></option>
 								</select>
-								<p class="description"><?php esc_html_e( '新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨します。', 'rapls-passkey' ); ?></p>
+								<p class="description"><?php esc_html_e( 'Which authenticator type to allow at registration (applies at registration only). No preference is usually recommended.', 'rapls-passkey' ); ?></p>
 							</td>
 						</tr>
 						<tr>
-							<th scope="row"><?php esc_html_e( 'UI ヒント', 'rapls-passkey' ); ?></th>
+							<th scope="row"><?php esc_html_e( 'UI hints', 'rapls-passkey' ); ?></th>
 							<td>
 								<?php
 								$hints     = (array) ( $s['webauthn_hints'] ?? array() );
 								$hint_opts = array(
-									'client-device' => __( 'この端末のパスキー(client-device)', 'rapls-passkey' ),
-									'hybrid'        => __( '別の端末 / QR(hybrid)', 'rapls-passkey' ),
-									'security-key'  => __( 'セキュリティキー(security-key)', 'rapls-passkey' ),
+									'client-device' => __( 'Passkey on this device (client-device)', 'rapls-passkey' ),
+									'hybrid'        => __( 'Another device / QR (hybrid)', 'rapls-passkey' ),
+									'security-key'  => __( 'Security key (security-key)', 'rapls-passkey' ),
 								);
 								foreach ( $hint_opts as $value => $label ) :
 									?>
@@ -161,75 +161,75 @@ final class SettingsPage {
 										<?php echo esc_html( $label ); ?>
 									</label>
 								<?php endforeach; ?>
-								<p class="description"><?php esc_html_e( '対応ブラウザに対し、優先して案内する認証方法のヒントを与えます(順序も尊重されます)。未選択ならヒントなし。', 'rapls-passkey' ); ?></p>
+								<p class="description"><?php esc_html_e( 'Give supported browsers hints about which sign-in methods to suggest first (order is respected). No hints are sent if none are selected.', 'rapls-passkey' ); ?></p>
 							</td>
 						</tr>
 					</table>
 
-					<h2><?php esc_html_e( 'reCAPTCHA v3(パスワードログイン保護)', 'rapls-passkey' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログインには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレットを入力し、有効化してください。', 'rapls-passkey' ); ?></p>
+					<h2><?php esc_html_e( 'reCAPTCHA v3 (password login protection)', 'rapls-passkey' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Protect password logins with Google reCAPTCHA v3. It does not apply to passkey logins (brute force does not work against them). Enter your site key and secret, then enable it.', 'rapls-passkey' ); ?></p>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><?php esc_html_e( '有効化', 'rapls-passkey' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Enable', 'rapls-passkey' ); ?></th>
 						<td>
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_enabled]" value="1" <?php checked( ! empty( $s['recaptcha_enabled'] ) ); ?>>
-								<?php esc_html_e( 'reCAPTCHA を有効にする', 'rapls-passkey' ); ?>
+								<?php esc_html_e( 'Enable reCAPTCHA', 'rapls-passkey' ); ?>
 							</label>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="rapls-recaptcha-site"><?php esc_html_e( 'サイトキー', 'rapls-passkey' ); ?></label></th>
+						<th scope="row"><label for="rapls-recaptcha-site"><?php esc_html_e( 'Site key', 'rapls-passkey' ); ?></label></th>
 						<td><input type="text" class="regular-text" id="rapls-recaptcha-site" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_site_key]" value="<?php echo esc_attr( (string) $s['recaptcha_site_key'] ); ?>"></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="rapls-recaptcha-secret"><?php esc_html_e( 'シークレットキー', 'rapls-passkey' ); ?></label></th>
+						<th scope="row"><label for="rapls-recaptcha-secret"><?php esc_html_e( 'Secret key', 'rapls-passkey' ); ?></label></th>
 						<td><input type="password" class="regular-text" id="rapls-recaptcha-secret" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_secret_key]" value="<?php echo esc_attr( (string) $s['recaptcha_secret_key'] ); ?>" autocomplete="off"></td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="rapls-recaptcha-threshold"><?php esc_html_e( 'スコアしきい値', 'rapls-passkey' ); ?></label></th>
+						<th scope="row"><label for="rapls-recaptcha-threshold"><?php esc_html_e( 'Score threshold', 'rapls-passkey' ); ?></label></th>
 						<td>
 							<input type="number" step="0.1" min="0" max="1" id="rapls-recaptcha-threshold" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_threshold]" value="<?php echo esc_attr( (string) $s['recaptcha_threshold'] ); ?>">
-							<p class="description"><?php esc_html_e( '0.0〜1.0。これ未満のスコアは拒否します(既定 0.5)。', 'rapls-passkey' ); ?></p>
+							<p class="description"><?php esc_html_e( '0.0 to 1.0. Scores below this are rejected (default 0.5).', 'rapls-passkey' ); ?></p>
 						</td>
 					</tr>
 				</table>
 
-				<h2><?php esc_html_e( 'セキュリティ通知メール', 'rapls-passkey' ); ?></h2>
-					<p class="description"><?php esc_html_e( 'パスキーの登録・削除、および新しい端末からのパスキーサインインを、対象ユーザー本人のメールアドレスに通知します。乗っ取りの早期発見に役立ちます。', 'rapls-passkey' ); ?></p>
+				<h2><?php esc_html_e( 'Security notification emails', 'rapls-passkey' ); ?></h2>
+					<p class="description"><?php esc_html_e( 'Email the affected user about passkey registration and removal, and about passkey sign-ins from a new device. Helps detect account takeover early.', 'rapls-passkey' ); ?></p>
 					<table class="form-table" role="presentation">
 						<tr>
-							<th scope="row"><?php esc_html_e( '送信', 'rapls-passkey' ); ?></th>
+							<th scope="row"><?php esc_html_e( 'Send', 'rapls-passkey' ); ?></th>
 							<td>
 								<label>
 									<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[notifications_enabled]" value="1" <?php checked( ! empty( $s['notifications_enabled'] ) ); ?>>
-									<?php esc_html_e( 'セキュリティ通知メールを送信する', 'rapls-passkey' ); ?>
+									<?php esc_html_e( 'Send security notification emails', 'rapls-passkey' ); ?>
 								</label>
 							</td>
 						</tr>
 					</table>
 
-					<h2><?php esc_html_e( 'パスキー登録のうながし', 'rapls-passkey' ); ?></h2>
+					<h2><?php esc_html_e( 'Passkey enrolment prompt', 'rapls-passkey' ); ?></h2>
 					<table class="form-table" role="presentation">
 						<tr>
-							<th scope="row"><?php esc_html_e( 'ログイン後の表示', 'rapls-passkey' ); ?></th>
+							<th scope="row"><?php esc_html_e( 'After login', 'rapls-passkey' ); ?></th>
 							<td>
 								<label>
 									<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[upgrade_prompt_enabled]" value="1" <?php checked( ! empty( $s['upgrade_prompt_enabled'] ) ); ?>>
-									<?php esc_html_e( 'パスワードでログインした直後に、パスキーの作成をその場でおすすめする(パスキー未登録のユーザーのみ)', 'rapls-passkey' ); ?>
+									<?php esc_html_e( 'Right after a password login, suggest creating a passkey on the spot (only for users without a passkey)', 'rapls-passkey' ); ?>
 								</label>
 							</td>
 						</tr>
 					</table>
 
-					<h2><?php esc_html_e( '監査ログ', 'rapls-passkey' ); ?></h2>
+					<h2><?php esc_html_e( 'Audit log', 'rapls-passkey' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><?php esc_html_e( '記録', 'rapls-passkey' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Logging', 'rapls-passkey' ); ?></th>
 						<td>
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[audit_enabled]" value="1" <?php checked( ! empty( $s['audit_enabled'] ) ); ?>>
-								<?php esc_html_e( '登録・ログイン・削除などのイベントを記録する', 'rapls-passkey' ); ?>
+								<?php esc_html_e( 'Record events such as registration, login, and removal', 'rapls-passkey' ); ?>
 							</label>
 						</td>
 					</tr>
@@ -253,11 +253,11 @@ final class SettingsPage {
 		$total_users = isset( $counts['total_users'] ) ? (int) $counts['total_users'] : 0;
 		$pct         = $total_users > 0 ? (int) round( $stats['users'] / $total_users * 100 ) : 0;
 
-		echo '<h2>' . esc_html__( '導入状況', 'rapls-passkey' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Adoption', 'rapls-passkey' ) . '</h2>';
 		echo '<p>' . esc_html(
 			sprintf(
 				/* translators: 1: users with a passkey, 2: total users, 3: percentage. */
-				__( 'パスキーを登録済みのユーザー: %1$d / %2$d 人(%3$d%%)', 'rapls-passkey' ),
+				__( 'Users with a passkey: %1$d / %2$d (%3$d%%)', 'rapls-passkey' ),
 				$stats['users'],
 				$total_users,
 				$pct
@@ -266,11 +266,11 @@ final class SettingsPage {
 		echo '<p>' . esc_html(
 			sprintf(
 				/* translators: %d: total number of registered passkeys. */
-				__( '登録済みパスキーの総数: %d 個', 'rapls-passkey' ),
+				__( 'Total registered passkeys: %d', 'rapls-passkey' ),
 				$stats['total']
 			)
 		) . '</p>';
-		echo '<p class="description">' . esc_html__( '各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。', 'rapls-passkey' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Per-user status is shown in the Passkey column of the Users list.', 'rapls-passkey' ) . '</p>';
 	}
 
 	/**
@@ -278,23 +278,23 @@ final class SettingsPage {
 	 */
 	private function render_compat(): void {
 		$detected = Compat::detect();
-		echo '<h2>' . esc_html__( 'セキュリティプラグインとの互換', 'rapls-passkey' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Compatibility with security plugins', 'rapls-passkey' ) . '</h2>';
 		if ( array() === $detected ) {
-			echo '<p>' . esc_html__( '既知のログイン系セキュリティプラグインは検出されませんでした。', 'rapls-passkey' ) . '</p>';
+			echo '<p>' . esc_html__( 'No known login-security plugins were detected.', 'rapls-passkey' ) . '</p>';
 			return;
 		}
-		echo '<p>' . esc_html__( '次のプラグインを検出しました:', 'rapls-passkey' ) . ' <strong>' . esc_html( implode( ', ', $detected ) ) . '</strong></p>';
-		echo '<p class="description">' . esc_html__( 'Rapls Passkey は標準のログインフックのみを使用し、ログイン成功時に wp_login を発火するため、これらと共存できます。ログイン画面の CAPTCHA が重複する場合は、どちらか一方を無効にしてください(本プラグインの reCAPTCHA は上記設定で無効化できます)。', 'rapls-passkey' ) . '</p>';
+		echo '<p>' . esc_html__( 'The following plugins were detected:', 'rapls-passkey' ) . ' <strong>' . esc_html( implode( ', ', $detected ) ) . '</strong></p>';
+		echo '<p class="description">' . esc_html__( 'Rapls Passkey uses only the standard login hooks and fires wp_login on a successful sign-in, so it coexists with these. If the login screen shows a duplicate CAPTCHA, disable one of them (you can disable this plugin reCAPTCHA in the settings above).', 'rapls-passkey' ) . '</p>';
 	}
 
 	/**
 	 * Recent audit events.
 	 */
 	private function render_audit(): void {
-		echo '<h2>' . esc_html__( '最近のイベント', 'rapls-passkey' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Recent events', 'rapls-passkey' ) . '</h2>';
 		$events = AuditLog::recent( 50 );
 		if ( array() === $events ) {
-			echo '<p>' . esc_html__( '記録されたイベントはありません。', 'rapls-passkey' ) . '</p>';
+			echo '<p>' . esc_html__( 'No events have been recorded.', 'rapls-passkey' ) . '</p>';
 			return;
 		}
 
@@ -302,12 +302,12 @@ final class SettingsPage {
 			admin_url( 'admin-post.php?action=' . AuditExport::ACTION ),
 			AuditExport::ACTION
 		);
-		echo '<p><a class="button" href="' . esc_url( $export_url ) . '">' . esc_html__( 'CSV エクスポート', 'rapls-passkey' ) . '</a></p>';
+		echo '<p><a class="button" href="' . esc_url( $export_url ) . '">' . esc_html__( 'Export CSV', 'rapls-passkey' ) . '</a></p>';
 		echo '<table class="widefat striped"><thead><tr>';
-		echo '<th>' . esc_html__( '日時 (UTC)', 'rapls-passkey' ) . '</th>';
-		echo '<th>' . esc_html__( 'イベント', 'rapls-passkey' ) . '</th>';
-		echo '<th>' . esc_html__( 'ユーザー', 'rapls-passkey' ) . '</th>';
-		echo '<th>' . esc_html__( '詳細', 'rapls-passkey' ) . '</th>';
+		echo '<th>' . esc_html__( 'Date/time (UTC)', 'rapls-passkey' ) . '</th>';
+		echo '<th>' . esc_html__( 'Event', 'rapls-passkey' ) . '</th>';
+		echo '<th>' . esc_html__( 'Users', 'rapls-passkey' ) . '</th>';
+		echo '<th>' . esc_html__( 'Details', 'rapls-passkey' ) . '</th>';
 		echo '<th>IP</th>';
 		echo '</tr></thead><tbody>';
 		foreach ( $events as $row ) {

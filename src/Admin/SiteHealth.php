@@ -46,29 +46,29 @@ final class SiteHealth {
 		$tables   = $this->tables_exist();
 		$detected = Compat::detect();
 
-		$yes = __( 'はい', 'rapls-passkey' );
-		$no  = __( 'いいえ', 'rapls-passkey' );
+		$yes = __( 'Yes', 'rapls-passkey' );
+		$no  = __( 'No', 'rapls-passkey' );
 
 		$info['rapls-passkey'] = array(
 			'label'  => __( 'Rapls Passkey', 'rapls-passkey' ),
 			'fields' => array(
 				'version'         => array(
-					'label' => __( 'バージョン', 'rapls-passkey' ),
+					'label' => __( 'Version', 'rapls-passkey' ),
 					'value' => defined( 'RAPLS_PASSKEY_VERSION' ) ? RAPLS_PASSKEY_VERSION : '',
 				),
 				'https'           => array(
-					'label' => __( 'HTTPS / セキュアコンテキスト', 'rapls-passkey' ),
+					'label' => __( 'HTTPS / secure context', 'rapls-passkey' ),
 					'value' => $secure ? $yes : $no,
 					'debug' => $secure ? 'true' : 'false',
 				),
 				'library'         => array(
-					'label' => __( 'WebAuthn ライブラリ', 'rapls-passkey' ),
-					'value' => $library ? __( '読み込み済み', 'rapls-passkey' ) : __( '未検出', 'rapls-passkey' ),
+					'label' => __( 'WebAuthn library', 'rapls-passkey' ),
+					'value' => $library ? __( 'Loaded', 'rapls-passkey' ) : __( 'Not found', 'rapls-passkey' ),
 					'debug' => $library ? 'true' : 'false',
 				),
 				'tables'          => array(
-					'label' => __( 'データベーステーブル', 'rapls-passkey' ),
-					'value' => $tables ? __( '存在します', 'rapls-passkey' ) : __( '未作成', 'rapls-passkey' ),
+					'label' => __( 'Database tables', 'rapls-passkey' ),
+					'value' => $tables ? __( 'Present', 'rapls-passkey' ) : __( 'Not created', 'rapls-passkey' ),
 					'debug' => $tables ? 'true' : 'false',
 				),
 				'rp_id'           => array(
@@ -76,12 +76,12 @@ final class SiteHealth {
 					'value' => RelyingParty::from_site()->id(),
 				),
 				'registered'      => array(
-					'label' => __( '登録済みパスキー総数', 'rapls-passkey' ),
+					'label' => __( 'Total registered passkeys', 'rapls-passkey' ),
 					'value' => (string) $this->total_credentials(),
 				),
 				'security_plugins' => array(
-					'label' => __( '検出したセキュリティプラグイン', 'rapls-passkey' ),
-					'value' => array() === $detected ? __( 'なし', 'rapls-passkey' ) : implode( ', ', $detected ),
+					'label' => __( 'Detected security plugins', 'rapls-passkey' ),
+					'value' => array() === $detected ? __( 'None', 'rapls-passkey' ) : implode( ', ', $detected ),
 				),
 			),
 		);
@@ -103,11 +103,11 @@ final class SiteHealth {
 			'test'  => array( $this, 'test_https' ),
 		);
 		$tests['direct']['rapls_passkey_library'] = array(
-			'label' => __( 'Rapls Passkey: WebAuthn ライブラリ', 'rapls-passkey' ),
+			'label' => __( 'Rapls Passkey: WebAuthn library', 'rapls-passkey' ),
 			'test'  => array( $this, 'test_library' ),
 		);
 		$tests['direct']['rapls_passkey_tables']  = array(
-			'label' => __( 'Rapls Passkey: データベース', 'rapls-passkey' ),
+			'label' => __( 'Rapls Passkey: Database', 'rapls-passkey' ),
 			'test'  => array( $this, 'test_tables' ),
 		);
 		$tests['direct']['rapls_passkey_rp']      = array(
@@ -128,8 +128,8 @@ final class SiteHealth {
 	public function test_https(): array {
 		$secure = is_ssl() || $this->is_local_host();
 		$desc   = $secure
-			? __( 'サイトは安全なコンテキスト(HTTPS)で配信されています。', 'rapls-passkey' )
-			: __( 'パスキーには HTTPS(安全なコンテキスト)が必要です。SSL 証明書を導入し、サイトを HTTPS で配信してください(localhost を除く)。', 'rapls-passkey' );
+			? __( 'The site is served over a secure context (HTTPS).', 'rapls-passkey' )
+			: __( 'Passkeys require HTTPS (a secure context). Install an SSL certificate and serve the site over HTTPS (except on localhost).', 'rapls-passkey' );
 
 		return $this->result( 'rapls_passkey_https', __( 'Rapls Passkey: HTTPS', 'rapls-passkey' ), self::https_status( $secure ), $desc );
 	}
@@ -142,10 +142,10 @@ final class SiteHealth {
 	public function test_library(): array {
 		$present = class_exists( '\\Webauthn\\PublicKeyCredentialSource' );
 		$desc    = $present
-			? __( 'WebAuthn ライブラリが読み込まれています。', 'rapls-passkey' )
-			: __( 'WebAuthn ライブラリが見つかりません。`composer install` を実行して依存関係を導入してください。パスキー認証は無効になっています。', 'rapls-passkey' );
+			? __( 'The WebAuthn library is loaded.', 'rapls-passkey' )
+			: __( 'The WebAuthn library was not found. Run `composer install` to install dependencies. Passkey authentication is disabled.', 'rapls-passkey' );
 
-		return $this->result( 'rapls_passkey_library', __( 'Rapls Passkey: WebAuthn ライブラリ', 'rapls-passkey' ), self::library_status( $present ), $desc );
+		return $this->result( 'rapls_passkey_library', __( 'Rapls Passkey: WebAuthn library', 'rapls-passkey' ), self::library_status( $present ), $desc );
 	}
 
 	/**
@@ -156,10 +156,10 @@ final class SiteHealth {
 	public function test_tables(): array {
 		$present = $this->tables_exist();
 		$desc    = $present
-			? __( '認証情報・監査ログのテーブルが存在します。', 'rapls-passkey' )
-			: __( 'プラグインのデータベーステーブルが見つかりません。プラグインを一度無効化してから再度有効化すると作成されます。', 'rapls-passkey' );
+			? __( 'The credential and audit-log tables exist.', 'rapls-passkey' )
+			: __( 'The plugin database tables were not found. Deactivate and reactivate the plugin to create them.', 'rapls-passkey' );
 
-		return $this->result( 'rapls_passkey_tables', __( 'Rapls Passkey: データベース', 'rapls-passkey' ), self::tables_status( $present ), $desc );
+		return $this->result( 'rapls_passkey_tables', __( 'Rapls Passkey: Database', 'rapls-passkey' ), self::tables_status( $present ), $desc );
 	}
 
 	/**
@@ -172,16 +172,16 @@ final class SiteHealth {
 		$host      = (string) wp_parse_url( home_url(), PHP_URL_HOST );
 		$detected  = Compat::detect();
 		$compat    = array() === $detected
-			? __( '既知のログイン系セキュリティプラグインは検出されていません。', 'rapls-passkey' )
+			? __( 'No known login-security plugins are detected.', 'rapls-passkey' )
 			: sprintf(
 				/* translators: %s: comma-separated plugin names. */
-				__( 'セキュリティプラグインを検出しました: %s。REST API 制限環境でも動作するよう自動対応しています。', 'rapls-passkey' ),
+				__( 'Detected security plugins: %s. The plugin adapts automatically to work even when the REST API is restricted.', 'rapls-passkey' ),
 				implode( ', ', $detected )
 			);
 
 		$desc = sprintf(
 			/* translators: 1: RP ID, 2: site host. */
-			__( '現在の RP ID は「%1$s」、サイトのホストは「%2$s」です。RP ID はパスキーの有効範囲を決めます(rapls_passkey_rp_id フィルターで変更可)。', 'rapls-passkey' ),
+			__( 'The current RP ID is %1$s and the site host is %2$s. The RP ID determines the scope of passkeys (changeable via the rapls_passkey_rp_id filter).', 'rapls-passkey' ),
 			$rp_id,
 			$host
 		) . ' ' . $compat;
@@ -237,7 +237,7 @@ final class SiteHealth {
 			'label'       => $label,
 			'status'      => $status,
 			'badge'       => array(
-				'label' => __( 'セキュリティ', 'rapls-passkey' ),
+				'label' => __( 'Security', 'rapls-passkey' ),
 				'color' => $colors[ $status ] ?? 'gray',
 			),
 			'description' => '<p>' . esc_html( $description ) . '</p>',

@@ -4,100 +4,103 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-WordPress のログインをパスキー(WebAuthn / FIDO2)で行う、パスワードレス認証プラグイン。
+Passwordless authentication for WordPress using passkeys (WebAuthn / FIDO2).
 
 == Description ==
 
-Rapls Passkey は、WordPress のログインをパスキー(WebAuthn / FIDO2)で行えるようにするプラグインです。
+Rapls Passkey lets users sign in to WordPress with passkeys (WebAuthn / FIDO2).
 
-* パスワードレスでフィッシング耐性のあるログイン
-* 同一デバイスのパスキー(Touch ID / Windows Hello)に対応
-* スマートフォンのパスキー(iOS パスワード / 1Password など)によるクロスデバイス認証に対応
-* 任意のページに埋め込めるショートコードと Gutenberg ブロック(ログイン / パスキー管理)
-* 日本市場向けの丁寧な日本語 UI
+* Passwordless, phishing-resistant sign-in
+* Same-device passkeys (Touch ID / Windows Hello)
+* Cross-device sign-in with phone passkeys (iCloud Keychain, 1Password, and more)
+* Shortcodes and Gutenberg blocks (login / passkey management) you can embed on any page
+* Fully translatable UI (English source with a bundled Japanese translation)
 
-= ショートコード =
+= Shortcodes =
 
-任意の固定ページ・投稿・ウィジェットに埋め込めます。Gutenberg では「パスキーでログイン」「パスキーの管理」ブロックとしても利用できます。
+Embed them in any page, post, or widget. In the block editor they are also available as the "Sign in with a passkey" and "Manage passkeys" blocks.
 
-* `[rapls_passkey_login]` — ログアウト中の訪問者向けのパスキーログインボタン。`redirect`(成功後の遷移先 URL)と `label`(ボタン文言)属性に対応。
-* `[rapls_passkey_register]` — ログイン中のユーザーが自分のパスキーを登録・削除できる管理 UI。
+* `[rapls_passkey_login]` — a passkey sign-in button for logged-out visitors. Supports the `redirect` (URL to go to after success) and `label` (button text) attributes.
+* `[rapls_passkey_register]` — a management UI where logged-in users can register and remove their own passkeys.
 
-= 要件 =
+= Requirements =
 
-* PHP 8.2 以上
-* WordPress 6.0 以上
-* HTTPS(localhost を除く)
+* PHP 8.2 or later
+* WordPress 6.0 or later
+* HTTPS (except on localhost)
 
 == Installation ==
 
-1. プラグインを `wp-content/plugins/rapls-passkey` に配置します。
-2. プラグイン管理画面から「Rapls Passkey」を有効化します。
-3. プロフィール画面からパスキーを登録します。
+1. Place the plugin in `wp-content/plugins/rapls-passkey`.
+2. Activate "Rapls Passkey" from the Plugins screen.
+3. Register a passkey from your profile screen.
 
 == Frequently Asked Questions ==
 
-= パスキーを紛失してログインできない場合は? =
+= What if I lose my passkey and cannot sign in? =
 
-現在はパスワードログインも併用できるため、通常はパスワードでサインインし、プロフィール画面から不要なパスキーを削除・再登録してください。
+Password login still works alongside passkeys, so sign in with your password as usual and then remove or re-register passkeys from your profile screen.
 
-サーバーから直接操作する場合は WP-CLI を使えます。
+You can also manage passkeys from the server with WP-CLI:
 
     wp rapls-passkey list --user=admin
     wp rapls-passkey remove <id>
 
-緊急時は wp-config.php に次を追加するとパスキーの強制を一時的に無効化できます(復旧後は必ず削除してください)。
+In an emergency, add the following to wp-config.php to temporarily disable passkey enforcement (remove it once you have recovered):
 
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
 
+= 0.9.0 =
+* Internationalization: all source strings are now in English, with Japanese provided as a bundled translation (languages/rapls-passkey-ja.po/.mo). The text domain remains rapls-passkey, so any locale can be translated. No functional change; the Japanese UI is unchanged for ja sites.
+
 = 0.8.0 =
-* パスキーの説明(教育)導線を追加。プロフィール画面・ログイン画面・ショートコードのログイン/管理に「パスキーとは?」の簡潔な説明(JavaScript 不要の開閉式)を表示します。rapls_passkey_learn_more_url フィルターで「詳しく」リンク先(自社ヘルプページ等)を指定できます。
+* Added a passkey education snippet: a concise "What is a passkey?" explainer (a JavaScript-free disclosure) on the profile screen, the login screen, and the login/management shortcodes. Use the rapls_passkey_learn_more_url filter to point the "Learn more" link at your own help page.
 
 = 0.7.0 =
-* ログインフォーム連携に LifterLMS と BuddyPress を追加(各プラグインのログインフォームにパスキーボタンを表示。各プラグインが有効なときのみ)。bbPress や LearnDash など標準の login_form アクションを使うフォームは、ログイン画面のパスキーボタンで既に対応済みです(rapls_passkey_login_form_hooks フィルターで追加も可能)。
+* Added LifterLMS and BuddyPress login-form integrations (a passkey button on each plugin's login form, only when that plugin is active). Forms that use the standard login_form action (such as bbPress and LearnDash) are already covered by the login-screen passkey button (and can be added via the rapls_passkey_login_form_hooks filter).
 
 = 0.6.0 =
-* 管理ダッシュボードに「導入状況」ウィジェットを追加。登録済みパスキー数・パスキーを持つユーザー数と全体に占める割合・直近30日の活動(ログイン/新規登録)を一目で確認でき、ユーザー一覧と設定への導線も表示します(管理者のみ)。
+* Added an "Adoption" dashboard widget. See at a glance the number of registered passkeys, how many users have a passkey and their share of all users, and the last 30 days of activity (logins / new registrations), plus links to the users list and settings (administrators only).
 
 = 0.5.0 =
-* WP-CLI に `wp rapls-passkey stats`(サイト全体の導入状況: 総パスキー数・登録ユーザー数)を追加。既存の `list` / `remove` と合わせ、運用の自動化・棚卸しに利用できます。
+* Added `wp rapls-passkey stats` (site-wide adoption: total passkeys and users with a passkey). Together with the existing `list` / `remove` commands, this helps automate operations and audits.
 
 = 0.4.0 =
-* 認証器(プロバイダ)名の表示: パスキー一覧(プロフィール画面・[rapls_passkey_register] ショートコード)に「認証器」列を追加し、AAGUID から iCloud キーチェーン / Google Password Manager / Windows Hello / 1Password / YubiKey などの提供元名を表示。登録通知メールにも認証器名を記載。対応表は rapls_passkey/authenticator_names フィルターで拡張・上書き可能(提供元を秘匿する環境では「不明」と表示)。
+* Authenticator (provider) names: added an "Authenticator" column to the passkey list (profile screen and the [rapls_passkey_register] shortcode), showing the provider derived from the AAGUID — iCloud Keychain, Google Password Manager, Windows Hello, 1Password, YubiKey, and more. The provider name is also included in the registration notification email. The mapping is extensible/overridable via the rapls_passkey/authenticator_names filter (shows "Unknown" where the provider is hidden).
 
 = 0.3.0 =
-* セキュリティ通知メール: パスキーの登録・削除、および新しい端末からのパスキーサインインを本人にメール通知(設定で無効化可、フィルターで個別制御可)。
-* プライバシー(GDPR)対応: WordPress 標準の「個人データのエクスポート/消去」にパスキー・監査ログを連携。ユーザー削除時にも関連データを自動消去。
-* 「ユーザー」一覧に「パスキー」列を追加(登録数・最終使用・未登録を表示)。設定画面に導入状況(登録率・総数)サマリを追加。
-* ログインフォーム連携を拡張: Ultimate Member / MemberPress / Easy Digital Downloads / Theme My Login のログインフォームにパスキーボタンを表示(各プラグインが有効なときのみ。フィルターで個別制御可)。
-* WebAuthn 詳細設定を追加: タイムアウト・ユーザー検証(required/preferred/discouraged)・認証器の種類(内蔵/外付け)を設定画面およびフィルターで調整可能。
-* 登録ポリシー用の拡張フックを追加(rapls_passkey/registration_policy・rapls_passkey/attestation_conveyance)。Pro の認証器ポリシーや独自のアテステーション検証に利用できます。
-* ログイン後のパスキー登録うながし: パスワードでログインした直後に、その場でパスキーの作成をおすすめ(未登録ユーザーのみ・一定期間に1回・設定で無効化可)。
-* WooCommerce「マイアカウント」に「パスキー」タブを追加。会員が自分のパスキーを登録・削除できます(WooCommerce 有効時のみ)。
-* 監査ログの CSV エクスポート(設定画面からダウンロード。Excel 対応の UTF-8 BOM 付き)。
-* Pro のパスキー新規登録(サインアップ)に対応する登録コア(未作成ユーザー向けの作成オプション生成)を追加。
-* 自動パスキー作成(Conditional Create): 対応ブラウザ(Safari 18+ / Chrome 136+ 等)では、パスワードログイン直後にダイアログなしでパスキーを自動作成。非対応時は登録うながし画面にフォールバック。
-* サイトヘルス連携: HTTPS・WebAuthn ライブラリ・データベーステーブル・RP ID/セキュリティプラグイン共存を「ツール → サイトヘルス」で自己診断(「ステータス」タブの検査+「情報」タブの診断パネル/エクスポート)。
-* WebAuthn の UI ヒント(hints)設定を追加。対応ブラウザに、この端末/別端末(QR)/セキュリティキーのいずれを優先案内するか指定できます。ユーザー名なしのパスキーログインにも対応(ボタンのみでサインイン)。
-* Plugin Check 対応: ログイン後うながし画面のスクリプトを wp_enqueue_script 化、DB 直接クエリの注釈整理(テーブル名はプレフィックス由来で安全)。開発専用ファイル(tests/・bin/)に直接アクセス防止ガードを追加。
+* Security notification emails: notify the user about passkey registration and removal, and about passkey sign-ins from a new device (can be disabled in settings; individually controllable via filters).
+* Privacy (GDPR): integrates passkeys and the audit log with WordPress's built-in personal-data export/erase, and purges related data when a user is deleted.
+* Added a "Passkey" column to the Users list (count / last used / not registered), and an adoption summary (rate / total) on the settings screen.
+* Extended login-form integrations: a passkey button on the login forms of Ultimate Member / MemberPress / Easy Digital Downloads / Theme My Login (only when each plugin is active; individually controllable via filters).
+* Added advanced WebAuthn settings: timeout, user verification (required/preferred/discouraged), and authenticator type (platform/cross-platform), adjustable in settings and via filters.
+* Added extension hooks for the registration policy (rapls_passkey/registration_policy, rapls_passkey/attestation_conveyance) for the Pro authenticator policy or custom attestation verification.
+* Post-login passkey prompt: right after a password login, suggest creating a passkey on the spot (only for users without one, once per interval, can be disabled in settings).
+* Added a "Passkey" tab to the WooCommerce "My account" page so members can register and remove their own passkeys (only when WooCommerce is active).
+* CSV export of the audit log (download from the settings screen; UTF-8 with BOM for Excel).
+* Added the registration core that powers Pro passkey sign-up (creation options for not-yet-created users).
+* Automatic passkey creation (Conditional Create): on supported browsers (Safari 18+ / Chrome 136+, etc.) a passkey is created automatically right after a password login with no dialog; falls back to the prompt screen when unsupported.
+* Site Health integration: self-checks for HTTPS, the WebAuthn library, the database tables, and RP ID / security-plugin coexistence under Tools → Site Health (Status tab checks plus an Info tab panel/export).
+* Added WebAuthn UI hints. Tell supported browsers whether to suggest this device, another device (QR), or a security key first. Also supports usernameless passkey login (sign in with just the button).
+* Plugin Check compliance: the post-login prompt script is loaded via wp_enqueue_script, direct DB query annotations were tidied (table names come from the prefix and are safe), and a direct-access guard was added to dev-only files (tests/ and bin/).
 
 = 0.2.0 =
-* ショートコードと Gutenberg ブロックによるフロントエンド埋め込み(ログイン / パスキー管理)。
-* 1ユーザーあたりのパスキー登録上限を設定可能。管理者は他ユーザーのパスキーを削除可能。
-* 二要素認証プラグイン(Automattic Two-Factor / WP 2FA)と共存。パスキーログインを多要素認証として扱います。
-* REST API をログイン済みユーザーに制限するセキュリティプラグイン環境でも、パスキー用エンドポイントのみ許可して動作を維持。
-* Content-Security-Policy を壊しません。独自の CSP ヘッダーを注入せず、インラインのイベントハンドラーも使用しません。
-* マルチサイト向けに rapls_passkey_rp_id / rapls_passkey_rp_name フィルターを追加(共通 RP ID)。
+* Front-end embedding via shortcodes and Gutenberg blocks (login / passkey management).
+* Configurable per-user passkey registration limit. Administrators can remove other users' passkeys.
+* Coexists with two-factor plugins (Automattic Two-Factor / WP 2FA), treating a passkey login as multi-factor.
+* Keeps working even where a security plugin restricts the REST API to logged-in users, by allowing only the passkey endpoints.
+* Does not break Content-Security-Policy: injects no custom CSP header and uses no inline event handlers.
+* Added the rapls_passkey_rp_id / rapls_passkey_rp_name filters for multisite (shared RP ID).
 
 = 0.1.0 =
-* 初期スキャフォールド。プラグインの起動・認証情報テーブル・依存関係チェック。
-* パスキーの登録・ログイン(同一端末・クロスデバイス・オートフィル対応)。
-* WP-CLI による管理/復旧コマンドと緊急バイパス定数。
-* 設定画面。パスワードログイン向け reCAPTCHA v3、監査ログ。
-* Wordfence / SiteGuard WP Plugin / CloudSecure WP Security 等の検出と共存。
+* Initial scaffold: plugin bootstrap, credential table, and dependency checks.
+* Passkey registration and login (same-device, cross-device, and autofill).
+* WP-CLI management/recovery commands and an emergency bypass constant.
+* Settings screen, reCAPTCHA v3 for password logins, and an audit log.
+* Detects and coexists with Wordfence / SiteGuard WP Plugin / CloudSecure WP Security, etc.

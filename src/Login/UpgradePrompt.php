@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * intercept the login redirect and show a one-screen prompt offering to create
  * one — the single biggest driver of passkey adoption. The user is already
  * authenticated on this screen, so the normal logged-in registration ceremony
- * runs; "後で" simply continues to the original destination.
+ * runs; "Later" simply continues to the original destination.
  *
  * It hooks `login_redirect`, which fires for the wp-login.php form flow but not
  * for the plugin's own passkey / magic-link / recovery logins (those redirect
@@ -122,12 +122,12 @@ final class UpgradePrompt {
 			 */
 			'conditionalCreate' => (bool) apply_filters( 'rapls_passkey_conditional_create', true ),
 			'i18n'     => array(
-				'registering' => __( 'パスキーを登録しています…', 'rapls-passkey' ),
-				'success'     => __( 'パスキーを登録しました。', 'rapls-passkey' ),
-				'failed'      => __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ),
-				'unsupported' => __( 'このブラウザはパスキーに対応していません。', 'rapls-passkey' ),
-				'cancelled'   => __( 'キャンセルされました。', 'rapls-passkey' ),
-				'duplicate'   => __( 'この認証器にはすでにパスキーが登録されています。', 'rapls-passkey' ),
+				'registering' => __( 'Registering passkey...', 'rapls-passkey' ),
+				'success'     => __( 'Passkey registered.', 'rapls-passkey' ),
+				'failed'      => __( 'Failed to register the passkey.', 'rapls-passkey' ),
+				'unsupported' => __( 'This browser does not support passkeys.', 'rapls-passkey' ),
+				'cancelled'   => __( 'Cancelled.', 'rapls-passkey' ),
+				'duplicate'   => __( 'This authenticator already has a passkey registered.', 'rapls-passkey' ),
 			),
 		);
 
@@ -137,19 +137,19 @@ final class UpgradePrompt {
 		wp_enqueue_script( 'rapls-passkey-upgrade', RAPLS_PASSKEY_URL . 'assets/upgrade.js', array( 'rapls-passkey-webauthn' ), RAPLS_PASSKEY_VERSION, false );
 		wp_localize_script( 'rapls-passkey-upgrade', 'raplsPkUpgrade', $config );
 
-		login_header( __( 'パスキーの設定', 'rapls-passkey' ), '' );
+		login_header( __( 'Set up a passkey', 'rapls-passkey' ), '' );
 		?>
 		<div class="rapls-pk-upgrade">
-			<h2 style="margin-top:0"><?php esc_html_e( '次回から、もっと速く安全にログイン', 'rapls-passkey' ); ?></h2>
-			<p><?php esc_html_e( 'この端末にパスキーを設定すると、次回からパスワードなしで、指紋・顔認証・PIN ですばやくログインできます。フィッシングにも強くなります。', 'rapls-passkey' ); ?></p>
+			<h2 style="margin-top:0"><?php esc_html_e( 'Sign in faster and more securely next time', 'rapls-passkey' ); ?></h2>
+			<p><?php esc_html_e( 'Set up a passkey on this device to sign in quickly next time without a password, using your fingerprint, face, or PIN. It also resists phishing.', 'rapls-passkey' ); ?></p>
 			<p>
 				<button type="button" id="rapls-pk-upgrade-create" class="button button-primary button-large" style="width:100%">
-					<?php esc_html_e( 'パスキーを作成', 'rapls-passkey' ); ?>
+					<?php esc_html_e( 'Create a passkey', 'rapls-passkey' ); ?>
 				</button>
 			</p>
 			<p id="rapls-pk-upgrade-status" role="status" aria-live="polite" style="min-height:1.5em"></p>
 			<p style="text-align:center">
-				<a id="rapls-pk-upgrade-skip" href="<?php echo esc_url( $dest ); ?>"><?php esc_html_e( '後で', 'rapls-passkey' ); ?></a>
+				<a id="rapls-pk-upgrade-skip" href="<?php echo esc_url( $dest ); ?>"><?php esc_html_e( 'Later', 'rapls-passkey' ); ?></a>
 			</p>
 		</div>
 		<?php

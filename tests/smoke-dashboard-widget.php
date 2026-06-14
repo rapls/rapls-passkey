@@ -97,8 +97,8 @@ namespace {
 	check( 'shows the total passkey count (3)', false !== strpos( $html, '3' ) );
 	check( 'shows users with a passkey and total (2 / 10)', false !== strpos( $html, '2 / 10' ) );
 	check( 'computes the adoption percentage (20%)', false !== strpos( $html, '20%' ) );
-	check( 'counts recent logins in the window (2)', false !== strpos( $html, 'ログイン 2 件' ) );
-	check( 'counts recent registrations in the window (1)', false !== strpos( $html, '新規登録 1 件' ) );
+	check( 'counts recent logins in the window (2)', false !== strpos( $html, '2 logins' ) );
+	check( 'counts recent registrations in the window (1)', false !== strpos( $html, '1 new registrations' ) );
 	check( 'links to settings', false !== strpos( $html, 'page=rapls-passkey' ) );
 	check( 'links to the users list', false !== strpos( $html, 'users.php' ) );
 

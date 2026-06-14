@@ -40,7 +40,7 @@ final class Help {
 	 * @return string
 	 */
 	public static function intro_text(): string {
-		return __( 'パスキーは、指紋・顔認証や端末のロック解除(PIN)でログインできる、パスワード不要のしくみです。フィッシングに強く、パスワードの使い回しや漏えいの心配がありません。', 'rapls-passkey' );
+		return __( 'A passkey lets you sign in with your fingerprint, face, or device unlock (PIN) with no password. It resists phishing and avoids the risks of password reuse and leaks.', 'rapls-passkey' );
 	}
 
 	/**
@@ -50,14 +50,14 @@ final class Help {
 	 * @return string
 	 */
 	public static function html( string $variant = 'details' ): string {
-		$summary = esc_html__( 'パスキーとは?', 'rapls-passkey' );
+		$summary = esc_html__( 'What is a passkey?', 'rapls-passkey' );
 		$intro   = esc_html( self::intro_text() );
 
 		$link = '';
 		$url  = self::learn_more_url();
 		if ( '' !== $url ) {
 			$link = ' <a href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">'
-				. esc_html__( '詳しく', 'rapls-passkey' ) . '</a>';
+				. esc_html__( 'Learn more', 'rapls-passkey' ) . '</a>';
 		}
 
 		if ( 'inline' === $variant ) {

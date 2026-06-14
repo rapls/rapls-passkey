@@ -13,8 +13,8 @@
 
 	blocks.registerBlockType( 'rapls-passkey/login', {
 		apiVersion: 2,
-		title: __( 'パスキーでログイン', 'rapls-passkey' ),
-		description: __( 'ログアウト中の訪問者にパスキーのサインインボタンを表示します。', 'rapls-passkey' ),
+		title: __( 'Sign in with a passkey', 'rapls-passkey' ),
+		description: __( 'Show a passkey sign-in button to logged-out visitors.', 'rapls-passkey' ),
 		icon: 'lock',
 		category: 'widgets',
 		attributes: {
@@ -38,8 +38,8 @@
 
 	blocks.registerBlockType( 'rapls-passkey/register', {
 		apiVersion: 2,
-		title: __( 'パスキーの管理', 'rapls-passkey' ),
-		description: __( 'ログイン中のユーザーが自分のパスキーを登録・削除できるUIを表示します。', 'rapls-passkey' ),
+		title: __( 'Manage passkeys', 'rapls-passkey' ),
+		description: __( 'Let logged-in users register and remove their own passkeys.', 'rapls-passkey' ),
 		icon: 'admin-network',
 		category: 'widgets',
 		edit: function () {

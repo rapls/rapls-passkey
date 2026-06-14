@@ -43,7 +43,7 @@ final class DashboardWidget {
 		}
 		wp_add_dashboard_widget(
 			'rapls_passkey_adoption',
-			__( 'Rapls Passkey: 導入状況', 'rapls-passkey' ),
+			__( 'Rapls Passkey: Adoption', 'rapls-passkey' ),
 			array( $this, 'render' )
 		);
 	}
@@ -68,26 +68,26 @@ final class DashboardWidget {
 		echo '<ul style="margin:0">';
 		printf(
 			'<li><strong>%s</strong>: %s</li>',
-			esc_html__( '登録済みパスキー', 'rapls-passkey' ),
+			esc_html__( 'Registered passkeys', 'rapls-passkey' ),
 			esc_html( number_format_i18n( $total ) )
 		);
 		printf(
 			'<li><strong>%s</strong>: %s</li>',
-			esc_html__( 'パスキーを持つユーザー', 'rapls-passkey' ),
+			esc_html__( 'Users with a passkey', 'rapls-passkey' ),
 			esc_html(
 				$all_users > 0
 					/* translators: 1: users with a passkey, 2: total users, 3: percentage. */
-					? sprintf( __( '%1$s / %2$s(%3$d%%)', 'rapls-passkey' ), number_format_i18n( $users ), number_format_i18n( $all_users ), $pct )
+					? sprintf( __( '%1$s / %2$s (%3$d%%)', 'rapls-passkey' ), number_format_i18n( $users ), number_format_i18n( $all_users ), $pct )
 					: number_format_i18n( $users )
 			)
 		);
 		printf(
 			'<li><strong>%s</strong>: %s</li>',
-			esc_html__( '直近30日', 'rapls-passkey' ),
+			esc_html__( 'Last 30 days', 'rapls-passkey' ),
 			esc_html(
 				sprintf(
 					/* translators: 1: passkey logins, 2: new registrations. */
-					__( 'ログイン %1$s 件 / 新規登録 %2$s 件', 'rapls-passkey' ),
+					__( '%1$s logins / %2$s new registrations', 'rapls-passkey' ),
 					number_format_i18n( $recent['login'] ),
 					number_format_i18n( $recent['registered'] )
 				)
@@ -97,9 +97,9 @@ final class DashboardWidget {
 
 		$links = array();
 		if ( current_user_can( 'list_users' ) ) {
-			$links[] = '<a href="' . esc_url( admin_url( 'users.php' ) ) . '">' . esc_html__( 'ユーザー一覧', 'rapls-passkey' ) . '</a>';
+			$links[] = '<a href="' . esc_url( admin_url( 'users.php' ) ) . '">' . esc_html__( 'Users list', 'rapls-passkey' ) . '</a>';
 		}
-		$links[] = '<a href="' . esc_url( admin_url( 'options-general.php?page=rapls-passkey' ) ) . '">' . esc_html__( '設定', 'rapls-passkey' ) . '</a>';
+		$links[] = '<a href="' . esc_url( admin_url( 'options-general.php?page=rapls-passkey' ) ) . '">' . esc_html__( 'Settings', 'rapls-passkey' ) . '</a>';
 		echo '<p style="margin:8px 0 0">' . wp_kses_post( implode( ' · ', $links ) ) . '</p>';
 	}
 

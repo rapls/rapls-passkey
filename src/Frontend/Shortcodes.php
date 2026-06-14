@@ -94,17 +94,17 @@ final class Shortcodes {
 				// Present only for logged-in users; the register routes need it.
 				'nonce'   => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
 				'i18n'    => array(
-					'authenticating' => __( '認証しています…', 'rapls-passkey' ),
-					'loginFailed'    => __( 'パスキーでの認証に失敗しました。', 'rapls-passkey' ),
-					'registering'    => __( 'パスキーを登録しています…', 'rapls-passkey' ),
-					'registered'     => __( 'パスキーを登録しました。', 'rapls-passkey' ),
-					'registerFailed' => __( 'パスキーの登録に失敗しました。', 'rapls-passkey' ),
-					'unsupported'    => __( 'このブラウザはパスキーに対応していません。', 'rapls-passkey' ),
-					'cancelled'      => __( '操作がキャンセルされたか、時間切れになりました。もう一度お試しください。', 'rapls-passkey' ),
-					'duplicate'      => __( 'この認証器にはすでにパスキーが登録されています。', 'rapls-passkey' ),
-					'confirmDel'     => __( 'このパスキーを削除しますか?', 'rapls-passkey' ),
-					'labelPrompt'    => __( 'このパスキーの名前(任意):', 'rapls-passkey' ),
-					'noLabel'        => __( '(名前なし)', 'rapls-passkey' ),
+					'authenticating' => __( 'Authenticating...', 'rapls-passkey' ),
+					'loginFailed'    => __( 'Passkey authentication failed.', 'rapls-passkey' ),
+					'registering'    => __( 'Registering passkey...', 'rapls-passkey' ),
+					'registered'     => __( 'Passkey registered.', 'rapls-passkey' ),
+					'registerFailed' => __( 'Failed to register the passkey.', 'rapls-passkey' ),
+					'unsupported'    => __( 'This browser does not support passkeys.', 'rapls-passkey' ),
+					'cancelled'      => __( 'The operation was cancelled or timed out. Please try again.', 'rapls-passkey' ),
+					'duplicate'      => __( 'This authenticator already has a passkey registered.', 'rapls-passkey' ),
+					'confirmDel'     => __( 'Delete this passkey?', 'rapls-passkey' ),
+					'labelPrompt'    => __( 'Name for this passkey (optional):', 'rapls-passkey' ),
+					'noLabel'        => __( '(no name)', 'rapls-passkey' ),
 				),
 			)
 		);
@@ -120,14 +120,14 @@ final class Shortcodes {
 		$atts = shortcode_atts(
 			array(
 				'redirect' => '',
-				'label'    => __( 'パスキーでログイン', 'rapls-passkey' ),
+				'label'    => __( 'Sign in with a passkey', 'rapls-passkey' ),
 			),
 			(array) $atts,
 			'rapls_passkey_login'
 		);
 
 		if ( is_user_logged_in() ) {
-			return '<div class="rapls-pk-fe rapls-pk-fe-note">' . esc_html__( 'すでにログインしています。', 'rapls-passkey' ) . '</div>';
+			return '<div class="rapls-pk-fe rapls-pk-fe-note">' . esc_html__( 'You are already signed in.', 'rapls-passkey' ) . '</div>';
 		}
 
 		$this->enqueue_assets();
@@ -138,7 +138,7 @@ final class Shortcodes {
 		?>
 		<div class="rapls-pk-fe rapls-pk-fe-login" data-redirect="<?php echo esc_attr( $redirect ); ?>">
 			<label class="rapls-pk-fe-field">
-				<span class="rapls-pk-fe-label"><?php esc_html_e( 'ユーザー名またはメールアドレス', 'rapls-passkey' ); ?></span>
+				<span class="rapls-pk-fe-label"><?php esc_html_e( 'Username or email address', 'rapls-passkey' ); ?></span>
 				<input type="text" id="rapls-pk-fe-username" autocomplete="username webauthn" autocapitalize="off" autocorrect="off" spellcheck="false">
 			</label>
 			<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-login-btn"><?php echo esc_html( (string) $atts['label'] ); ?></button>
@@ -159,7 +159,7 @@ final class Shortcodes {
 		unset( $atts );
 
 		if ( ! is_user_logged_in() ) {
-			return '<div class="rapls-pk-fe rapls-pk-fe-note">' . esc_html__( 'パスキーを管理するにはログインしてください。', 'rapls-passkey' ) . '</div>';
+			return '<div class="rapls-pk-fe rapls-pk-fe-note">' . esc_html__( 'Please sign in to manage your passkeys.', 'rapls-passkey' ) . '</div>';
 		}
 
 		$this->enqueue_assets();
@@ -173,31 +173,31 @@ final class Shortcodes {
 			<table class="rapls-pk-fe-table" id="rapls-pk-fe-list">
 				<thead>
 					<tr>
-						<th><?php esc_html_e( '名前', 'rapls-passkey' ); ?></th>
-						<th><?php esc_html_e( '認証器', 'rapls-passkey' ); ?></th>
-						<th><?php esc_html_e( '登録日時', 'rapls-passkey' ); ?></th>
-						<th><?php esc_html_e( '最終使用', 'rapls-passkey' ); ?></th>
+						<th><?php esc_html_e( 'Name', 'rapls-passkey' ); ?></th>
+						<th><?php esc_html_e( 'Authenticator', 'rapls-passkey' ); ?></th>
+						<th><?php esc_html_e( 'Registered', 'rapls-passkey' ); ?></th>
+						<th><?php esc_html_e( 'Last used', 'rapls-passkey' ); ?></th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody>
 				<?php if ( empty( $credentials ) ) : ?>
-					<tr class="rapls-pk-fe-empty"><td colspan="5"><?php esc_html_e( '登録済みのパスキーはありません。', 'rapls-passkey' ); ?></td></tr>
+					<tr class="rapls-pk-fe-empty"><td colspan="5"><?php esc_html_e( 'No passkeys are registered.', 'rapls-passkey' ); ?></td></tr>
 				<?php else : ?>
 					<?php foreach ( $credentials as $credential ) : ?>
 						<tr data-id="<?php echo esc_attr( (string) $credential->id ); ?>">
-							<td><?php echo esc_html( $credential->label ? $credential->label : __( '(名前なし)', 'rapls-passkey' ) ); ?></td>
-							<td><?php echo esc_html( \RaplsPasskey\Credentials\AuthenticatorNames::display( $credential->record_json, __( '不明', 'rapls-passkey' ) ) ); ?></td>
+							<td><?php echo esc_html( $credential->label ? $credential->label : __( '(no name)', 'rapls-passkey' ) ); ?></td>
+							<td><?php echo esc_html( \RaplsPasskey\Credentials\AuthenticatorNames::display( $credential->record_json, __( 'Unknown', 'rapls-passkey' ) ) ); ?></td>
 							<td><?php echo esc_html( $credential->created_at ); ?></td>
 							<td><?php echo esc_html( $credential->last_used_at ? $credential->last_used_at : '—' ); ?></td>
-							<td><button type="button" class="rapls-pk-fe-delete"><?php esc_html_e( '削除', 'rapls-passkey' ); ?></button></td>
+							<td><button type="button" class="rapls-pk-fe-delete"><?php esc_html_e( 'Delete', 'rapls-passkey' ); ?></button></td>
 						</tr>
 					<?php endforeach; ?>
 				<?php endif; ?>
 				</tbody>
 			</table>
 			<p>
-				<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-register-btn"><?php esc_html_e( 'パスキーを登録', 'rapls-passkey' ); ?></button>
+				<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-register-btn"><?php esc_html_e( 'Register a passkey', 'rapls-passkey' ); ?></button>
 				<span class="rapls-pk-fe-status" id="rapls-pk-fe-register-status" role="status" aria-live="polite"></span>
 			</p>
 			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

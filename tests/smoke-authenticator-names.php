@@ -52,8 +52,8 @@ namespace {
 	check( 'unknown AAGUID has no name', null === AuthenticatorNames::name_for_aaguid( '11111111-2222-3333-4444-555555555555' ) );
 
 	// --- display fallback ------------------------------------------------------
-	check( 'display returns provider when known', 'iCloud キーチェーン' === AuthenticatorNames::display( record( 'fbfc3007-154e-4ecc-8c0b-6e020557d7bd' ), '不明' ) );
-	check( 'display returns fallback when unknown', '不明' === AuthenticatorNames::display( record( AuthenticatorNames::ZERO_AAGUID ), '不明' ) );
+	check( 'display returns provider when known', 'iCloud Keychain' === AuthenticatorNames::display( record( 'fbfc3007-154e-4ecc-8c0b-6e020557d7bd' ), 'Unknown' ) );
+	check( 'display returns fallback when unknown', 'Unknown' === AuthenticatorNames::display( record( AuthenticatorNames::ZERO_AAGUID ), 'Unknown' ) );
 
 	// --- override filter -------------------------------------------------------
 	$GLOBALS['rapls_filter'] = function ( $map, $hook ) {

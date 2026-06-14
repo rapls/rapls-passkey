@@ -37,7 +37,7 @@ final class AuditExport {
 	 */
 	public function handle(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( '権限がありません。', 'rapls-passkey' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( 'You do not have permission.', 'rapls-passkey' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( self::ACTION );
 
@@ -72,11 +72,11 @@ final class AuditExport {
 		fputcsv(
 			$handle,
 			array(
-				__( '日時 (UTC)', 'rapls-passkey' ),
-				__( 'イベント', 'rapls-passkey' ),
-				__( 'ユーザーID', 'rapls-passkey' ),
-				__( 'ユーザー名', 'rapls-passkey' ),
-				__( '詳細', 'rapls-passkey' ),
+				__( 'Date/time (UTC)', 'rapls-passkey' ),
+				__( 'Event', 'rapls-passkey' ),
+				__( 'User ID', 'rapls-passkey' ),
+				__( 'Username', 'rapls-passkey' ),
+				__( 'Details', 'rapls-passkey' ),
 				'IP',
 			),
 			',',

@@ -48,7 +48,7 @@ final class Bypass {
 			return;
 		}
 		echo '<div class="notice notice-warning"><p>';
-		echo esc_html__( 'Rapls Passkey: 緊急バイパス (RAPLS_PASSKEY_BYPASS) が有効です。パスキーの強制は無効化されています。復旧後は wp-config.php から定数を削除してください。', 'rapls-passkey' );
+		echo esc_html__( 'Rapls Passkey: The emergency bypass (RAPLS_PASSKEY_BYPASS) is enabled. Passkey enforcement is disabled. After recovery, remove the constant from wp-config.php.', 'rapls-passkey' );
 		echo '</p></div>';
 	}
 }

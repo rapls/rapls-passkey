@@ -62,10 +62,10 @@ final class WooCommerce {
 		$done = true;
 
 		echo '<div class="rapls-pk-wc">';
-		echo '<p class="rapls-pk-wc-heading">' . esc_html__( 'パスキーでログイン', 'rapls-passkey' ) . '</p>';
+		echo '<p class="rapls-pk-wc-heading">' . esc_html__( 'Sign in with a passkey', 'rapls-passkey' ) . '</p>';
 		// render_login() returns trusted, internally-escaped markup.
 		echo $this->shortcodes->render_login( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<p class="rapls-pk-wc-or">' . esc_html__( 'またはパスワードでログイン', 'rapls-passkey' ) . '</p>';
+		echo '<p class="rapls-pk-wc-or">' . esc_html__( 'Or sign in with a password', 'rapls-passkey' ) . '</p>';
 		echo '</div>';
 	}
 }

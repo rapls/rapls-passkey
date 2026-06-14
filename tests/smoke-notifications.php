@@ -118,7 +118,7 @@ namespace {
 	$n->on_registered( 1, 99, 'My Phone' );
 	check( 'registered email sent when enabled', mailcount() === 1 );
 	check( 'registered email goes to the user', lastmail()['to'] === 'alice@example.test' );
-	check( 'registered email names the authenticator', false !== strpos( lastmail()['body'], 'iCloud キーチェーン' ) );
+	check( 'registered email names the authenticator', false !== strpos( lastmail()['body'], 'iCloud Keychain' ) );
 
 	// disabled globally
 	Settings::$on = false;
@@ -173,7 +173,7 @@ namespace {
 	reset_mail();
 	$n->on_login( $alice, 'recovery-code' );
 	check( 'recovery-code login always notifies', mailcount() === 1 );
-	check( 'recovery email has its own subject', false !== strpos( lastmail()['subject'], 'リカバリーコード' ) );
+	check( 'recovery email has its own subject', false !== strpos( lastmail()['subject'], 'recovery code' ) );
 
 	// Filter veto on new-device still records the device but sends nothing.
 	$GLOBALS['__meta'] = array();

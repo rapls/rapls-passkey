@@ -7,6 +7,7 @@
 
 namespace RaplsPasskey\Security;
 
+use RaplsPasskey\Support\Settings;
 use WP_Error;
 use WP_User;
 
@@ -43,9 +44,11 @@ final class AuthSession {
 			return $blocked;
 		}
 
-		// Administrators never get a persistent cookie (shared-PC / theft risk).
-		$is_admin = user_can( $user, 'manage_options' );
-		if ( $is_admin ) {
+		// Administrators never get a persistent cookie (shared-PC / theft risk),
+		// unless an administrator has explicitly opted in via the setting.
+		$is_admin        = user_can( $user, 'manage_options' );
+		$force_admin_off = $is_admin && ! Settings::admin_remember_allowed();
+		if ( $force_admin_off ) {
 			$remember = false;
 		}
 
@@ -59,8 +62,8 @@ final class AuthSession {
 		$remember = (bool) apply_filters( 'rapls_passkey/login_remember', $remember, $user, $context );
 
 		// Enforce the administrator rule again: the filter must not be able to
-		// re-grant a persistent session to a privileged account.
-		if ( $is_admin ) {
+		// re-grant a persistent session to a privileged account (unless opted in).
+		if ( $force_admin_off ) {
 			$remember = false;
 		}
 

@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later license.
 msgid ""
 msgstr ""
-"Project-Id-Version: Rapls Passkey 0.9.4\n"
+"Project-Id-Version: Rapls Passkey 0.9.6\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-06-15 08:13+0000\n"
+"POT-Creation-Date: 2026-06-15 13:03+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -16,12 +16,12 @@ msgstr ""
 msgid "You do not have permission."
 msgstr ""
 
-#: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:307
+#: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:342
 #: src/Privacy/PersonalData.php:128
 msgid "Date/time (UTC)"
 msgstr ""
 
-#: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:308
+#: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:343
 #: src/Privacy/PersonalData.php:124
 msgid "Event"
 msgstr ""
@@ -34,7 +34,7 @@ msgstr ""
 msgid "Username"
 msgstr ""
 
-#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:310
+#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:345
 msgid "Details"
 msgstr ""
 
@@ -131,7 +131,7 @@ msgid "Passkey registered."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:72 src/Frontend/Shortcodes.php:101
-#: src/Login/UpgradePrompt.php:127 src/Rest/Endpoints.php:244
+#: src/Login/UpgradePrompt.php:127 src/Rest/Endpoints.php:245
 msgid "Failed to register the passkey."
 msgstr ""
 
@@ -157,222 +157,258 @@ msgstr ""
 msgid "Name for this passkey (optional):"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:93 src/Admin/SettingsPage.php:105
+#: src/Admin/ProfileUi.php:93 src/Admin/SettingsPage.php:108
 #: src/Admin/UsersColumn.php:54 src/Integrations/WooCommerceAccount.php:86
 #: src/Integrations/WooCommerceAccount.php:101
 #: src/Privacy/PersonalData.php:94
 msgid "Passkey"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:108
-msgid "Per-user registration limit"
+#: src/Admin/SettingsPage.php:102
+msgid "Rapls Passkey Settings"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:111
+msgid "Per-user registration limit"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:114
 msgid "Maximum number of passkeys a user can register. 0 means unlimited. We recommend 2 or more so passkeys can be used across multiple devices."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:116
-msgid "Advanced (WebAuthn)"
-msgstr ""
-
 #: src/Admin/SettingsPage.php:119
-msgid "Timeout (seconds)"
+msgid "Login rate limit"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:122
-msgid "Timeout for the passkey registration and authentication dialogs. 0 uses the browser default (typically around 60 seconds)."
+msgid "Attempt limit"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:126
-msgid "User verification"
+#: src/Admin/SettingsPage.php:125
+msgid "How many failed passkey-login attempts from the same IP address are allowed within the window below before \"Too many attempts\" is shown. Successful logins are not counted. 0 disables the limit."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:129
-msgid "Preferred"
+msgid "Lockout time (seconds)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:130
-msgid "Required"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:131
-msgid "Discouraged"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:133
-msgid "How strongly to require identity verification via biometrics or PIN. Required may reject authenticators that do not support it; leaving this at Preferred is usually recommended."
+#: src/Admin/SettingsPage.php:132
+msgid "The length of the counting window, and how long the lockout lasts once the attempt limit is reached (default 300 seconds = 5 minutes)."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:137
-msgid "Authenticator type"
+msgid "Session security"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:140
-msgid "No preference (allow all)"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:141
-msgid "Platform only (Touch ID / Windows Hello, etc.)"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:142
-msgid "Cross-platform only (security key / another device)"
+msgid "Administrator \"remember me\""
 msgstr ""
 
 #: src/Admin/SettingsPage.php:144
-msgid "Which authenticator type to allow at registration (applies at registration only). No preference is usually recommended."
+msgid "Allow administrators to stay signed in (\"remember me\") after a passkey login"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:148
-msgid "UI hints"
+#: src/Admin/SettingsPage.php:146
+msgid "Off by default for safety: administrators never get a persistent session, so a shared or stolen device cannot keep an admin logged in. Turn this on to honour the \"remember me\" checkbox for administrators too. Non-administrators are unaffected."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:153
-msgid "Passkey on this device (client-device)"
+#: src/Admin/SettingsPage.php:151
+msgid "Advanced (WebAuthn)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:154
-msgid "Another device / QR (hybrid)"
+msgid "Timeout (seconds)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:155
-msgid "Security key (security-key)"
+#: src/Admin/SettingsPage.php:157
+msgid "Timeout for the passkey registration and authentication dialogs. 0 uses the browser default (typically around 60 seconds)."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:161
+msgid "User verification"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:164
-msgid "Give supported browsers hints about which sign-in methods to suggest first (order is respected). No hints are sent if none are selected."
+msgid "Preferred"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:169
-msgid "reCAPTCHA v3 (password login protection)"
+#: src/Admin/SettingsPage.php:165
+msgid "Required"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:170
-msgid "Protect password logins with Google reCAPTCHA v3. It does not apply to passkey logins (brute force does not work against them). Enter your site key and secret, then enable it."
+#: src/Admin/SettingsPage.php:166
+msgid "Discouraged"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:173
-msgid "Enable"
+#: src/Admin/SettingsPage.php:168
+msgid "How strongly to require identity verification via biometrics or PIN. Required may reject authenticators that do not support it; leaving this at Preferred is usually recommended."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:172
+msgid "Authenticator type"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:175
+msgid "No preference (allow all)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:176
+msgid "Platform only (Touch ID / Windows Hello, etc.)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:177
-msgid "Enable reCAPTCHA"
+msgid "Cross-platform only (security key / another device)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:182
-msgid "Site key"
+#: src/Admin/SettingsPage.php:179
+msgid "Which authenticator type to allow at registration (applies at registration only). No preference is usually recommended."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:186
-msgid "Secret key"
+#: src/Admin/SettingsPage.php:183
+msgid "UI hints"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:188
+msgid "Passkey on this device (client-device)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:189
+msgid "Another device / QR (hybrid)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:190
-msgid "Score threshold"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:193
-msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
-msgstr ""
-
-#: src/Admin/SettingsPage.php:198
-msgid "Security notification emails"
+msgid "Security key (security-key)"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:199
-msgid "Email the affected user about passkey registration and removal, and about passkey sign-ins from a new device. Helps detect account takeover early."
+msgid "Give supported browsers hints about which sign-in methods to suggest first (order is respected). No hints are sent if none are selected."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:202
-msgid "Send"
+#: src/Admin/SettingsPage.php:204
+msgid "reCAPTCHA v3 (password login protection)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:206
-msgid "Send security notification emails"
+#: src/Admin/SettingsPage.php:205
+msgid "Protect password logins with Google reCAPTCHA v3. It does not apply to passkey logins (brute force does not work against them). Enter your site key and secret, then enable it."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:208
+msgid "Enable"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:212
-msgid "Passkey enrolment prompt"
+msgid "Enable reCAPTCHA"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:215
-msgid "After login"
+#: src/Admin/SettingsPage.php:217
+msgid "Site key"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:219
-msgid "Right after a password login, suggest creating a passkey on the spot (only for users without a passkey)"
+#: src/Admin/SettingsPage.php:221
+msgid "Secret key"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:225
-msgid "Audit log"
+msgid "Score threshold"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:228
+msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:233
+msgid "Security notification emails"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:234
+msgid "Email the affected user about passkey registration and removal, and about passkey sign-ins from a new device. Helps detect account takeover early."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:237
+msgid "Send"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:241
+msgid "Send security notification emails"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:247
+msgid "Passkey enrolment prompt"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:250
+msgid "After login"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:254
+msgid "Right after a password login, suggest creating a passkey on the spot (only for users without a passkey)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:260
+msgid "Audit log"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:263
 msgid "Logging"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:232
+#: src/Admin/SettingsPage.php:267
 msgid "Record events such as registration, login, and removal"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:256
+#: src/Admin/SettingsPage.php:291
 msgid "Adoption"
 msgstr ""
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:295
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
 msgstr ""
 
 #. translators: %d: total number of registered passkeys.
-#: src/Admin/SettingsPage.php:269
+#: src/Admin/SettingsPage.php:304
 msgid "Total registered passkeys: %d"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:273
+#: src/Admin/SettingsPage.php:308
 msgid "Per-user status is shown in the Passkey column of the Users list."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:281
+#: src/Admin/SettingsPage.php:316
 msgid "Compatibility with security plugins"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:283
+#: src/Admin/SettingsPage.php:318
 msgid "No known login-security plugins were detected."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:286
+#: src/Admin/SettingsPage.php:321
 msgid "The following plugins were detected:"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:287
+#: src/Admin/SettingsPage.php:322
 msgid "Rapls Passkey uses only the standard login hooks and fires wp_login on a successful sign-in, so it coexists with these. If the login screen shows a duplicate CAPTCHA, disable one of them (you can disable this plugin reCAPTCHA in the settings above)."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:294
+#: src/Admin/SettingsPage.php:329
 msgid "Recent events"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:297
+#: src/Admin/SettingsPage.php:332
 msgid "No events have been recorded."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:305
+#: src/Admin/SettingsPage.php:340
 msgid "Export CSV"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:309
+#: src/Admin/SettingsPage.php:344
 msgid "Users"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:41 src/Admin/SettingsPage.php:42
 #: src/Admin/SiteHealth.php:53
 msgid "Rapls Passkey"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:99
-msgid "Rapls Passkey Settings"
 msgstr ""
 
 #: src/Admin/SiteHealth.php:102 src/Admin/SiteHealth.php:134
@@ -525,8 +561,8 @@ msgid "Authenticating..."
 msgstr ""
 
 #: src/Frontend/Shortcodes.php:98 src/Login/LoginForm.php:59
-#: src/Rest/Endpoints.php:348 src/Rest/Endpoints.php:353
-#: src/Rest/Endpoints.php:373 src/Rest/Endpoints.php:380
+#: src/Rest/Endpoints.php:349 src/Rest/Endpoints.php:354
+#: src/Rest/Endpoints.php:374 src/Rest/Endpoints.php:381
 msgid "Passkey authentication failed."
 msgstr ""
 
@@ -598,24 +634,24 @@ msgstr ""
 msgid "Invalid request."
 msgstr ""
 
-#: src/Rest/Endpoints.php:158
+#: src/Rest/Endpoints.php:159
 msgid "Too many attempts. Please try again later."
 msgstr ""
 
-#: src/Rest/Endpoints.php:249
+#: src/Rest/Endpoints.php:250
 msgid "This passkey is already registered."
 msgstr ""
 
-#: src/Rest/Endpoints.php:281
+#: src/Rest/Endpoints.php:282
 msgid "Failed to save the passkey."
 msgstr ""
 
-#: src/Rest/Endpoints.php:454
+#: src/Rest/Endpoints.php:459
 msgid "You do not have permission to delete this passkey."
 msgstr ""
 
 #. translators: %d: maximum number of passkeys.
-#: src/Rest/Endpoints.php:480
+#: src/Rest/Endpoints.php:485
 msgid "You can register at most %d passkeys. Remove an unused passkey before registering a new one."
 msgstr ""
 

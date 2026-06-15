@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.5
+Stable tag: 0.9.6
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,11 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.6 =
+* A successful passkey login no longer counts toward the "Too many attempts" limit: the per-IP counter is cleared on a successful sign-in, so only genuine failures accumulate.
+* The login attempt limit and the lockout time are now configurable on the settings screen (Login rate limit), with the rapls_passkey_login_rate_max / rapls_passkey_login_rate_window filters. Setting the attempt limit to 0 disables it. Defaults are unchanged (30 attempts per 300 seconds).
+* Added a "Session security" setting to optionally allow administrators to use "remember me" on a passkey login (off by default; administrators stay non-persistent for safety unless you turn it on). Also adjustable via the rapls_passkey_admin_remember_allowed filter.
 
 = 0.9.5 =
 * Follow-up review fixes:

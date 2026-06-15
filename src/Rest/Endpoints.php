@@ -154,7 +154,8 @@ final class Endpoints {
 		if ( ! $this->same_origin( $request, $strict ) ) {
 			return new WP_Error( 'rapls_passkey_bad_origin', __( 'Invalid request.', 'rapls-passkey' ), array( 'status' => 403 ) );
 		}
-		if ( ! $this->rate_ok( 'login', 30, 300 ) ) {
+		$max = Settings::login_rate_max();
+		if ( $max > 0 && ! $this->rate_ok( 'login', $max, Settings::login_rate_window() ) ) {
 			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
 		return true;
@@ -386,6 +387,10 @@ final class Endpoints {
 			return $blocked;
 		}
 
+		// A successful login should not count against the per-IP attempt limit, so
+		// clear the counter (covering this verify and its preceding options call).
+		$this->rate_clear( 'login' );
+
 		AuditLog::record( AuditLog::LOGIN, (int) $user->ID, 'cred=' . $stored->id );
 
 		$requested = trim( (string) $request->get_param( 'redirect_to' ) );
@@ -541,13 +546,33 @@ final class Endpoints {
 	 * @return bool True when the request is within budget.
 	 */
 	private function rate_ok( string $bucket, int $max, int $window ): bool {
-		$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
-		$key = 'rapls_passkey_rl_' . md5( $bucket . '|' . $ip );
+		$key = $this->rate_key( $bucket );
 		$n   = (int) get_transient( $key );
 		if ( $n >= $max ) {
 			return false;
 		}
 		set_transient( $key, $n + 1, $window );
 		return true;
+	}
+
+	/**
+	 * Clear the per-IP counter for a bucket (called after a successful login so
+	 * successes do not accumulate toward the attempt limit).
+	 *
+	 * @param string $bucket Action bucket.
+	 */
+	private function rate_clear( string $bucket ): void {
+		delete_transient( $this->rate_key( $bucket ) );
+	}
+
+	/**
+	 * Transient key for a per-IP rate-limit bucket.
+	 *
+	 * @param string $bucket Action bucket.
+	 * @return string
+	 */
+	private function rate_key( string $bucket ): string {
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
+		return 'rapls_passkey_rl_' . md5( $bucket . '|' . $ip );
 	}
 }

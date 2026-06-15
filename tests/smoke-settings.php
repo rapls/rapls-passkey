@@ -78,6 +78,20 @@ check( 'max_passkeys read from options', Settings::max_passkeys() === 3 );
 $GLOBALS['__opt']['rapls_passkey_settings']['max_passkeys'] = -5;
 check( 'max_passkeys clamped to 0', Settings::max_passkeys() === 0 );
 
+// Login rate limit — defaults and clamping.
+check( 'login_rate_max default 30', Settings::login_rate_max() === 30 );
+check( 'login_rate_window default 300', Settings::login_rate_window() === 300 );
+$GLOBALS['__opt']['rapls_passkey_settings']['login_rate_max']    = 5;
+$GLOBALS['__opt']['rapls_passkey_settings']['login_rate_window'] = 900;
+check( 'login_rate_max read from options', Settings::login_rate_max() === 5 );
+check( 'login_rate_window read from options', Settings::login_rate_window() === 900 );
+$GLOBALS['__opt']['rapls_passkey_settings']['login_rate_max']    = 0;
+check( 'login_rate_max 0 (limit disabled) allowed', Settings::login_rate_max() === 0 );
+$GLOBALS['__opt']['rapls_passkey_settings']['login_rate_max']    = -3;
+check( 'login_rate_max negative clamped to 0', Settings::login_rate_max() === 0 );
+$GLOBALS['__opt']['rapls_passkey_settings']['login_rate_window'] = 0;
+check( 'login_rate_window 0 falls back to 300', Settings::login_rate_window() === 300 );
+
 // WebAuthn ceremony tuning — defaults.
 check( 'timeout default 60000ms', Settings::webauthn_timeout() === 60000 );
 check( 'user verification default preferred', Settings::webauthn_user_verification() === 'preferred' );

@@ -21,7 +21,9 @@ namespace {
 	$GLOBALS['cookie'] = null; // [uid, remember]
 	$GLOBALS['fired']  = array();
 
+	$GLOBALS['__opt'] = array();
 	function __( $s, $d = null ) { return $s; }
+	function get_option( $k, $d = false ) { return $GLOBALS['__opt'][ $k ] ?? $d; }
 	function user_can( $user, $cap ) { return ! empty( $GLOBALS['admin'] ); }
 	function wp_set_current_user( $uid ) {}
 	function wp_set_auth_cookie( $uid, $remember = false ) { $GLOBALS['cookie'] = array( (int) $uid, (bool) $remember ); }
@@ -39,6 +41,7 @@ namespace {
 	class WP_User { public $ID; public $user_login; public function __construct( $id ) { $this->ID = $id; $this->user_login = 'u' . $id; } }
 	class WP_Error { public $code; public function __construct( $code = '', $m = '', $d = array() ) { $this->code = $code; } }
 
+	require dirname( __DIR__ ) . '/src/Support/Settings.php';
 	require dirname( __DIR__ ) . '/src/Security/LoginGate.php';
 	require dirname( __DIR__ ) . '/src/Security/AuthSession.php';
 
@@ -61,10 +64,17 @@ namespace {
 	check( 'sets the cookie with remember=true', $GLOBALS['cookie'] === array( 5, true ) );
 	check( 'fires wp_login and after_login', in_array( 'wp_login', $GLOBALS['fired'], true ) && in_array( 'rapls_passkey/after_login', $GLOBALS['fired'], true ) );
 
-	// Administrator never gets a persistent cookie.
+	// Administrator never gets a persistent cookie by default.
 	reset_state(); $GLOBALS['admin'] = true;
 	AuthSession::login( $user, 'login', true );
-	check( 'administrator session is never persistent', $GLOBALS['cookie'] === array( 5, false ) );
+	check( 'administrator session is never persistent by default', $GLOBALS['cookie'] === array( 5, false ) );
+
+	// ...unless an administrator opts in via the setting.
+	reset_state(); $GLOBALS['admin'] = true;
+	$GLOBALS['__opt']['rapls_passkey_settings'] = array( 'admin_remember_allowed' => true );
+	AuthSession::login( $user, 'login', true );
+	check( 'administrator persistent allowed when opted in', $GLOBALS['cookie'] === array( 5, true ) );
+	$GLOBALS['__opt'] = array();
 	$GLOBALS['admin'] = false;
 
 	// LoginGate veto -> WP_Error, no cookie.

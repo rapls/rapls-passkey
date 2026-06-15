@@ -404,6 +404,33 @@ msgstr "パスキーの登録・認証ダイアログのタイムアウト。0 �
 msgid "Too many attempts. Please try again later."
 msgstr "試行回数が多すぎます。しばらくしてからお試しください。"
 
+msgid "Login rate limit"
+msgstr "ログイン回数制限"
+
+msgid "Attempt limit"
+msgstr "試行回数の上限"
+
+msgid "How many failed passkey-login attempts from the same IP address are allowed within the window below before \"Too many attempts\" is shown. Successful logins are not counted. 0 disables the limit."
+msgstr "「試行回数が多すぎます」と表示されるまでに、同一 IP アドレスから許可されるパスキーログインの失敗回数です(下のロックアウト時間内)。成功したログインはカウントされません。0 で無効になります。"
+
+msgid "Lockout time (seconds)"
+msgstr "ロックアウト時間(秒)"
+
+msgid "The length of the counting window, and how long the lockout lasts once the attempt limit is reached (default 300 seconds = 5 minutes)."
+msgstr "カウントを集計する期間であり、試行回数の上限に達した後にロックアウトが続く時間です(デフォルト 300 秒 = 5 分)。"
+
+msgid "Session security"
+msgstr "セッションのセキュリティ"
+
+msgid "Administrator \"remember me\""
+msgstr "管理者の「ログイン状態を保存する」"
+
+msgid "Allow administrators to stay signed in (\"remember me\") after a passkey login"
+msgstr "パスキーログイン後、管理者もログイン状態を保存できるようにする"
+
+msgid "Off by default for safety: administrators never get a persistent session, so a shared or stolen device cannot keep an admin logged in. Turn this on to honour the \"remember me\" checkbox for administrators too. Non-administrators are unaffected."
+msgstr "安全のため既定はオフです。管理者には持続的なセッションを発行しないため、共有端末や盗難端末で管理者のログイン状態が維持されることを防ぎます。オンにすると、管理者でも「ログイン状態を保存する」チェックボックスが有効になります。管理者以外には影響しません。"
+
 msgid "Total registered passkeys"
 msgstr "登録済みパスキー総数"
 

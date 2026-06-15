@@ -75,6 +75,9 @@ final class SettingsPage {
 			'recaptcha_threshold'  => $threshold,
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
+			'login_rate_max'       => isset( $input['login_rate_max'] ) ? max( 0, (int) $input['login_rate_max'] ) : 30,
+			'login_rate_window'    => isset( $input['login_rate_window'] ) ? max( 1, (int) $input['login_rate_window'] ) : 300,
+			'admin_remember_allowed' => ! empty( $input['admin_remember_allowed'] ),
 			'notifications_enabled' => ! empty( $input['notifications_enabled'] ),
 			'upgrade_prompt_enabled' => ! empty( $input['upgrade_prompt_enabled'] ),
 			'webauthn_timeout'     => isset( $input['webauthn_timeout'] ) ? max( 0, min( 600, (int) $input['webauthn_timeout'] ) ) : 60,
@@ -109,6 +112,38 @@ final class SettingsPage {
 						<td>
 							<input type="number" step="1" min="0" id="rapls-max-passkeys" name="<?php echo esc_attr( Settings::OPTION ); ?>[max_passkeys]" value="<?php echo esc_attr( (string) $s['max_passkeys'] ); ?>">
 							<p class="description"><?php esc_html_e( 'Maximum number of passkeys a user can register. 0 means unlimited. We recommend 2 or more so passkeys can be used across multiple devices.', 'rapls-passkey' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Login rate limit', 'rapls-passkey' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="rapls-login-rate-max"><?php esc_html_e( 'Attempt limit', 'rapls-passkey' ); ?></label></th>
+						<td>
+							<input type="number" step="1" min="0" id="rapls-login-rate-max" name="<?php echo esc_attr( Settings::OPTION ); ?>[login_rate_max]" value="<?php echo esc_attr( (string) $s['login_rate_max'] ); ?>">
+							<p class="description"><?php esc_html_e( 'How many failed passkey-login attempts from the same IP address are allowed within the window below before "Too many attempts" is shown. Successful logins are not counted. 0 disables the limit.', 'rapls-passkey' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="rapls-login-rate-window"><?php esc_html_e( 'Lockout time (seconds)', 'rapls-passkey' ); ?></label></th>
+						<td>
+							<input type="number" step="1" min="1" id="rapls-login-rate-window" name="<?php echo esc_attr( Settings::OPTION ); ?>[login_rate_window]" value="<?php echo esc_attr( (string) $s['login_rate_window'] ); ?>">
+							<p class="description"><?php esc_html_e( 'The length of the counting window, and how long the lockout lasts once the attempt limit is reached (default 300 seconds = 5 minutes).', 'rapls-passkey' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Session security', 'rapls-passkey' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Administrator "remember me"', 'rapls-passkey' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[admin_remember_allowed]" value="1" <?php checked( ! empty( $s['admin_remember_allowed'] ) ); ?>>
+								<?php esc_html_e( 'Allow administrators to stay signed in ("remember me") after a passkey login', 'rapls-passkey' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Off by default for safety: administrators never get a persistent session, so a shared or stolen device cannot keep an admin logged in. Turn this on to honour the "remember me" checkbox for administrators too. Non-administrators are unaffected.', 'rapls-passkey' ); ?></p>
 						</td>
 					</tr>
 				</table>

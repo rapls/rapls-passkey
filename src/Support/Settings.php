@@ -34,6 +34,14 @@ final class Settings {
 			'audit_enabled'        => true,
 			// Max passkeys a user may register (0 = unlimited).
 			'max_passkeys'         => 0,
+			// Per-IP login rate limit: failed attempts allowed within the window,
+			// and the window / lockout length in seconds. Successful logins do not
+			// count (the counter is cleared on success).
+			'login_rate_max'       => 30,
+			'login_rate_window'    => 300,
+			// Allow administrators to hold a persistent ("remember me") session on
+			// a passkey/alternative login. Off by default: shared-PC / theft risk.
+			'admin_remember_allowed' => false,
 			// Email the user on passkey registration/removal and new-device sign-in.
 			'notifications_enabled' => true,
 			// Offer to create a passkey right after an interactive (password) login.
@@ -258,5 +266,65 @@ final class Settings {
 		$max = (int) apply_filters( 'rapls_passkey_max_passkeys', $max );
 
 		return max( 0, $max );
+	}
+
+	/**
+	 * Number of login attempts allowed per IP within the window before the
+	 * "too many attempts" lockout. Successful logins do not count toward it.
+	 * A value of 0 disables the limit. Minimum of 1 otherwise.
+	 *
+	 * @return int
+	 */
+	public static function login_rate_max(): int {
+		$max = (int) self::get( 'login_rate_max' );
+
+		/**
+		 * Filter the per-IP login attempt limit.
+		 *
+		 * @param int $max Attempts allowed per window (0 = no limit).
+		 */
+		$max = (int) apply_filters( 'rapls_passkey_login_rate_max', $max );
+
+		return max( 0, $max );
+	}
+
+	/**
+	 * The login rate-limit window / lockout length in seconds.
+	 *
+	 * @return int
+	 */
+	public static function login_rate_window(): int {
+		$window = (int) self::get( 'login_rate_window' );
+		if ( $window < 1 ) {
+			$window = 300;
+		}
+
+		/**
+		 * Filter the login rate-limit window (lockout length) in seconds.
+		 *
+		 * @param int $window Window length in seconds.
+		 */
+		$window = (int) apply_filters( 'rapls_passkey_login_rate_window', $window );
+
+		return max( 1, $window );
+	}
+
+	/**
+	 * Whether administrators may hold a persistent ("remember me") session on a
+	 * passkey / alternative-method login. Off by default (the secure choice):
+	 * administrators never get a persistent cookie, to limit shared-PC / theft
+	 * risk. Turn it on to honour the "remember me" checkbox for administrators too.
+	 *
+	 * @return bool
+	 */
+	public static function admin_remember_allowed(): bool {
+		$allowed = (bool) self::get( 'admin_remember_allowed' );
+
+		/**
+		 * Filter whether administrators may hold a persistent session.
+		 *
+		 * @param bool $allowed Whether administrators may be remembered.
+		 */
+		return (bool) apply_filters( 'rapls_passkey_admin_remember_allowed', $allowed );
 	}
 }

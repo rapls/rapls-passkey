@@ -287,7 +287,7 @@ final class Notifications {
 		$ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 		if ( '' !== $ua ) {
 			/* translators: %s: browser user agent. */
-			$lines .= sprintf( __( 'Browser: %s', 'rapls-passkey' ), mb_substr( $ua, 0, 200 ) ) . "\n";
+			$lines .= sprintf( __( 'Browser: %s', 'rapls-passkey' ), \RaplsPasskey\Support\Str::substr( $ua, 0, 200 ) ) . "\n";
 		}
 
 		return $lines;

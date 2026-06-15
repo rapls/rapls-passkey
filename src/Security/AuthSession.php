@@ -44,7 +44,8 @@ final class AuthSession {
 		}
 
 		// Administrators never get a persistent cookie (shared-PC / theft risk).
-		if ( user_can( $user, 'manage_options' ) ) {
+		$is_admin = user_can( $user, 'manage_options' );
+		if ( $is_admin ) {
 			$remember = false;
 		}
 
@@ -56,6 +57,12 @@ final class AuthSession {
 		 * @param string  $context  Login context.
 		 */
 		$remember = (bool) apply_filters( 'rapls_passkey/login_remember', $remember, $user, $context );
+
+		// Enforce the administrator rule again: the filter must not be able to
+		// re-grant a persistent session to a privileged account.
+		if ( $is_admin ) {
+			$remember = false;
+		}
 
 		wp_set_current_user( $user->ID );
 		wp_set_auth_cookie( $user->ID, $remember );

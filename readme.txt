@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.4
+Stable tag: 0.9.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,12 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.5 =
+* Follow-up review fixes:
+* The /login/options endpoint now rejects requests with no Origin and no Referer (a new strict gate); /login/verify stays lenient, since WebAuthn binds the origin there.
+* AuthSession re-applies the "administrators are never persistent" rule after the rapls_passkey/login_remember filter, so the filter cannot re-grant a persistent cookie to an admin.
+* Replaced remaining direct mb_substr() calls with a Str::substr() helper that falls back to substr() when mbstring is absent.
 
 = 0.9.4 =
 * From an external review. Hardening, no change to normal use:

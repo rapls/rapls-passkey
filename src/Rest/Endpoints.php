@@ -80,7 +80,7 @@ final class Endpoints {
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'login_options' ),
-				'permission_callback' => array( $this, 'public_login_gate' ),
+				'permission_callback' => array( $this, 'public_login_gate_strict' ),
 			)
 		);
 		register_rest_route(
@@ -128,7 +128,30 @@ final class Endpoints {
 	 * @return bool|WP_Error
 	 */
 	public function public_login_gate( WP_REST_Request $request ) {
-		if ( ! $this->same_origin( $request ) ) {
+		return $this->login_gate( $request, false );
+	}
+
+	/**
+	 * Stricter gate for the pre-verify login step (/login/options): a request
+	 * with no Origin and no Referer is rejected. The verify step stays lenient
+	 * because WebAuthn binds the ceremony to the real origin there.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool|WP_Error
+	 */
+	public function public_login_gate_strict( WP_REST_Request $request ) {
+		return $this->login_gate( $request, true );
+	}
+
+	/**
+	 * Shared login gate: same-origin (optionally strict) plus a per-IP rate limit.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @param bool            $strict  Reject when Origin and Referer are both absent.
+	 * @return bool|WP_Error
+	 */
+	private function login_gate( WP_REST_Request $request, bool $strict ) {
+		if ( ! $this->same_origin( $request, $strict ) ) {
 			return new WP_Error( 'rapls_passkey_bad_origin', __( 'Invalid request.', 'rapls-passkey' ), array( 'status' => 403 ) );
 		}
 		if ( ! $this->rate_ok( 'login', 30, 300 ) ) {
@@ -139,19 +162,20 @@ final class Endpoints {
 
 	/**
 	 * Confirm the request originates from this site (Origin/Referer host match).
-	 * Absent both headers we allow it — WebAuthn still binds the ceremony to the
-	 * real origin during verification.
+	 * When not strict, both headers absent is allowed — WebAuthn still binds the
+	 * ceremony to the real origin during verification.
 	 *
 	 * @param WP_REST_Request $request Request.
+	 * @param bool            $strict  Reject when Origin and Referer are both absent.
 	 * @return bool
 	 */
-	private function same_origin( WP_REST_Request $request ): bool {
+	private function same_origin( WP_REST_Request $request, bool $strict = false ): bool {
 		$source = $request->get_header( 'origin' );
 		if ( ! $source ) {
 			$source = $request->get_header( 'referer' );
 		}
 		if ( ! $source ) {
-			return true;
+			return ! $strict;
 		}
 
 		$source_host = wp_parse_url( $source, PHP_URL_HOST );
@@ -211,7 +235,7 @@ final class Endpoints {
 		if ( '' === $label ) {
 			$label = null;
 		} else {
-			$label = function_exists( 'mb_substr' ) ? mb_substr( $label, 0, 100 ) : substr( $label, 0, 100 );
+			$label = \RaplsPasskey\Support\Str::substr( $label, 0, 100 );
 		}
 
 		try {

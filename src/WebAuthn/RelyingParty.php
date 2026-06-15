@@ -63,7 +63,11 @@ final class RelyingParty {
 		 * @param string $home The site home URL.
 		 */
 		$id = (string) apply_filters( 'rapls_passkey_rp_id', $host, $home );
-		if ( '' === $id ) {
+
+		// The RP ID must be the site host or a registrable parent of it (e.g.
+		// "example.com" for "site1.example.com"); anything else would make every
+		// passkey fail to register/verify. Fall back to the host on a bad value.
+		if ( ! self::is_valid_rp_id( $id, $host ) ) {
 			$id = $host;
 		}
 
@@ -75,6 +79,28 @@ final class RelyingParty {
 		$name = (string) apply_filters( 'rapls_passkey_rp_name', $name );
 
 		return new self( $id, $name, $origin );
+	}
+
+	/**
+	 * Whether $id is a valid RP ID for the given host: equal to it, or a
+	 * registrable parent domain (a dot-bounded suffix) of it.
+	 *
+	 * @param string $id   Candidate RP ID.
+	 * @param string $host Site host.
+	 * @return bool
+	 */
+	public static function is_valid_rp_id( string $id, string $host ): bool {
+		$id   = strtolower( trim( $id ) );
+		$host = strtolower( trim( $host ) );
+		if ( '' === $id || '' === $host ) {
+			return false;
+		}
+		if ( $id === $host ) {
+			return true;
+		}
+		// A parent domain: host must end with ".{$id}".
+		$suffix = '.' . $id;
+		return substr( $host, - strlen( $suffix ) ) === $suffix;
 	}
 
 	/**

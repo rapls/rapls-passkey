@@ -208,7 +208,11 @@ final class Endpoints {
 		$state           = (string) $request->get_param( 'state' );
 		$credential_json = $this->credential_json( $request );
 		$label           = sanitize_text_field( (string) $request->get_param( 'label' ) );
-		$label           = '' !== $label ? mb_substr( $label, 0, 100 ) : null;
+		if ( '' === $label ) {
+			$label = null;
+		} else {
+			$label = function_exists( 'mb_substr' ) ? mb_substr( $label, 0, 100 ) : substr( $label, 0, 100 );
+		}
 
 		try {
 			$record = $this->registration->verify( $state, $credential_json );
@@ -231,6 +235,14 @@ final class Endpoints {
 		$veto = apply_filters( 'rapls_passkey/registration_policy', null, $record );
 		if ( is_wp_error( $veto ) ) {
 			return $veto;
+		}
+
+		// Re-check the per-user limit right before storing, to close the race
+		// between the options request and this verify (two near-simultaneous
+		// registrations could both have passed the initial check).
+		$limit = $this->limit_error( (int) wp_get_current_user()->ID );
+		if ( null !== $limit ) {
+			return $limit;
 		}
 
 		$id = $this->repository->insert(
@@ -321,6 +333,19 @@ final class Endpoints {
 			$record  = $this->codec->record_from_json( $stored->record_json );
 			$updated = $this->assertion->verify( $state, $credential_json, $record );
 		} catch ( \Throwable $e ) {
+			// A signature-counter regression can mean a cloned authenticator; flag
+			// it for review rather than swallowing it as a generic failure.
+			if ( $this->is_counter_error( $e ) ) {
+				AuditLog::record( AuditLog::COUNTER_MISMATCH, (int) $stored->user_id, 'cred=' . $stored->id );
+				/**
+				 * Fires when an assertion fails the signature-counter check (possible
+				 * cloned or malfunctioning authenticator).
+				 *
+				 * @param int $user_id       User the credential belongs to.
+				 * @param int $credential_id Stored credential row id.
+				 */
+				do_action( 'rapls_passkey/counter_mismatch', (int) $stored->user_id, (int) $stored->id );
+			}
 			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
 		}
 
@@ -331,23 +356,11 @@ final class Endpoints {
 			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'user_not_found: ' . $stored->user_id );
 		}
 
-		$blocked = \RaplsPasskey\Security\LoginGate::check( $user, 'login' );
+		$remember = (bool) $request->get_param( 'rememberme' );
+		$blocked  = \RaplsPasskey\Security\AuthSession::login( $user, 'login', $remember );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
 		}
-
-		wp_set_current_user( $user->ID );
-		wp_set_auth_cookie( $user->ID, true );
-		do_action( 'wp_login', $user->user_login, $user );
-
-		/**
-		 * Fires after a successful passkey login, once the auth cookie is set.
-		 * Integrations (e.g. 2FA coexistence) hook this to mark the session.
-		 *
-		 * @param \WP_User $user    The user who logged in.
-		 * @param string   $context Login context.
-		 */
-		do_action( 'rapls_passkey/after_login', $user, 'login' );
 
 		AuditLog::record( AuditLog::LOGIN, (int) $user->ID, 'cred=' . $stored->id );
 
@@ -394,12 +407,11 @@ final class Endpoints {
 			return rest_ensure_response( array( 'success' => true ) );
 		}
 
-		// Admin path: remove another user's credential.
-		if ( current_user_can( 'edit_users' ) ) {
-			$credential = $this->repository->find_by_id( $id );
-			if ( null === $credential ) {
-				return rest_ensure_response( array( 'success' => false ) );
-			}
+		// Admin path: remove another user's credential. Authorise against the
+		// specific target user (not the blanket edit_users), so per-user/multisite
+		// capability rules are respected.
+		$credential = $this->repository->find_by_id( $id );
+		if ( null !== $credential && current_user_can( 'edit_user', (int) $credential->user_id ) ) {
 			$deleted = $this->repository->delete_by_id( $id );
 			if ( $deleted ) {
 				AuditLog::record(
@@ -480,6 +492,20 @@ final class Endpoints {
 			$data['reason'] = $reason;
 		}
 		return new WP_Error( $code, $message, $data );
+	}
+
+	/**
+	 * Whether a verification exception is a signature-counter regression (which
+	 * web-auth raises as a CounterException / a message mentioning the counter).
+	 *
+	 * @param \Throwable $e The thrown exception.
+	 * @return bool
+	 */
+	private function is_counter_error( \Throwable $e ): bool {
+		if ( false !== strpos( get_class( $e ), 'Counter' ) ) {
+			return true;
+		}
+		return false !== stripos( $e->getMessage(), 'counter' );
 	}
 
 	/**

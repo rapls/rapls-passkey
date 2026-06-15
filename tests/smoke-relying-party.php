@@ -66,6 +66,19 @@ namespace {
 	$rp = RelyingParty::from_site();
 	check( 'rp_name filter overrides the name', $rp->name() === 'My Network' );
 
+	// --- RP ID validity helper ---
+	check( 'exact host is valid', RelyingParty::is_valid_rp_id( 'site1.example.com', 'site1.example.com' ) );
+	check( 'registrable parent is valid', RelyingParty::is_valid_rp_id( 'example.com', 'site1.example.com' ) );
+	check( 'unrelated domain is invalid', ! RelyingParty::is_valid_rp_id( 'evil.com', 'site1.example.com' ) );
+	check( 'suffix without a dot boundary is invalid', ! RelyingParty::is_valid_rp_id( 'ample.com', 'example.com' ) );
+	check( 'empty RP ID is invalid', ! RelyingParty::is_valid_rp_id( '', 'example.com' ) );
+
+	// A bogus rp_id filter value is rejected and falls back to the host.
+	$GLOBALS['__rp_id'] = 'attacker.example';
+	$rp = RelyingParty::from_site();
+	check( 'bogus rp_id filter falls back to the host', $rp->id() === 'site1.example.com' );
+	$GLOBALS['__rp_id'] = null;
+
 	echo "\n  {$pass} passed, {$failc} failed\n";
 	exit( $failc === 0 ? 0 : 1 );
 }

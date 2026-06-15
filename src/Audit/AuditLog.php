@@ -21,10 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class AuditLog {
 
 	/** Event constants. */
-	public const REGISTERED = 'registered';
-	public const LOGIN      = 'login';
-	public const REMOVED    = 'removed';
-	public const RECOVERY   = 'recovery';
+	public const REGISTERED       = 'registered';
+	public const LOGIN            = 'login';
+	public const REMOVED          = 'removed';
+	public const RECOVERY         = 'recovery';
+	public const COUNTER_MISMATCH = 'counter_mismatch';
 
 	/**
 	 * Record an event.

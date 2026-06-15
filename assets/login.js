@@ -64,10 +64,12 @@
 		}
 
 		const assertion = await navigator.credentials.get( getOptions );
+		const rememberEl = document.getElementById( 'rememberme' );
 		const result = await postJson( 'login/verify', {
 			state: options.state,
 			credential: wa.assertionToJson( assertion ),
 			redirect_to: cfg.redirectTo || '',
+			rememberme: rememberEl && rememberEl.checked ? 1 : 0,
 		}, signal );
 
 		window.location.href = result.redirect || window.location.href;

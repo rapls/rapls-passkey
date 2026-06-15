@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.3
+Stable tag: 0.9.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,7 +16,7 @@ Rapls Passkey lets users sign in to WordPress with passkeys (WebAuthn / FIDO2).
 
 * Passwordless, phishing-resistant sign-in
 * Same-device passkeys (Touch ID / Windows Hello)
-* Cross-device sign-in with phone passkeys (iCloud Keychain, 1Password, and more)
+* Cross-device sign-in using the browser's native passkey flow when the browser offers it (scan with your phone). A custom QR approval flow is available in Pro.
 * Shortcodes and Gutenberg blocks (login / passkey management) you can embed on any page
 * Fully translatable UI (English source with a bundled Japanese translation)
 
@@ -55,6 +55,15 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.4 =
+* From an external review. Hardening, no change to normal use:
+* Passkey login now honours the "remember me" checkbox (default off) instead of always issuing a persistent session, and administrators never get a persistent cookie. All sign-in paths now go through one chokepoint (AuthSession) so the login policy is applied consistently.
+* Admin removal of another user's passkey now checks the per-user edit_user capability for that specific user, not the blanket edit_users.
+* A signature-counter regression on assertion (a possible cloned authenticator) is now recorded in the audit log and exposed via the rapls_passkey/counter_mismatch action.
+* The rapls_passkey_rp_id filter value is validated (must be the host or a registrable parent) and falls back to the host if misconfigured, preventing a site-wide passkey breakage.
+* The per-user passkey limit is re-checked immediately before storing (closes a registration race), and mb_substr() now has a substr() fallback.
+* readme wording clarified for cross-device sign-in and two-factor coexistence.
 
 = 0.9.3 =
 * The stored reCAPTCHA secret key is now encrypted at rest (versioned, tagged ciphertext via libsodium, with an OpenSSL AES-256-GCM fallback) instead of plaintext. Existing keys keep working and are re-encrypted on the next save. Settings export decrypts secrets so a configuration stays portable between sites.
@@ -102,7 +111,7 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
 = 0.2.0 =
 * Front-end embedding via shortcodes and Gutenberg blocks (login / passkey management).
 * Configurable per-user passkey registration limit. Administrators can remove other users' passkeys.
-* Coexists with two-factor plugins (Automattic Two-Factor / WP 2FA), treating a passkey login as multi-factor.
+* Works alongside two-factor plugins (Automattic Two-Factor / WP 2FA): a passkey login can be treated as a strong-authenticated session. Exact compatibility depends on the 2FA plugin and its policy, because passkey login sets the session directly rather than passing through the password authenticate chain.
 * Keeps working even where a security plugin restricts the REST API to logged-in users, by allowing only the passkey endpoints.
 * Does not break Content-Security-Policy: injects no custom CSP header and uses no inline event handlers.
 * Added the rapls_passkey_rp_id / rapls_passkey_rp_name filters for multisite (shared RP ID).

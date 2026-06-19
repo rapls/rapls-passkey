@@ -146,6 +146,12 @@ final class Endpoints {
 	/**
 	 * Shared login gate: same-origin (optionally strict) plus a per-IP rate limit.
 	 *
+	 * The rate limit is checked here read-only. It is only *incremented* on a
+	 * failed assertion (see {@see login_verify}) — never on /login/options, which
+	 * the browser legitimately calls several times per page (autofill / conditional
+	 * UI). Counting option requests would otherwise exhaust a small limit before
+	 * the user even submits a passkey. A successful login clears the counter.
+	 *
 	 * @param WP_REST_Request $request Request.
 	 * @param bool            $strict  Reject when Origin and Referer are both absent.
 	 * @return bool|WP_Error
@@ -154,8 +160,7 @@ final class Endpoints {
 		if ( ! $this->same_origin( $request, $strict ) ) {
 			return new WP_Error( 'rapls_passkey_bad_origin', __( 'Invalid request.', 'rapls-passkey' ), array( 'status' => 403 ) );
 		}
-		$max = Settings::login_rate_max();
-		if ( $max > 0 && ! $this->rate_ok( 'login', $max, Settings::login_rate_window() ) ) {
+		if ( $this->rate_limited( 'login' ) ) {
 			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
 		return true;
@@ -346,12 +351,12 @@ final class Endpoints {
 		try {
 			$credential_id = $this->codec->credential_id_from_json( $credential_json );
 		} catch ( \Throwable $e ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'parse: ' . $e->getMessage() );
+			return $this->login_fail( 'parse: ' . $e->getMessage() );
 		}
 
 		$stored = $this->repository->find_by_credential_id( $credential_id );
 		if ( null === $stored ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'credential_not_found: ' . $credential_id );
+			return $this->login_fail( 'credential_not_found: ' . $credential_id );
 		}
 
 		try {
@@ -371,14 +376,14 @@ final class Endpoints {
 				 */
 				do_action( 'rapls_passkey/counter_mismatch', (int) $stored->user_id, (int) $stored->id );
 			}
-			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
+			return $this->login_fail( 'verify: ' . $e->getMessage() );
 		}
 
 		$this->repository->touch( $stored->id, $this->codec->record_to_json( $updated ), $updated->counter );
 
 		$user = get_user_by( 'id', $stored->user_id );
 		if ( ! $user ) {
-			return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, 'user_not_found: ' . $stored->user_id );
+			return $this->login_fail( 'user_not_found: ' . $stored->user_id );
 		}
 
 		$remember = (bool) $request->get_param( 'rememberme' );
@@ -524,6 +529,19 @@ final class Endpoints {
 	}
 
 	/**
+	 * A failed assertion: count it toward the per-IP attempt limit, then return
+	 * the generic login-failure error. Only genuine verification failures land
+	 * here, so the limit reflects real attempts (not /login/options calls).
+	 *
+	 * @param string $reason Internal reason (logged; exposed only with WP_DEBUG).
+	 * @return WP_Error
+	 */
+	private function login_fail( string $reason ): WP_Error {
+		$this->rate_bump( 'login' );
+		return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, $reason );
+	}
+
+	/**
 	 * Whether a verification exception is a signature-counter regression (which
 	 * web-auth raises as a CounterException / a message mentioning the counter).
 	 *
@@ -538,21 +556,35 @@ final class Endpoints {
 	}
 
 	/**
-	 * Simple per-IP fixed-window rate limit backed by a transient.
+	 * Whether the per-IP attempt counter for a bucket has reached the configured
+	 * limit. Read-only: it never increments, so it is safe to call from the gate
+	 * on every request (including /login/options). A limit of 0 disables it.
 	 *
 	 * @param string $bucket Action bucket.
-	 * @param int    $max    Max requests per window.
-	 * @param int    $window Window length in seconds.
-	 * @return bool True when the request is within budget.
+	 * @return bool True when the request should be blocked (429).
 	 */
-	private function rate_ok( string $bucket, int $max, int $window ): bool {
-		$key = $this->rate_key( $bucket );
-		$n   = (int) get_transient( $key );
-		if ( $n >= $max ) {
+	private function rate_limited( string $bucket ): bool {
+		$max = Settings::login_rate_max();
+		if ( $max <= 0 ) {
 			return false;
 		}
-		set_transient( $key, $n + 1, $window );
-		return true;
+		return (int) get_transient( $this->rate_key( $bucket ) ) >= $max;
+	}
+
+	/**
+	 * Increment the per-IP attempt counter for a bucket (called only on a failed
+	 * attempt). The window refreshes on each failure, so the lockout lasts up to
+	 * the configured window from the last failed attempt.
+	 *
+	 * @param string $bucket Action bucket.
+	 */
+	private function rate_bump( string $bucket ): void {
+		if ( Settings::login_rate_max() <= 0 ) {
+			return;
+		}
+		$key = $this->rate_key( $bucket );
+		$n   = (int) get_transient( $key );
+		set_transient( $key, $n + 1, Settings::login_rate_window() );
 	}
 
 	/**

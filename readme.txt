@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.6
+Stable tag: 0.9.7
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,10 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.9.7 =
+* Fixed the login rate limit being far too aggressive: only failed passkey assertions now count toward the limit. The /login/options request (which the browser legitimately makes several times per page for autofill / conditional UI) is no longer counted, so a small limit such as 3 no longer triggers "Too many attempts" before you even sign in. A successful login still clears the counter, and once the limit is reached the lockout lasts the configured window.
+* Added a "Reset to defaults" button on the settings screen (CSP-safe confirmation, nonce-protected).
 
 = 0.9.6 =
 * A successful passkey login no longer counts toward the "Too many attempts" limit: the per-IP counter is cleared on a successful sign-in, so only genuine failures accumulate.

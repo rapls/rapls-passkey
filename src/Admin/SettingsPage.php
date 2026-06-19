@@ -25,12 +25,31 @@ final class SettingsPage {
 	/** Settings group. */
 	private const GROUP = 'rapls_passkey_group';
 
+	/** admin-post action for "reset to defaults". */
+	private const RESET_ACTION = 'rapls_passkey_reset_settings';
+
 	/**
 	 * Hook the admin menu and settings registration.
 	 */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'add_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_post_' . self::RESET_ACTION, array( $this, 'handle_reset' ) );
+	}
+
+	/**
+	 * Reset all settings to their defaults, then return to the settings screen.
+	 */
+	public function handle_reset(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission.', 'rapls-passkey' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( self::RESET_ACTION );
+
+		update_option( Settings::OPTION, Settings::defaults() );
+
+		wp_safe_redirect( add_query_arg( 'rapls_pk_reset', 'ok', admin_url( 'options-general.php?page=rapls-passkey' ) ) );
+		exit;
 	}
 
 	/**
@@ -96,10 +115,15 @@ final class SettingsPage {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+		wp_enqueue_script( 'rapls-passkey-admin', RAPLS_PASSKEY_URL . 'assets/admin.js', array(), RAPLS_PASSKEY_VERSION, true );
 		$s = Settings::all();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Rapls Passkey Settings', 'rapls-passkey' ); ?></h1>
+
+			<?php if ( isset( $_GET['rapls_pk_reset'] ) && 'ok' === sanitize_key( wp_unslash( $_GET['rapls_pk_reset'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings were reset to their defaults.', 'rapls-passkey' ); ?></p></div>
+			<?php endif; ?>
 
 				<?php $this->render_adoption(); ?>
 
@@ -271,6 +295,18 @@ final class SettingsPage {
 				</table>
 
 				<?php submit_button(); ?>
+			</form>
+
+			<?php
+			// Reset-to-defaults — its own form (posts to admin-post.php), kept
+			// outside the settings form so its action field cannot override the
+			// Settings API save.
+			?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-rapls-confirm="<?php echo esc_attr__( 'Reset all Rapls Passkey settings to their defaults? This cannot be undone.', 'rapls-passkey' ); ?>">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::RESET_ACTION ); ?>">
+				<?php wp_nonce_field( self::RESET_ACTION ); ?>
+				<?php submit_button( __( 'Reset to defaults', 'rapls-passkey' ), 'delete', 'submit', false ); ?>
+				<span class="description" style="margin-left:8px"><?php esc_html_e( 'Restore every setting on this page to its default value.', 'rapls-passkey' ); ?></span>
 			</form>
 
 			<?php $this->render_compat(); ?>

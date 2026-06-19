@@ -526,3 +526,18 @@ msgstr "reCAPTCHA の検証に失敗しました。"
 
 msgid "You cannot sign in to this account right now."
 msgstr "現在このアカウントにはログインできません。"
+
+msgid "Reset to defaults"
+msgstr "初期設定に戻す"
+
+msgid "Restore every setting on this page to its default value."
+msgstr "このページのすべての設定を初期値に戻します。"
+
+msgid "Reset all Rapls Passkey settings to their defaults? This cannot be undone."
+msgstr "Rapls Passkey のすべての設定を初期値に戻しますか?この操作は元に戻せません。"
+
+msgid "Settings were reset to their defaults."
+msgstr "設定を初期値に戻しました。"
+
+msgid "You do not have permission."
+msgstr "権限がありません。"

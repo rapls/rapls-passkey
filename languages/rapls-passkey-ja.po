@@ -667,3 +667,84 @@ msgstr "そのユーザーは存在しません。"
 
 msgid "Total passkeys: %s"
 msgstr "パスキー総数: %s"
+
+msgid "Rapls Passkey setup"
+msgstr "Rapls Passkey セットアップ"
+
+msgid "Rapls Passkey is active."
+msgstr "Rapls Passkey が有効になりました。"
+
+msgid "Run the three-minute setup check to confirm passkeys will work on this site, and register your own."
+msgstr "セットアップ確認を実行して、このサイトでパスキーが動作することを確かめ、ご自身のパスキーを登録してください。"
+
+msgid "Start setup"
+msgstr "セットアップを開始"
+
+msgid "Dismiss"
+msgstr "閉じる"
+
+msgid "Setup check"
+msgstr "セットアップ確認"
+
+msgid "Step 1: can this site use passkeys?"
+msgstr "ステップ 1: このサイトでパスキーは使えるか"
+
+msgid "Secure connection"
+msgstr "安全な接続"
+
+msgid "OK. WebAuthn requires HTTPS (localhost is exempt)."
+msgstr "問題ありません。WebAuthn には HTTPS が必要です (localhost は例外)。"
+
+msgid "Not available."
+msgstr "利用できません。"
+
+msgid "Browsers refuse WebAuthn without HTTPS, so no passkey can be registered or used until this site is served over HTTPS."
+msgstr "HTTPS でない場合ブラウザーは WebAuthn を拒否します。このサイトが HTTPS で配信されるまで、パスキーの登録も利用もできません。"
+
+msgid "Loaded."
+msgstr "読み込まれています。"
+
+msgid "Missing."
+msgstr "見つかりません。"
+
+msgid "Run composer install in the plugin directory."
+msgstr "プラグインのディレクトリーで composer install を実行してください。"
+
+msgid "Relying-party ID"
+msgstr "Relying Party ID"
+
+msgid "Passkeys are bound to this domain. If you later move the site to another domain, or change this with the rapls_passkey_rp_id filter, every passkey already registered stops matching and users have to register again. Decide it now, before anyone enrols."
+msgstr "パスキーはこのドメインに紐づきます。あとでサイトを別のドメインに移したり、rapls_passkey_rp_id フィルターでこの値を変えたりすると、登録済みのパスキーはすべて一致しなくなり、ユーザーは登録し直しになります。誰かが登録を始める前に決めてください。"
+
+msgid "Security plugins"
+msgstr "セキュリティプラグイン"
+
+msgid "Detected and coexisted with: this plugin adds no CSP header, uses only standard login hooks, and keeps its REST routes reachable where a plugin locks the REST API down to logged-in users."
+msgstr "検出し、共存しています。本プラグインは CSP ヘッダーを追加せず、標準のログインフックのみを使い、REST API がログイン済みユーザーに限定されている場合でも自身のルートは通れるようにします。"
+
+msgid "Step 2: register your own passkey"
+msgstr "ステップ 2: 自分のパスキーを登録する"
+
+msgid "Fix the items above first — passkeys cannot be registered until they pass."
+msgstr "まず上の項目を解決してください。解決するまでパスキーは登録できません。"
+
+msgid "You already have a passkey. Sign out and back in with it once, so you know the login flow works before you ask anyone else to use it."
+msgstr "すでにパスキーをお持ちです。他の人に使ってもらう前に、一度ログアウトしてパスキーでログインし、動作を確認してください。"
+
+msgid "Register one now. An administrator who has not tried it cannot tell whether it works for everyone else."
+msgstr "いま登録してください。自分で試していない管理者には、他のユーザーで動くかどうか判断できません。"
+
+msgid "Go to your profile and register"
+msgstr "プロフィールに移動して登録"
+
+msgid "Step 3: decide the rollout"
+msgstr "ステップ 3: 展開方針を決める"
+
+msgid "Passkeys sit alongside passwords by default: nothing is taken away, and users adopt them at their own pace. When you are ready to go further, the settings screen carries the login rate limit, the post-login prompt that offers users a passkey, and reCAPTCHA for the password form. Making passkeys mandatory for a role, disabling password login, cross-device QR sign-in and recovery codes come with Rapls Passkey Pro."
+msgstr "既定ではパスキーはパスワードと併存します。何も取り上げず、ユーザーは自分のペースで移行できます。さらに進める準備ができたら、設定画面でログイン回数制限、ログイン後のパスキー登録の案内、パスワードフォームの reCAPTCHA を設定できます。ロールごとのパスキー必須化、パスワードログインの無効化、QR での別端末ログイン、リカバリーコードは Rapls Passkey Pro で利用できます。"
+
+msgid "Go to settings"
+msgstr "設定に移動"
+
+msgid "Finish setup"
+msgstr "セットアップを完了"

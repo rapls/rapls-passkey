@@ -121,7 +121,10 @@ final class SettingsPage {
 		$s = Settings::all();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Rapls Passkey Settings', 'rapls-passkey' ); ?></h1>
+			<h1>
+				<?php esc_html_e( 'Rapls Passkey Settings', 'rapls-passkey' ); ?>
+				<a href="<?php echo esc_url( SetupWizard::url() ); ?>" class="page-title-action"><?php esc_html_e( 'Setup check', 'rapls-passkey' ); ?></a>
+			</h1>
 
 			<?php if ( isset( $_GET['rapls_pk_reset'] ) && 'ok' === sanitize_key( wp_unslash( $_GET['rapls_pk_reset'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings were reset to their defaults.', 'rapls-passkey' ); ?></p></div>

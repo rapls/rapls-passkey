@@ -12,6 +12,7 @@ use RaplsPasskey\Admin\CredentialsPage;
 use RaplsPasskey\Admin\DashboardWidget;
 use RaplsPasskey\Admin\ProfileUi;
 use RaplsPasskey\Admin\SettingsPage;
+use RaplsPasskey\Admin\SetupWizard;
 use RaplsPasskey\Admin\SiteHealth;
 use RaplsPasskey\Admin\UsersColumn;
 use RaplsPasskey\Cli\Commands;
@@ -108,6 +109,12 @@ final class Plugin {
 		( new PersonalData( new CredentialRepository() ) )->register();
 		( new AuditExport() )->register();
 		( new SiteHealth() )->register();
+
+		// First-run wizard. Wired before the library guard on purpose: a site whose
+		// dependency is missing is exactly the one that needs to be told.
+		if ( is_admin() ) {
+			( new SetupWizard( new CredentialRepository() ) )->register();
+		}
 
 		// The WebAuthn core lives in web-auth/webauthn-lib; degrade loudly without it.
 		if ( ! $this->webauthn_library_available() ) {

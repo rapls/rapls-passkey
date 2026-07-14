@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.12.0
+Stable tag: 0.13.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,9 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.13.0 =
+* Added a first-run setup check. Activating a passkey plugin and landing on a settings screen leaves the two questions that actually decide whether passkeys will work unanswered: is the site served over HTTPS (browsers refuse WebAuthn otherwise), and what relying-party ID will the credentials be bound to — get that wrong later and every registered passkey stops matching. The wizard answers both, notes any security plugin it is coexisting with, and walks the administrator through registering their own passkey, since an administrator who has not tried it cannot tell whether it works for anyone else. It appears once and is reachable afterwards from "Setup check" on the settings screen.
 
 = 0.12.0 =
 * Passkeys can now be suspended instead of deleted. A device that is at the repair shop or left at the office is not gone for good, but until now the only way to stop it signing in was to destroy the credential and re-run the whole registration ceremony later. A suspended passkey is refused at login and is not offered to the browser, but survives to be resumed. Users manage their own from the profile screen and the [rapls_passkey_register] shortcode; an administrator can suspend anyone's. A suspended passkey does not count as "having a passkey", so enforcement and the disabled password login cannot strand a user with nothing to sign in with.

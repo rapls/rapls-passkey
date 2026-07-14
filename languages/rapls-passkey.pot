@@ -893,3 +893,84 @@ msgstr ""
 
 msgid "Total passkeys: %s"
 msgstr ""
+
+msgid "Rapls Passkey setup"
+msgstr ""
+
+msgid "Rapls Passkey is active."
+msgstr ""
+
+msgid "Run the three-minute setup check to confirm passkeys will work on this site, and register your own."
+msgstr ""
+
+msgid "Start setup"
+msgstr ""
+
+msgid "Dismiss"
+msgstr ""
+
+msgid "Setup check"
+msgstr ""
+
+msgid "Step 1: can this site use passkeys?"
+msgstr ""
+
+msgid "Secure connection"
+msgstr ""
+
+msgid "OK. WebAuthn requires HTTPS (localhost is exempt)."
+msgstr ""
+
+msgid "Not available."
+msgstr ""
+
+msgid "Browsers refuse WebAuthn without HTTPS, so no passkey can be registered or used until this site is served over HTTPS."
+msgstr ""
+
+msgid "Loaded."
+msgstr ""
+
+msgid "Missing."
+msgstr ""
+
+msgid "Run composer install in the plugin directory."
+msgstr ""
+
+msgid "Relying-party ID"
+msgstr ""
+
+msgid "Passkeys are bound to this domain. If you later move the site to another domain, or change this with the rapls_passkey_rp_id filter, every passkey already registered stops matching and users have to register again. Decide it now, before anyone enrols."
+msgstr ""
+
+msgid "Security plugins"
+msgstr ""
+
+msgid "Detected and coexisted with: this plugin adds no CSP header, uses only standard login hooks, and keeps its REST routes reachable where a plugin locks the REST API down to logged-in users."
+msgstr ""
+
+msgid "Step 2: register your own passkey"
+msgstr ""
+
+msgid "Fix the items above first — passkeys cannot be registered until they pass."
+msgstr ""
+
+msgid "You already have a passkey. Sign out and back in with it once, so you know the login flow works before you ask anyone else to use it."
+msgstr ""
+
+msgid "Register one now. An administrator who has not tried it cannot tell whether it works for everyone else."
+msgstr ""
+
+msgid "Go to your profile and register"
+msgstr ""
+
+msgid "Step 3: decide the rollout"
+msgstr ""
+
+msgid "Passkeys sit alongside passwords by default: nothing is taken away, and users adopt them at their own pace. When you are ready to go further, the settings screen carries the login rate limit, the post-login prompt that offers users a passkey, and reCAPTCHA for the password form. Making passkeys mandatory for a role, disabling password login, cross-device QR sign-in and recovery codes come with Rapls Passkey Pro."
+msgstr ""
+
+msgid "Go to settings"
+msgstr ""
+
+msgid "Finish setup"
+msgstr ""

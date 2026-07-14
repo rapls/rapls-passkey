@@ -104,7 +104,7 @@ final class Endpoints {
 				),
 				array(
 					'methods'             => WP_REST_Server::EDITABLE,
-					'callback'            => array( $this, 'rename_credential' ),
+					'callback'            => array( $this, 'update_credential' ),
 					'permission_callback' => array( $this, 'require_logged_in' ),
 				),
 			)
@@ -208,8 +208,11 @@ final class Endpoints {
 	 *
 	 * @return WP_REST_Response|WP_Error
 	 */
-	public function register_options() {
-		$user = wp_get_current_user();
+	public function register_options( WP_REST_Request $request ) {
+		$user = $this->enrolment_target( $request );
+		if ( $user instanceof WP_Error ) {
+			return $user;
+		}
 
 		$limit = $this->limit_error( (int) $user->ID );
 		if ( null !== $limit ) {
@@ -238,7 +241,16 @@ final class Endpoints {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function register_verify( WP_REST_Request $request ) {
-		$limit = $this->limit_error( (int) wp_get_current_user()->ID );
+		// Re-resolved (and re-authorised) here rather than trusted from the options
+		// step, so a caller cannot swap the owner in between.
+		$owner = $this->enrolment_target( $request );
+		if ( $owner instanceof WP_Error ) {
+			return $owner;
+		}
+		$owner_id = (int) $owner->ID;
+		$actor_id = (int) wp_get_current_user()->ID;
+
+		$limit = $this->limit_error( $owner_id );
 		if ( null !== $limit ) {
 			return $limit;
 		}
@@ -278,13 +290,13 @@ final class Endpoints {
 		// Re-check the per-user limit right before storing, to close the race
 		// between the options request and this verify (two near-simultaneous
 		// registrations could both have passed the initial check).
-		$limit = $this->limit_error( (int) wp_get_current_user()->ID );
+		$limit = $this->limit_error( $owner_id );
 		if ( null !== $limit ) {
 			return $limit;
 		}
 
 		$id = $this->repository->insert(
-			(int) wp_get_current_user()->ID,
+			$owner_id,
 			$credential_id,
 			$this->codec->record_to_json( $record ),
 			$record->counter,
@@ -295,7 +307,11 @@ final class Endpoints {
 			return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
 		}
 
-		AuditLog::record( AuditLog::REGISTERED, (int) wp_get_current_user()->ID, 'id=' . $id );
+		AuditLog::record(
+			AuditLog::REGISTERED,
+			$owner_id,
+			'id=' . $id . ( $owner_id === $actor_id ? '' : ' by-admin=' . $actor_id )
+		);
 
 		/**
 		 * Fires after a passkey is registered and stored.
@@ -304,7 +320,7 @@ final class Endpoints {
 		 * @param int         $id      Stored credential row id.
 		 * @param string|null $label   Optional passkey label.
 		 */
-		do_action( 'rapls_passkey/credential_registered', (int) wp_get_current_user()->ID, $id, $label );
+		do_action( 'rapls_passkey/credential_registered', $owner_id, $id, $label );
 
 		return rest_ensure_response(
 			array(
@@ -337,7 +353,9 @@ final class Endpoints {
 				$user = get_user_by( 'email', $username );
 			}
 			if ( $user ) {
-				foreach ( $this->repository->find_by_user( (int) $user->ID ) as $credential ) {
+				// Suspended passkeys are not offered: the browser must not put a
+				// credential in the picker that the server would then reject.
+				foreach ( $this->repository->find_active_by_user( (int) $user->ID ) as $credential ) {
 					$records[] = $this->codec->record_from_json( $credential->record_json );
 				}
 			}
@@ -365,6 +383,11 @@ final class Endpoints {
 		$stored = $this->repository->find_by_credential_id( $credential_id );
 		if ( null === $stored ) {
 			return $this->login_fail( 'credential_not_found: ' . $credential_id );
+		}
+		// A suspended passkey must not sign anyone in, even when the browser still
+		// holds it (usernameless login never sent an allow-list to filter it out).
+		if ( ! $stored->active ) {
+			return $this->login_fail( 'credential_suspended: ' . $credential_id );
 		}
 
 		try {
@@ -422,38 +445,149 @@ final class Endpoints {
 		);
 	}
 
-	// --- Credential management ----------------------------------------------
-
 	/**
-	 * Rename a credential. Owner-only: a name is a label the user chose for their
-	 * own device, and there is no admin case for rewriting it (an admin who needs to
-	 * act on someone else's passkey removes it).
+	 * Whose passkey is being registered — normally the caller, but an administrator
+	 * may enrol on another user's behalf (handing over a pre-configured security key,
+	 * or sitting with someone during onboarding).
+	 *
+	 * Off unless a site opts in, because it lets the administrator hold a credential
+	 * to someone else's account. That is not new power — an administrator can already
+	 * reset anyone's password — but it is quieter, so it is gated three ways: the
+	 * opt-in filter, the per-user edit_user capability, and the registration
+	 * notification, which still goes to the account's owner.
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response|WP_Error
+	 * @return \WP_User|WP_Error
 	 */
-	public function rename_credential( WP_REST_Request $request ) {
-		$id      = (int) $request->get_param( 'id' );
-		$user_id = (int) wp_get_current_user()->ID;
+	private function enrolment_target( WP_REST_Request $request ) {
+		$current   = wp_get_current_user();
+		$requested = (int) $request->get_param( 'user' );
 
-		$label = sanitize_text_field( (string) $request->get_param( 'label' ) );
-		$label = Str::substr( $label, 0, 191 ); // The column is varchar(191).
-		$label = '' === trim( $label ) ? null : $label;
+		if ( $requested <= 0 || $requested === (int) $current->ID ) {
+			return $current;
+		}
 
-		if ( ! $this->repository->rename( $id, $user_id, $label ) ) {
+		/**
+		 * Allow an administrator to register a passkey on another user's behalf.
+		 *
+		 * @param bool $allowed False by default. Rapls Passkey Pro turns this on from
+		 *                      its "Administrator enrolment" setting.
+		 */
+		if ( ! apply_filters( 'rapls_passkey/allow_admin_enrolment', false ) ) {
 			return new WP_Error(
 				'rapls_passkey_forbidden',
-				__( 'You do not have permission to rename this passkey.', 'rapls-passkey' ),
+				__( 'Registering a passkey for another user is not enabled on this site.', 'rapls-passkey' ),
 				array( 'status' => 403 )
 			);
 		}
 
-		AuditLog::record( AuditLog::RENAMED, $user_id, 'id=' . $id );
+		if ( ! current_user_can( 'edit_user', $requested ) ) {
+			return new WP_Error(
+				'rapls_passkey_forbidden',
+				__( 'You do not have permission to register a passkey for that user.', 'rapls-passkey' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$target = get_user_by( 'id', $requested );
+		if ( ! $target ) {
+			return new WP_Error(
+				'rapls_passkey_not_found',
+				__( 'That user does not exist.', 'rapls-passkey' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		return $target;
+	}
+
+	// --- Credential management ----------------------------------------------
+
+	/**
+	 * Update a credential: rename it, and/or suspend and resume it.
+	 *
+	 * Renaming is owner-only — a name is a label the user chose for their own device
+	 * and there is no admin case for rewriting it. Suspending is also allowed to a
+	 * user who can edit the owner, so an administrator can cut off a lost device
+	 * without destroying the credential.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function update_credential( WP_REST_Request $request ) {
+		$id      = (int) $request->get_param( 'id' );
+		$user_id = (int) wp_get_current_user()->ID;
+
+		$credential = $this->repository->find_by_id( $id );
+		if ( null === $credential ) {
+			return new WP_Error(
+				'rapls_passkey_not_found',
+				__( 'That passkey no longer exists.', 'rapls-passkey' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$is_owner = (int) $credential->user_id === $user_id;
+		$is_admin = ! $is_owner && current_user_can( 'edit_user', (int) $credential->user_id );
+
+		if ( ! $is_owner && ! $is_admin ) {
+			return new WP_Error(
+				'rapls_passkey_forbidden',
+				__( 'You do not have permission to change this passkey.', 'rapls-passkey' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		if ( null !== $request->get_param( 'label' ) ) {
+			if ( ! $is_owner ) {
+				return new WP_Error(
+					'rapls_passkey_forbidden',
+					__( 'You do not have permission to rename this passkey.', 'rapls-passkey' ),
+					array( 'status' => 403 )
+				);
+			}
+
+			$label = sanitize_text_field( (string) $request->get_param( 'label' ) );
+			$label = Str::substr( $label, 0, 191 ); // The column is varchar(191).
+			$label = '' === trim( $label ) ? null : $label;
+
+			if ( ! $this->repository->rename( $id, $user_id, $label ) ) {
+				return new WP_Error(
+					'rapls_passkey_forbidden',
+					__( 'You do not have permission to rename this passkey.', 'rapls-passkey' ),
+					array( 'status' => 403 )
+				);
+			}
+
+			$credential->label = $label;
+			AuditLog::record( AuditLog::RENAMED, (int) $credential->user_id, 'id=' . $id );
+		}
+
+		if ( null !== $request->get_param( 'active' ) ) {
+			$active = (bool) $request->get_param( 'active' );
+			$scope  = $is_owner ? $user_id : null; // The admin path is already authorised above.
+
+			if ( ! $this->repository->set_active( $id, $scope, $active ) ) {
+				return new WP_Error(
+					'rapls_passkey_forbidden',
+					__( 'You do not have permission to change this passkey.', 'rapls-passkey' ),
+					array( 'status' => 403 )
+				);
+			}
+
+			$credential->active = $active;
+			AuditLog::record(
+				$active ? AuditLog::RESUMED : AuditLog::SUSPENDED,
+				(int) $credential->user_id,
+				'id=' . $id . ( $is_owner ? '' : ' by-admin=' . $user_id )
+			);
+		}
 
 		return rest_ensure_response(
 			array(
 				'success' => true,
-				'label'   => $label,
+				'label'   => $credential->label,
+				'active'  => $credential->active,
 			)
 		);
 	}

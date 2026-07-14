@@ -142,6 +142,141 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * The credentials a user can actually sign in with (suspended ones excluded).
+	 *
+	 * @param int $user_id User id.
+	 * @return Credential[]
+	 */
+	public function find_active_by_user( int $user_id ): array {
+		return array_values(
+			array_filter(
+				$this->find_by_user( $user_id ),
+				static function ( Credential $credential ): bool {
+					return $credential->active;
+				}
+			)
+		);
+	}
+
+	/**
+	 * Suspend or resume a credential.
+	 *
+	 * Suspending is the answer to "my laptop is at the repair shop": the passkey
+	 * stops working immediately but is not destroyed, so it can be brought back
+	 * without a re-registration ceremony. Deleting is the answer to "it is gone
+	 * for good".
+	 *
+	 * @param int      $id      Row id.
+	 * @param int|null $user_id Owner to scope the update to, or null for an admin
+	 *                          acting on someone else's credential (already
+	 *                          capability-checked by the caller).
+	 * @param bool     $active  New state.
+	 * @return bool True if the row exists (and belongs to $user_id when given).
+	 */
+	public function set_active( int $id, ?int $user_id, bool $active ): bool {
+		global $wpdb;
+
+		$where = array( 'id' => $id );
+		$types = array( '%d' );
+		if ( null !== $user_id ) {
+			$where['user_id'] = $user_id;
+			$types[]          = '%d';
+		}
+
+		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			Schema::credentials_table(),
+			array( 'active' => $active ? 1 : 0 ),
+			$where,
+			array( '%d' ),
+			$types
+		);
+
+		if ( false === $updated ) {
+			return false;
+		}
+		// 0 changed rows means either "already in that state" or "not yours"; only
+		// the second is a failure.
+		if ( 0 === (int) $updated ) {
+			$credential = $this->find_by_id( $id );
+			if ( null === $credential ) {
+				return false;
+			}
+			return null === $user_id || (int) $credential->user_id === $user_id;
+		}
+		return true;
+	}
+
+	/**
+	 * Every credential on the site, newest first — for the admin overview.
+	 *
+	 * @param string $search   Match against the label or the owner's login/email ('' for all).
+	 * @param int    $per_page Rows to return.
+	 * @param int    $offset   Rows to skip.
+	 * @return Credential[]
+	 */
+	public function find_all( string $search = '', int $per_page = 50, int $offset = 0 ): array {
+		global $wpdb;
+		$table = Schema::credentials_table();
+		$users = $wpdb->users;
+
+		$per_page = max( 1, min( 200, $per_page ) );
+		$offset   = max( 0, $offset );
+
+		if ( '' !== $search ) {
+			$like = '%' . $wpdb->esc_like( $search ) . '%';
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare(
+					"SELECT c.* FROM {$table} c
+					 LEFT JOIN {$users} u ON u.ID = c.user_id
+					 WHERE c.label LIKE %s OR u.user_login LIKE %s OR u.user_email LIKE %s
+					 ORDER BY c.id DESC LIMIT %d OFFSET %d",
+					$like,
+					$like,
+					$like,
+					$per_page,
+					$offset
+				),
+				ARRAY_A
+			);
+		} else {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", $per_page, $offset ),
+				ARRAY_A
+			);
+		}
+
+		return array_map( array( self::class, 'hydrate' ), $rows ?: array() );
+	}
+
+	/**
+	 * How many credentials {@see find_all()} would match.
+	 *
+	 * @param string $search Same search term.
+	 * @return int
+	 */
+	public function count_all( string $search = '' ): int {
+		global $wpdb;
+		$table = Schema::credentials_table();
+		$users = $wpdb->users;
+
+		if ( '' !== $search ) {
+			$like = '%' . $wpdb->esc_like( $search ) . '%';
+			return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$table} c
+					 LEFT JOIN {$users} u ON u.ID = c.user_id
+					 WHERE c.label LIKE %s OR u.user_login LIKE %s OR u.user_email LIKE %s",
+					$like,
+					$like,
+					$like
+				)
+			);
+		}
+
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+	}
+
+	/**
 	 * Rename a credential the user owns.
 	 *
 	 * A name is the only thing that tells two "iCloud Keychain" entries apart, so a
@@ -272,7 +407,10 @@ final class CredentialRepository {
 			(int) $row['sign_count'],
 			isset( $row['label'] ) ? ( null === $row['label'] ? null : (string) $row['label'] ) : null,
 			(string) $row['created_at'],
-			isset( $row['last_used_at'] ) && null !== $row['last_used_at'] ? (string) $row['last_used_at'] : null
+			isset( $row['last_used_at'] ) && null !== $row['last_used_at'] ? (string) $row['last_used_at'] : null,
+			// Rows written before the column existed are active; the upgrade
+			// backfills them, but tolerate a missing key either way.
+			! isset( $row['active'] ) || (bool) (int) $row['active']
 		);
 	}
 }

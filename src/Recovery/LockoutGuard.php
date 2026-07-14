@@ -32,7 +32,10 @@ final class LockoutGuard {
 	 * @return bool
 	 */
 	public function user_has_passkey( int $user_id ): bool {
-		return array() !== $this->repository->find_by_user( $user_id );
+		// Only a usable passkey counts. A suspended one cannot sign anyone in, so
+		// treating it as "has a passkey" would let enforcement (or the disabled
+		// password login) lock the user out with nothing to log in with.
+		return array() !== $this->repository->find_active_by_user( $user_id );
 	}
 
 	/**

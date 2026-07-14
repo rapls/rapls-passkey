@@ -203,6 +203,39 @@
 		}
 	}
 
+	/**
+	 * Suspending stops a passkey working without destroying it — the answer to a
+	 * device that is temporarily out of reach rather than gone for good.
+	 */
+	async function togglePasskey( row, button ) {
+		const id = row.getAttribute( 'data-id' );
+		const active = row.getAttribute( 'data-active' ) === '1';
+		if ( ! id ) {
+			return;
+		}
+		if ( active && ! window.confirm( cfg.i18n.confirmSuspend ) ) {
+			return;
+		}
+
+		try {
+			const result = await postJson(
+				'credentials/' + encodeURIComponent( id ),
+				{ active: ! active },
+				{ nonce: cfg.nonce }
+			);
+
+			const now = !! ( result && result.active );
+			row.setAttribute( 'data-active', now ? '1' : '0' );
+			button.textContent = now ? cfg.i18n.suspend : cfg.i18n.resume;
+			const state = row.querySelector( '.rapls-pk-fe-state' );
+			if ( state ) {
+				state.textContent = now ? cfg.i18n.active : cfg.i18n.suspended;
+			}
+		} catch ( e ) {
+			status( 'rapls-pk-fe-register-status', ( e && e.message ) || cfg.i18n.registerFailed );
+		}
+	}
+
 	// --- Wiring -------------------------------------------------------------
 
 	document.addEventListener( 'DOMContentLoaded', function () {
@@ -229,6 +262,14 @@
 				const row = node.closest( 'tr' );
 				if ( row ) {
 					renamePasskey( row );
+				}
+			} );
+		} );
+		document.querySelectorAll( '.rapls-pk-fe-toggle' ).forEach( function ( node ) {
+			node.addEventListener( 'click', function () {
+				const row = node.closest( 'tr' );
+				if ( row ) {
+					togglePasskey( row, node );
 				}
 			} );
 		} );

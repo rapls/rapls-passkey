@@ -595,3 +595,75 @@ msgstr "パスキーの名前を変更できませんでした。"
 
 msgid "You do not have permission to rename this passkey."
 msgstr "このパスキーの名前を変更する権限がありません。"
+
+msgid "Status"
+msgstr "状態"
+
+msgid "Active"
+msgstr "有効"
+
+msgid "Suspended"
+msgstr "一時停止中"
+
+msgid "Suspend"
+msgstr "一時停止"
+
+msgid "Resume"
+msgstr "再開"
+
+msgid "Suspend this passkey? It will stop working until you resume it, but it is not deleted."
+msgstr "このパスキーを一時停止しますか?再開するまで使えなくなりますが、削除はされません。"
+
+msgid "Passkeys"
+msgstr "パスキー"
+
+msgid "Search passkeys"
+msgstr "パスキーを検索"
+
+msgid "No passkeys found."
+msgstr "パスキーが見つかりません。"
+
+msgid "User"
+msgstr "ユーザー"
+
+msgid "Never"
+msgstr "未使用"
+
+msgid "(deleted user)"
+msgstr "(削除されたユーザー)"
+
+msgid "Delete this passkey? This cannot be undone."
+msgstr "このパスキーを削除しますか?この操作は元に戻せません。"
+
+msgid "The passkey was deleted."
+msgstr "パスキーを削除しました。"
+
+msgid "The passkey was suspended. It cannot be used to sign in until you resume it."
+msgstr "パスキーを一時停止しました。再開するまでログインには使えません。"
+
+msgid "The passkey was resumed."
+msgstr "パスキーを再開しました。"
+
+msgid "That passkey no longer exists."
+msgstr "そのパスキーは存在しません。"
+
+msgid "You do not have permission to change this passkey."
+msgstr "このパスキーを変更する権限がありません。"
+
+msgid "Register a passkey for this user"
+msgstr "このユーザーのパスキーを登録"
+
+msgid "The passkey is created on the authenticator in front of you right now (your device, or a security key you are about to hand over) — so use this only when you are setting the user up in person. They are emailed about the new passkey, and it is recorded in the audit log."
+msgstr "パスキーは今この場にある認証器 (あなたの端末、または手渡す予定のセキュリティキー) の中に作られます。対面でセットアップするときだけ使ってください。新しいパスキーについては本人にメールで通知され、監査ログにも記録されます。"
+
+msgid "Registering a passkey for another user is not enabled on this site."
+msgstr "このサイトでは、他のユーザーのパスキー登録は有効になっていません。"
+
+msgid "You do not have permission to register a passkey for that user."
+msgstr "そのユーザーのパスキーを登録する権限がありません。"
+
+msgid "That user does not exist."
+msgstr "そのユーザーは存在しません。"
+
+msgid "Total passkeys: %s"
+msgstr "パスキー総数: %s"

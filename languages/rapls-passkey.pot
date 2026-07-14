@@ -821,3 +821,75 @@ msgstr ""
 
 msgid "You do not have permission to rename this passkey."
 msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "Active"
+msgstr ""
+
+msgid "Suspended"
+msgstr ""
+
+msgid "Suspend"
+msgstr ""
+
+msgid "Resume"
+msgstr ""
+
+msgid "Suspend this passkey? It will stop working until you resume it, but it is not deleted."
+msgstr ""
+
+msgid "Passkeys"
+msgstr ""
+
+msgid "Search passkeys"
+msgstr ""
+
+msgid "No passkeys found."
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Never"
+msgstr ""
+
+msgid "(deleted user)"
+msgstr ""
+
+msgid "Delete this passkey? This cannot be undone."
+msgstr ""
+
+msgid "The passkey was deleted."
+msgstr ""
+
+msgid "The passkey was suspended. It cannot be used to sign in until you resume it."
+msgstr ""
+
+msgid "The passkey was resumed."
+msgstr ""
+
+msgid "That passkey no longer exists."
+msgstr ""
+
+msgid "You do not have permission to change this passkey."
+msgstr ""
+
+msgid "Register a passkey for this user"
+msgstr ""
+
+msgid "The passkey is created on the authenticator in front of you right now (your device, or a security key you are about to hand over) — so use this only when you are setting the user up in person. They are emailed about the new passkey, and it is recorded in the audit log."
+msgstr ""
+
+msgid "Registering a passkey for another user is not enabled on this site."
+msgstr ""
+
+msgid "You do not have permission to register a passkey for that user."
+msgstr ""
+
+msgid "That user does not exist."
+msgstr ""
+
+msgid "Total passkeys: %s"
+msgstr ""

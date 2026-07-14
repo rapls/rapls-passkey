@@ -107,6 +107,11 @@ final class Shortcodes {
 					'noLabel'        => __( '(no name)', 'rapls-passkey' ),
 					'renamePrompt'   => __( 'New name for this passkey:', 'rapls-passkey' ),
 					'renameFailed'   => __( 'Could not rename the passkey.', 'rapls-passkey' ),
+					'active'         => __( 'Active', 'rapls-passkey' ),
+					'suspended'      => __( 'Suspended', 'rapls-passkey' ),
+					'suspend'        => __( 'Suspend', 'rapls-passkey' ),
+					'resume'         => __( 'Resume', 'rapls-passkey' ),
+					'confirmSuspend' => __( 'Suspend this passkey? It will stop working until you resume it, but it is not deleted.', 'rapls-passkey' ),
 				),
 			)
 		);
@@ -179,21 +184,24 @@ final class Shortcodes {
 						<th><?php esc_html_e( 'Authenticator', 'rapls-passkey' ); ?></th>
 						<th><?php esc_html_e( 'Registered', 'rapls-passkey' ); ?></th>
 						<th><?php esc_html_e( 'Last used', 'rapls-passkey' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'rapls-passkey' ); ?></th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody>
 				<?php if ( empty( $credentials ) ) : ?>
-					<tr class="rapls-pk-fe-empty"><td colspan="5"><?php esc_html_e( 'No passkeys are registered.', 'rapls-passkey' ); ?></td></tr>
+					<tr class="rapls-pk-fe-empty"><td colspan="6"><?php esc_html_e( 'No passkeys are registered.', 'rapls-passkey' ); ?></td></tr>
 				<?php else : ?>
 					<?php foreach ( $credentials as $credential ) : ?>
-						<tr data-id="<?php echo esc_attr( (string) $credential->id ); ?>">
+						<tr data-id="<?php echo esc_attr( (string) $credential->id ); ?>" data-active="<?php echo $credential->active ? '1' : '0'; ?>">
 							<td class="rapls-pk-fe-label"><?php echo esc_html( $credential->label ? $credential->label : __( '(no name)', 'rapls-passkey' ) ); ?></td>
 							<td><?php echo esc_html( \RaplsPasskey\Credentials\AuthenticatorNames::display( $credential->record_json, __( 'Unknown', 'rapls-passkey' ) ) ); ?></td>
 							<td><?php echo esc_html( $credential->created_at ); ?></td>
 							<td><?php echo esc_html( $credential->last_used_at ? $credential->last_used_at : '—' ); ?></td>
+							<td class="rapls-pk-fe-state"><?php echo esc_html( $credential->active ? __( 'Active', 'rapls-passkey' ) : __( 'Suspended', 'rapls-passkey' ) ); ?></td>
 							<td>
 								<button type="button" class="rapls-pk-fe-rename"><?php esc_html_e( 'Rename', 'rapls-passkey' ); ?></button>
+								<button type="button" class="rapls-pk-fe-toggle"><?php echo esc_html( $credential->active ? __( 'Suspend', 'rapls-passkey' ) : __( 'Resume', 'rapls-passkey' ) ); ?></button>
 								<button type="button" class="rapls-pk-fe-delete"><?php esc_html_e( 'Delete', 'rapls-passkey' ); ?></button>
 							</td>
 						</tr>

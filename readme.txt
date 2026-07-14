@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.11.0
+Stable tag: 0.12.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,8 @@ Rapls Passkey lets users sign in to WordPress with passkeys (WebAuthn / FIDO2).
 * Same-device passkeys (Touch ID / Windows Hello)
 * Cross-device sign-in using the browser's native passkey flow when the browser offers it (scan with your phone). A custom QR approval flow is available in Pro.
 * Shortcodes and Gutenberg blocks (login / passkey management) you can embed on any page
+* Rename, suspend and resume individual passkeys — a device that is temporarily out of reach can be cut off without destroying the credential
+* A site-wide passkey list for administrators (Users -> Passkeys), searchable by owner or name
 * Works with two-factor plugins (Wordfence Login Security, Two-Factor, ...): a passkey counts as the second factor, while weaker alternative logins must still pass the site's 2FA
 * Fully translatable UI (English source with a bundled Japanese translation)
 
@@ -56,6 +58,12 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.12.0 =
+* Passkeys can now be suspended instead of deleted. A device that is at the repair shop or left at the office is not gone for good, but until now the only way to stop it signing in was to destroy the credential and re-run the whole registration ceremony later. A suspended passkey is refused at login and is not offered to the browser, but survives to be resumed. Users manage their own from the profile screen and the [rapls_passkey_register] shortcode; an administrator can suspend anyone's. A suspended passkey does not count as "having a passkey", so enforcement and the disabled password login cannot strand a user with nothing to sign in with.
+* Added a site-wide passkey list under Users -> Passkeys: every passkey on the site, searchable by owner or name, showing the authenticator, when it was registered, when it was last used (or never), and its status — with suspend and delete in place. Answering "who still has a passkey on the laptop we just lost?" previously meant opening user profiles one at a time.
+* Administrators can register a passkey on another user's behalf, for handing over a pre-configured security key or setting someone up in person. Off unless the site turns it on (Rapls Passkey Pro -> Administrator enrolment), gated on the edit_user capability for that specific user, notified to the account's owner by email, and recorded in the audit log. Sites without Pro can enable it with the rapls_passkey/allow_admin_enrolment filter.
+* The credential table gained an `active` column; the schema upgrade runs automatically on the next admin page load.
 
 = 0.11.0 =
 * Passkeys can now be renamed after registration, from the profile screen and the [rapls_passkey_register] shortcode. The name was previously fixed at registration time, which left a user with two "iCloud Keychain" entries no way to tell which one to revoke after losing a device. Renaming is owner-only and is recorded in the audit log.

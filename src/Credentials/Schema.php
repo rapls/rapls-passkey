@@ -27,7 +27,7 @@ final class Schema {
 	/**
 	 * Current schema version. Bump when a table definition changes.
 	 */
-	private const VERSION = '2';
+	private const VERSION = '3';
 
 	/**
 	 * Fully-qualified credentials table name.
@@ -94,6 +94,7 @@ final class Schema {
 			credential_data longtext NOT NULL,
 			sign_count bigint(20) unsigned NOT NULL DEFAULT 0,
 			label varchar(191) DEFAULT NULL,
+			active tinyint(1) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL,
 			last_used_at datetime DEFAULT NULL,
 			PRIMARY KEY  (id),

@@ -27,6 +27,7 @@ final class Credential {
 	 * @param string|null $label         User-given label.
 	 * @param string      $created_at    Creation timestamp (UTC).
 	 * @param string|null $last_used_at  Last assertion timestamp (UTC), if any.
+	 * @param bool        $active        Whether it may currently be used to sign in.
 	 */
 	public function __construct(
 		public int $id,
@@ -36,6 +37,7 @@ final class Credential {
 		public int $sign_count,
 		public ?string $label,
 		public string $created_at,
-		public ?string $last_used_at
+		public ?string $last_used_at,
+		public bool $active = true
 	) {}
 }

@@ -72,15 +72,29 @@ class WPDB_Mem {
 		return null;
 	}
 	public function get_results( $prepared, $output = OBJECT ) {
-		$uid = (int) $prepared['args'][0];
-		$out = array();
-		foreach ( array_reverse( $this->rows, true ) as $row ) {
-			if ( (int) $row['user_id'] === $uid ) {
-				$out[] = $this->cols( $row );
+		$newest = array_reverse( $this->rows, true );
+
+		// find_by_user(): WHERE user_id = %d. find_all(): no WHERE, LIMIT/OFFSET.
+		if ( strpos( $prepared['q'], 'WHERE user_id =' ) !== false ) {
+			$uid = (int) $prepared['args'][0];
+			$out = array();
+			foreach ( $newest as $row ) {
+				if ( (int) $row['user_id'] === $uid ) {
+					$out[] = $this->cols( $row );
+				}
 			}
+			return $out;
 		}
-		return $out;
+
+		$limit  = (int) ( $prepared['args'][0] ?? 50 );
+		$offset = (int) ( $prepared['args'][1] ?? 0 );
+		return array_map( array( $this, 'cols' ), array_slice( array_values( $newest ), $offset, $limit ) );
 	}
+	public function get_var( $query ) {
+		// count_all() with no search passes a plain string.
+		return count( $this->rows );
+	}
+	public function esc_like( $s ) { return $s; }
 	private function cols( $row ) {
 		return array(
 			'id'              => $row['id'],
@@ -89,6 +103,7 @@ class WPDB_Mem {
 			'credential_data' => $row['credential_data'],
 			'sign_count'      => $row['sign_count'],
 			'label'           => $row['label'] ?? null,
+			'active'          => $row['active'] ?? 1,
 			'created_at'      => $row['created_at'],
 			'last_used_at'    => $row['last_used_at'] ?? null,
 		);
@@ -143,6 +158,26 @@ check( "another user cannot rename it", $repo->rename( $id1, 9, 'Stolen' ) === f
 check( "and the name is untouched", $repo->find_by_id( $id1 )->label === null );
 check( 'renaming a missing row fails', $repo->rename( 9999, 7, 'Ghost' ) === false );
 $repo->rename( $id1, 7, 'MacBook' ); // Restore for the checks below.
+
+// --- suspend / resume ---
+check( 'a new passkey is active', $repo->find_by_id( $id1 )->active === true );
+check( 'the owner can suspend it', $repo->set_active( $id1, 7, false ) === true );
+check( 'it is then suspended', $repo->find_by_id( $id1 )->active === false );
+check( 'suspending twice is still a success', $repo->set_active( $id1, 7, false ) === true );
+check( 'a suspended passkey drops out of find_active_by_user', count( $repo->find_active_by_user( 7 ) ) === 1 );
+check( 'but it is still listed for management', count( $repo->find_by_user( 7 ) ) === 2 );
+check( "another user cannot suspend it", $repo->set_active( $id3, 7, false ) === false );
+check( "and that one stays active", $repo->find_by_id( $id3 )->active === true );
+check( 'an admin (no owner scope) can suspend anyone\'s', $repo->set_active( $id3, null, false ) === true );
+check( 'suspending a missing row fails', $repo->set_active( 9999, null, false ) === false );
+check( 'the owner can resume it', $repo->set_active( $id1, 7, true ) === true );
+check( 'it is active again', $repo->find_by_id( $id1 )->active === true );
+$repo->set_active( $id3, null, true ); // Restore.
+
+// --- site-wide list ---
+check( 'find_all returns every passkey, newest first', count( $repo->find_all() ) === 3 && $repo->find_all()[0]->id === $id3 );
+check( 'count_all counts them', $repo->count_all() === 3 );
+check( 'find_all paginates', count( $repo->find_all( '', 2, 0 ) ) === 2 && count( $repo->find_all( '', 2, 2 ) ) === 1 );
 
 $repo->touch( $id2, '{"r":2,"u":1}', 6 );
 $after = $repo->find_by_credential_id( 'credBBB' );

@@ -43,6 +43,12 @@ namespace {
 
 	require dirname( __DIR__ ) . '/src/Support/Settings.php';
 	require dirname( __DIR__ ) . '/src/Security/LoginGate.php';
+	// No 2FA plugin is registered here, so the second-factor gate stays open (see
+	// tests/smoke-second-factor.php for its own coverage).
+	require dirname( __DIR__ ) . '/src/Integrations/SecondFactor/Provider.php';
+	require dirname( __DIR__ ) . '/src/Integrations/SecondFactor/TwoFactorCore.php';
+	require dirname( __DIR__ ) . '/src/Integrations/SecondFactor/WordfenceLs.php';
+	require dirname( __DIR__ ) . '/src/Security/SecondFactor.php';
 	require dirname( __DIR__ ) . '/src/Security/AuthSession.php';
 
 	use RaplsPasskey\Security\AuthSession;

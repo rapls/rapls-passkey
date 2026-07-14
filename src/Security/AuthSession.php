@@ -22,6 +22,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * new path cannot forget a step:
  *
  *  - the {@see LoginGate} veto (so account-blocking integrations are honoured),
+ *  - the {@see SecondFactor} gate (a magic link or a recovery code must not become
+ *    a way around the site's 2FA plugin; a passkey already is the second factor),
  *  - a conservative "remember me" default — never persistent for administrators,
  *  - the standard wp_login plus our after_login signal (for 2FA coexistence,
  *    step-up, session management, …).
@@ -33,15 +35,30 @@ final class AuthSession {
 	/**
 	 * Complete a login for the given user, or refuse it.
 	 *
-	 * @param WP_User $user     The authenticated user.
-	 * @param string  $context  Login context (login|qr-channel|magic-link|recovery-code|signup).
-	 * @param bool    $remember Whether to issue a persistent session.
+	 * @param WP_User $user          The authenticated user.
+	 * @param string  $context       Login context (login|qr-channel|magic-link|recovery-code|signup).
+	 * @param bool    $remember      Whether to issue a persistent session.
+	 * @param bool    $second_factor Whether a second-factor challenge has already been answered.
 	 * @return WP_Error|null A WP_Error to abort (do not log the user in), or null on success.
 	 */
-	public static function login( WP_User $user, string $context, bool $remember = false ): ?WP_Error {
+	public static function login( WP_User $user, string $context, bool $remember = false, bool $second_factor = false ): ?WP_Error {
 		$blocked = LoginGate::check( $user, $context );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
+		}
+
+		// A login weaker than a passkey (magic link, recovery code) must still meet
+		// the site's 2FA plugin. Park it and send the caller to the challenge; the
+		// error carries the URL, so a caller that ignores it fails closed.
+		if ( ! $second_factor && SecondFactor::required( $user, $context ) ) {
+			return new WP_Error(
+				'rapls_passkey_2fa_required',
+				__( 'Enter your two-factor authentication code to finish signing in.', 'rapls-passkey' ),
+				array(
+					'status'   => 403,
+					'redirect' => SecondFactor::begin( $user, $context, $remember ),
+				)
+			);
 		}
 
 		// Administrators never get a persistent cookie (shared-PC / theft risk),

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.9.7
+Stable tag: 0.10.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,7 @@ Rapls Passkey lets users sign in to WordPress with passkeys (WebAuthn / FIDO2).
 * Same-device passkeys (Touch ID / Windows Hello)
 * Cross-device sign-in using the browser's native passkey flow when the browser offers it (scan with your phone). A custom QR approval flow is available in Pro.
 * Shortcodes and Gutenberg blocks (login / passkey management) you can embed on any page
+* Works with two-factor plugins (Wordfence Login Security, Two-Factor, ...): a passkey counts as the second factor, while weaker alternative logins must still pass the site's 2FA
 * Fully translatable UI (English source with a bundled Japanese translation)
 
 = Shortcodes =
@@ -55,6 +56,10 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.10.0 =
+* Two-factor plugins now also cover the logins that are weaker than a passkey. Wordfence Login Security, Two-Factor and the like enforce their second factor only inside the wp-login.php password chain; the email magic link and the recovery-code login (Pro) set the auth cookie without entering it, so they were a way around the site's 2FA. Those logins now stop at a two-factor challenge screen and are completed only after the site's own 2FA plugin verifies the code — Wordfence's own check is used, not a re-implementation of it, so a Wordfence recovery code works there as well. A passkey sign-in (including the QR cross-device flow and passkey sign-up) is itself phishing-resistant MFA and is never challenged.
+* The challenge only ever appears for users who have actually configured a second factor, and RAPLS_PASSKEY_BYPASS lifts it along with the rest of the enforcement, so it cannot lock anyone out. It can be switched off under Settings -> Session security, or per login via the rapls_passkey/require_second_factor filter; adapters for other 2FA plugins can be registered with rapls_passkey/second_factor_providers.
 
 = 0.9.7 =
 * Fixed the login rate limit being far too aggressive: only failed passkey assertions now count toward the limit. The /login/options request (which the browser legitimately makes several times per page for autofill / conditional UI) is no longer counted, so a small limit such as 3 no longer triggers "Too many attempts" before you even sign in. A successful login still clears the counter, and once the limit is reached the lockout lasts the configured window.

@@ -541,3 +541,45 @@ msgstr "設定を初期値に戻しました。"
 
 msgid "You do not have permission."
 msgstr "権限がありません。"
+
+msgid "Two-factor authentication"
+msgstr "2要素認証"
+
+msgid "Two-factor authentication code"
+msgstr "2要素認証コード"
+
+msgid "Enter the code from your authenticator app, or one of your Wordfence recovery codes."
+msgstr "認証アプリのコード、または Wordfence のリカバリーコードを入力してください。"
+
+msgid "Enter your two-factor authentication code to finish signing in."
+msgstr "ログインを完了するには2要素認証コードを入力してください。"
+
+msgid "Signed in as %s. One more step: confirm your second factor."
+msgstr "%s としてログインしています。最後に2つ目の要素を確認してください。"
+
+msgid "The two-factor authentication code is not correct."
+msgstr "2要素認証コードが正しくありません。"
+
+msgid "Your session is invalid. Please try again."
+msgstr "セッションが無効です。もう一度お試しください。"
+
+msgid "Confirm"
+msgstr "確認"
+
+msgid "Back to the normal login"
+msgstr "通常のログインに戻る"
+
+msgid "Two-factor on alternative logins"
+msgstr "代替ログインでの2要素認証"
+
+msgid "Ask for the site's two-factor code on the logins that are weaker than a passkey"
+msgstr "パスキーより弱いログイン方法では、サイトの2要素認証コードを要求する"
+
+msgid "Two-factor plugins (Wordfence Login Security, Two-Factor, ...) only enforce inside the wp-login.php password chain, which the email magic link and the recovery-code login do not go through — so without this they are a way around your 2FA. A passkey sign-in (including the QR cross-device flow) is itself the second factor and is never challenged. Only users who have actually set a second factor up see the challenge."
+msgstr "2要素認証プラグイン (Wordfence Login Security、Two-Factor など) は wp-login.php のパスワード認証チェーンの中でしか検証しません。メールのマジックリンクとリカバリーコードログインはそのチェーンを通らないため、この設定がないと2要素認証の抜け道になります。パスキーによるログイン (QR での別端末ログインを含む) はそれ自体が2つ目の要素なので、確認画面は表示されません。実際に2要素認証を設定しているユーザーにのみ表示されます。"
+
+msgid "No supported two-factor plugin detected, so this setting currently has no effect."
+msgstr "対応する2要素認証プラグインが見つからないため、この設定は現在効果がありません。"
+
+msgid "Detected:"
+msgstr "検出:"

@@ -24,6 +24,7 @@ use RaplsPasskey\Integrations\WooCommerce;
 use RaplsPasskey\Integrations\WooCommerceAccount;
 use RaplsPasskey\Login\LoginForm;
 use RaplsPasskey\Login\Recaptcha;
+use RaplsPasskey\Login\SecondFactorScreen;
 use RaplsPasskey\Login\UpgradePrompt;
 use RaplsPasskey\Privacy\PersonalData;
 use RaplsPasskey\Recovery\Bypass;
@@ -154,6 +155,10 @@ final class Plugin {
 
 		// 2FA coexistence: a passkey login satisfies MFA (inert without a 2FA plugin).
 		( new TwoFactor() )->register();
+
+		// The other side of that coin: the logins that are *not* a passkey (magic
+		// link, recovery code) still have to answer the site's 2FA challenge.
+		( new SecondFactorScreen() )->register();
 
 		// Security notification emails (registration / removal / new-device sign-in).
 		( new Notifications() )->register();

@@ -42,6 +42,9 @@ final class Settings {
 			// Allow administrators to hold a persistent ("remember me") session on
 			// a passkey/alternative login. Off by default: shared-PC / theft risk.
 			'admin_remember_allowed' => false,
+			// Ask for the site's 2FA code on the logins that are weaker than a
+			// passkey (magic link, recovery code), so they cannot bypass it.
+			'alt_login_second_factor' => true,
 			// Email the user on passkey registration/removal and new-device sign-in.
 			'notifications_enabled' => true,
 			// Offer to create a passkey right after an interactive (password) login.
@@ -326,5 +329,27 @@ final class Settings {
 		 * @param bool $allowed Whether administrators may be remembered.
 		 */
 		return (bool) apply_filters( 'rapls_passkey_admin_remember_allowed', $allowed );
+	}
+
+	/**
+	 * Whether the alternative logins that are not backed by a WebAuthn ceremony
+	 * (magic link, recovery code) must still answer the site's 2FA challenge.
+	 *
+	 * On by default: those paths skip the wp-login.php authenticate chain, which is
+	 * the only place 2FA plugins enforce, so leaving this off makes them a way
+	 * around the site's 2FA. It only ever challenges users who have a second factor
+	 * configured, and RAPLS_PASSKEY_BYPASS disables it along with all enforcement.
+	 *
+	 * @return bool
+	 */
+	public static function alt_login_second_factor(): bool {
+		$required = (bool) self::get( 'alt_login_second_factor' );
+
+		/**
+		 * Filter whether weaker alternative logins must pass the site's 2FA.
+		 *
+		 * @param bool $required Whether to challenge.
+		 */
+		return (bool) apply_filters( 'rapls_passkey_alt_login_second_factor', $required );
 	}
 }

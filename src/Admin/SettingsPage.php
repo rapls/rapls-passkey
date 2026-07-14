@@ -9,6 +9,7 @@ namespace RaplsPasskey\Admin;
 
 use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
+use RaplsPasskey\Security\SecondFactor;
 use RaplsPasskey\Support\Compat;
 use RaplsPasskey\Support\Settings;
 
@@ -97,6 +98,7 @@ final class SettingsPage {
 			'login_rate_max'       => isset( $input['login_rate_max'] ) ? max( 0, (int) $input['login_rate_max'] ) : 30,
 			'login_rate_window'    => isset( $input['login_rate_window'] ) ? max( 1, (int) $input['login_rate_window'] ) : 300,
 			'admin_remember_allowed' => ! empty( $input['admin_remember_allowed'] ),
+			'alt_login_second_factor' => ! empty( $input['alt_login_second_factor'] ),
 			'notifications_enabled' => ! empty( $input['notifications_enabled'] ),
 			'upgrade_prompt_enabled' => ! empty( $input['upgrade_prompt_enabled'] ),
 			'webauthn_timeout'     => isset( $input['webauthn_timeout'] ) ? max( 0, min( 600, (int) $input['webauthn_timeout'] ) ) : 60,
@@ -168,6 +170,33 @@ final class SettingsPage {
 								<?php esc_html_e( 'Allow administrators to stay signed in ("remember me") after a passkey login', 'rapls-passkey' ); ?>
 							</label>
 							<p class="description"><?php esc_html_e( 'Off by default for safety: administrators never get a persistent session, so a shared or stolen device cannot keep an admin logged in. Turn this on to honour the "remember me" checkbox for administrators too. Non-administrators are unaffected.', 'rapls-passkey' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Two-factor on alternative logins', 'rapls-passkey' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[alt_login_second_factor]" value="1" <?php checked( ! empty( $s['alt_login_second_factor'] ) ); ?>>
+								<?php esc_html_e( 'Ask for the site\'s two-factor code on the logins that are weaker than a passkey', 'rapls-passkey' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Two-factor plugins (Wordfence Login Security, Two-Factor, ...) only enforce inside the wp-login.php password chain, which the email magic link and the recovery-code login do not go through — so without this they are a way around your 2FA. A passkey sign-in (including the QR cross-device flow) is itself the second factor and is never challenged. Only users who have actually set a second factor up see the challenge.', 'rapls-passkey' ); ?>
+							</p>
+							<?php $detected = SecondFactor::providers(); ?>
+							<?php if ( array() === $detected ) : ?>
+								<p class="description"><em><?php esc_html_e( 'No supported two-factor plugin detected, so this setting currently has no effect.', 'rapls-passkey' ); ?></em></p>
+							<?php else : ?>
+								<p class="description">
+									<strong><?php esc_html_e( 'Detected:', 'rapls-passkey' ); ?></strong>
+									<?php
+									$labels = array();
+									foreach ( $detected as $provider ) {
+										$labels[] = $provider->label();
+									}
+									echo esc_html( implode( ', ', $labels ) );
+									?>
+								</p>
+							<?php endif; ?>
 						</td>
 					</tr>
 				</table>

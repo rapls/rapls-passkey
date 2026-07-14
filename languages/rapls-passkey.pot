@@ -767,3 +767,45 @@ msgstr ""
 #: src/Support/Help.php:60
 msgid "Learn more"
 msgstr ""
+
+msgid "Two-factor authentication"
+msgstr ""
+
+msgid "Two-factor authentication code"
+msgstr ""
+
+msgid "Enter the code from your authenticator app, or one of your Wordfence recovery codes."
+msgstr ""
+
+msgid "Enter your two-factor authentication code to finish signing in."
+msgstr ""
+
+msgid "Signed in as %s. One more step: confirm your second factor."
+msgstr ""
+
+msgid "The two-factor authentication code is not correct."
+msgstr ""
+
+msgid "Your session is invalid. Please try again."
+msgstr ""
+
+msgid "Confirm"
+msgstr ""
+
+msgid "Back to the normal login"
+msgstr ""
+
+msgid "Two-factor on alternative logins"
+msgstr ""
+
+msgid "Ask for the site's two-factor code on the logins that are weaker than a passkey"
+msgstr ""
+
+msgid "Two-factor plugins (Wordfence Login Security, Two-Factor, ...) only enforce inside the wp-login.php password chain, which the email magic link and the recovery-code login do not go through — so without this they are a way around your 2FA. A passkey sign-in (including the QR cross-device flow) is itself the second factor and is never challenged. Only users who have actually set a second factor up see the challenge."
+msgstr ""
+
+msgid "No supported two-factor plugin detected, so this setting currently has no effect."
+msgstr ""
+
+msgid "Detected:"
+msgstr ""

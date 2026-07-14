@@ -30,7 +30,16 @@ class WPDB_Mem {
 		if ( ! isset( $this->rows[ $id ] ) ) {
 			return 0;
 		}
-		$this->rows[ $id ] = array_merge( $this->rows[ $id ], $data );
+		// rename() scopes the update to the owner; touch() does not pass user_id.
+		if ( isset( $where['user_id'] ) && (int) $this->rows[ $id ]['user_id'] !== (int) $where['user_id'] ) {
+			return 0;
+		}
+		// Like the real $wpdb, report 0 changed rows when nothing actually changes.
+		$merged = array_merge( $this->rows[ $id ], $data );
+		if ( $merged === $this->rows[ $id ] ) {
+			return 0;
+		}
+		$this->rows[ $id ] = $merged;
 		return 1;
 	}
 	public function delete( $table, $where, $f = null ) {
@@ -124,6 +133,16 @@ check( 'find_by_credential_id null when missing', $repo->find_by_credential_id( 
 
 $mine = $repo->find_by_user( 7 );
 check( 'find_by_user returns only that user, newest first', count( $mine ) === 2 && $mine[0]->credential_id === 'credBBB' );
+
+// --- rename (owner-scoped) ---
+check( 'rename succeeds for the owner', $repo->rename( $id1, 7, 'Work laptop' ) === true );
+check( 'the new name is stored', $repo->find_by_id( $id1 )->label === 'Work laptop' );
+check( 'renaming to the same name is still a success', $repo->rename( $id1, 7, 'Work laptop' ) === true );
+check( 'a name can be cleared', $repo->rename( $id1, 7, null ) === true && $repo->find_by_id( $id1 )->label === null );
+check( "another user cannot rename it", $repo->rename( $id1, 9, 'Stolen' ) === false );
+check( "and the name is untouched", $repo->find_by_id( $id1 )->label === null );
+check( 'renaming a missing row fails', $repo->rename( 9999, 7, 'Ghost' ) === false );
+$repo->rename( $id1, 7, 'MacBook' ); // Restore for the checks below.
 
 $repo->touch( $id2, '{"r":2,"u":1}', 6 );
 $after = $repo->find_by_credential_id( 'credBBB' );

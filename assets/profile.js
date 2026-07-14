@@ -85,6 +85,31 @@
 		}
 	}
 
+	async function renamePasskey( row ) {
+		const id = row.getAttribute( 'data-id' );
+		const cell = row.querySelector( '.rapls-passkey-label' );
+		if ( ! id || ! cell ) {
+			return;
+		}
+
+		// An unnamed passkey shows a placeholder; do not offer it back as the name.
+		const current = cell.textContent === cfg.i18n.noName ? '' : cell.textContent;
+		const label = window.prompt( cfg.i18n.renamePrompt, current );
+		if ( label === null ) {
+			return;
+		}
+
+		try {
+			const result = await request( 'credentials/' + encodeURIComponent( id ), {
+				method: 'POST',
+				body: JSON.stringify( { label: label } ),
+			} );
+			cell.textContent = result.label || cfg.i18n.noName;
+		} catch ( e ) {
+			status( ( e && e.message ) || cfg.i18n.renameFailed );
+		}
+	}
+
 	document.addEventListener( 'DOMContentLoaded', function () {
 		const btn = document.getElementById( 'rapls-passkey-register' );
 		if ( btn ) {
@@ -95,6 +120,14 @@
 				const row = el.closest( 'tr' );
 				if ( row ) {
 					deletePasskey( row );
+				}
+			} );
+		} );
+		document.querySelectorAll( '.rapls-passkey-rename' ).forEach( function ( el ) {
+			el.addEventListener( 'click', function () {
+				const row = el.closest( 'tr' );
+				if ( row ) {
+					renamePasskey( row );
 				}
 			} );
 		} );

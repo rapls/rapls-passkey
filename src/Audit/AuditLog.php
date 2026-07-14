@@ -24,6 +24,7 @@ final class AuditLog {
 	public const REGISTERED       = 'registered';
 	public const LOGIN            = 'login';
 	public const REMOVED          = 'removed';
+	public const RENAMED          = 'renamed';
 	public const RECOVERY         = 'recovery';
 	public const COUNTER_MISMATCH = 'counter_mismatch';
 

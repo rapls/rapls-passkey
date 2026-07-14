@@ -809,3 +809,15 @@ msgstr ""
 
 msgid "Detected:"
 msgstr ""
+
+msgid "Rename"
+msgstr ""
+
+msgid "New name for this passkey:"
+msgstr ""
+
+msgid "Could not rename the passkey."
+msgstr ""
+
+msgid "You do not have permission to rename this passkey."
+msgstr ""

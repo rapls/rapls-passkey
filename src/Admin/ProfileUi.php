@@ -75,6 +75,9 @@ final class ProfileUi {
 					'duplicate'   => __( 'This authenticator already has a passkey registered.', 'rapls-passkey' ),
 					'confirmDel'  => __( 'Delete this passkey?', 'rapls-passkey' ),
 					'labelPrompt' => __( 'Name for this passkey (optional):', 'rapls-passkey' ),
+					'renamePrompt' => __( 'New name for this passkey:', 'rapls-passkey' ),
+					'renameFailed' => __( 'Could not rename the passkey.', 'rapls-passkey' ),
+					'noName'      => __( '(no name)', 'rapls-passkey' ),
 				),
 			)
 		);
@@ -115,11 +118,14 @@ final class ProfileUi {
 						<?php else : ?>
 							<?php foreach ( $credentials as $credential ) : ?>
 								<tr data-id="<?php echo esc_attr( (string) $credential->id ); ?>">
-									<td><?php echo esc_html( $credential->label ? $credential->label : __( '(no name)', 'rapls-passkey' ) ); ?></td>
+									<td class="rapls-passkey-label"><?php echo esc_html( $credential->label ? $credential->label : __( '(no name)', 'rapls-passkey' ) ); ?></td>
 									<td><?php echo esc_html( AuthenticatorNames::display( $credential->record_json, __( 'Unknown', 'rapls-passkey' ) ) ); ?></td>
 									<td><?php echo esc_html( $credential->created_at ); ?></td>
 									<td><?php echo esc_html( $credential->last_used_at ? $credential->last_used_at : '—' ); ?></td>
 									<td>
+										<?php if ( $is_self ) : ?>
+											<button type="button" class="button-link rapls-passkey-rename"><?php esc_html_e( 'Rename', 'rapls-passkey' ); ?></button>
+										<?php endif; ?>
 										<?php if ( $can_delete ) : ?>
 											<button type="button" class="button-link delete rapls-passkey-delete"><?php esc_html_e( 'Delete', 'rapls-passkey' ); ?></button>
 										<?php endif; ?>

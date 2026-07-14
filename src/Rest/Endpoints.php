@@ -12,6 +12,7 @@ use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\WebAuthn\AssertionManager;
 use RaplsPasskey\Support\Settings;
+use RaplsPasskey\Support\Str;
 use RaplsPasskey\WebAuthn\Codec;
 use RaplsPasskey\WebAuthn\RegistrationManager;
 use WP_Error;
@@ -96,9 +97,16 @@ final class Endpoints {
 			self::NS,
 			'/credentials/(?P<id>\d+)',
 			array(
-				'methods'             => WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'delete_credential' ),
-				'permission_callback' => array( $this, 'require_logged_in' ),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'delete_credential' ),
+					'permission_callback' => array( $this, 'require_logged_in' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'rename_credential' ),
+					'permission_callback' => array( $this, 'require_logged_in' ),
+				),
 			)
 		);
 	}
@@ -415,6 +423,40 @@ final class Endpoints {
 	}
 
 	// --- Credential management ----------------------------------------------
+
+	/**
+	 * Rename a credential. Owner-only: a name is a label the user chose for their
+	 * own device, and there is no admin case for rewriting it (an admin who needs to
+	 * act on someone else's passkey removes it).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function rename_credential( WP_REST_Request $request ) {
+		$id      = (int) $request->get_param( 'id' );
+		$user_id = (int) wp_get_current_user()->ID;
+
+		$label = sanitize_text_field( (string) $request->get_param( 'label' ) );
+		$label = Str::substr( $label, 0, 191 ); // The column is varchar(191).
+		$label = '' === trim( $label ) ? null : $label;
+
+		if ( ! $this->repository->rename( $id, $user_id, $label ) ) {
+			return new WP_Error(
+				'rapls_passkey_forbidden',
+				__( 'You do not have permission to rename this passkey.', 'rapls-passkey' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		AuditLog::record( AuditLog::RENAMED, $user_id, 'id=' . $id );
+
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'label'   => $label,
+			)
+		);
+	}
 
 	/**
 	 * Delete a credential. Users may remove their own; users with the `edit_users`

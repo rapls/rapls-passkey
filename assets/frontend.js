@@ -177,6 +177,32 @@
 		}
 	}
 
+	async function renamePasskey( row ) {
+		const id = row.getAttribute( 'data-id' );
+		const cell = row.querySelector( '.rapls-pk-fe-label' );
+		if ( ! id || ! cell ) {
+			return;
+		}
+
+		// An unnamed passkey shows a placeholder; do not offer it back as the name.
+		const current = cell.textContent === cfg.i18n.noLabel ? '' : cell.textContent;
+		const label = window.prompt( cfg.i18n.renamePrompt, current );
+		if ( label === null ) {
+			return;
+		}
+
+		try {
+			const result = await postJson(
+				'credentials/' + encodeURIComponent( id ),
+				{ label: label },
+				{ nonce: cfg.nonce }
+			);
+			cell.textContent = ( result && result.label ) || cfg.i18n.noLabel;
+		} catch ( e ) {
+			status( 'rapls-pk-fe-register-status', ( e && e.message ) || cfg.i18n.renameFailed );
+		}
+	}
+
 	// --- Wiring -------------------------------------------------------------
 
 	document.addEventListener( 'DOMContentLoaded', function () {
@@ -195,6 +221,14 @@
 				const row = node.closest( 'tr' );
 				if ( row ) {
 					deletePasskey( row );
+				}
+			} );
+		} );
+		document.querySelectorAll( '.rapls-pk-fe-rename' ).forEach( function ( node ) {
+			node.addEventListener( 'click', function () {
+				const row = node.closest( 'tr' );
+				if ( row ) {
+					renamePasskey( row );
 				}
 			} );
 		} );

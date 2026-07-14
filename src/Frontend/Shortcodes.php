@@ -105,6 +105,8 @@ final class Shortcodes {
 					'confirmDel'     => __( 'Delete this passkey?', 'rapls-passkey' ),
 					'labelPrompt'    => __( 'Name for this passkey (optional):', 'rapls-passkey' ),
 					'noLabel'        => __( '(no name)', 'rapls-passkey' ),
+					'renamePrompt'   => __( 'New name for this passkey:', 'rapls-passkey' ),
+					'renameFailed'   => __( 'Could not rename the passkey.', 'rapls-passkey' ),
 				),
 			)
 		);
@@ -186,11 +188,14 @@ final class Shortcodes {
 				<?php else : ?>
 					<?php foreach ( $credentials as $credential ) : ?>
 						<tr data-id="<?php echo esc_attr( (string) $credential->id ); ?>">
-							<td><?php echo esc_html( $credential->label ? $credential->label : __( '(no name)', 'rapls-passkey' ) ); ?></td>
+							<td class="rapls-pk-fe-label"><?php echo esc_html( $credential->label ? $credential->label : __( '(no name)', 'rapls-passkey' ) ); ?></td>
 							<td><?php echo esc_html( \RaplsPasskey\Credentials\AuthenticatorNames::display( $credential->record_json, __( 'Unknown', 'rapls-passkey' ) ) ); ?></td>
 							<td><?php echo esc_html( $credential->created_at ); ?></td>
 							<td><?php echo esc_html( $credential->last_used_at ? $credential->last_used_at : '—' ); ?></td>
-							<td><button type="button" class="rapls-pk-fe-delete"><?php esc_html_e( 'Delete', 'rapls-passkey' ); ?></button></td>
+							<td>
+								<button type="button" class="rapls-pk-fe-rename"><?php esc_html_e( 'Rename', 'rapls-passkey' ); ?></button>
+								<button type="button" class="rapls-pk-fe-delete"><?php esc_html_e( 'Delete', 'rapls-passkey' ); ?></button>
+							</td>
 						</tr>
 					<?php endforeach; ?>
 				<?php endif; ?>

@@ -583,3 +583,15 @@ msgstr "対応する2要素認証プラグインが見つからないため、�
 
 msgid "Detected:"
 msgstr "検出:"
+
+msgid "Rename"
+msgstr "名前を変更"
+
+msgid "New name for this passkey:"
+msgstr "このパスキーの新しい名前:"
+
+msgid "Could not rename the passkey."
+msgstr "パスキーの名前を変更できませんでした。"
+
+msgid "You do not have permission to rename this passkey."
+msgstr "このパスキーの名前を変更する権限がありません。"

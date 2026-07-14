@@ -142,6 +142,44 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * Rename a credential the user owns.
+	 *
+	 * A name is the only thing that tells two "iCloud Keychain" entries apart, so a
+	 * user who cannot rename after the fact ends up unable to tell which passkey to
+	 * revoke when they lose a device.
+	 *
+	 * @param int         $id      Row id.
+	 * @param int         $user_id Owning user id.
+	 * @param string|null $label   New name, or null to clear it.
+	 * @return bool True if the row exists and belongs to the user.
+	 */
+	public function rename( int $id, int $user_id, ?string $label ): bool {
+		global $wpdb;
+
+		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			Schema::credentials_table(),
+			array( 'label' => $label ),
+			array(
+				'id'      => $id,
+				'user_id' => $user_id,
+			),
+			array( '%s' ),
+			array( '%d', '%d' )
+		);
+
+		if ( false === $updated ) {
+			return false;
+		}
+		// $wpdb->update() reports 0 changed rows when the new name equals the old
+		// one, which is a successful no-op rather than "not yours".
+		if ( 0 === (int) $updated ) {
+			$credential = $this->find_by_id( $id );
+			return null !== $credential && (int) $credential->user_id === $user_id;
+		}
+		return true;
+	}
+
+	/**
 	 * Delete a credential by row id, regardless of owner. For trusted
 	 * server-side recovery (WP-CLI / admin tooling) only — the REST path uses
 	 * the owner-scoped delete().

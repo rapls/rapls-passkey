@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.11.0 =
+* Passkeys can now be renamed after registration, from the profile screen and the [rapls_passkey_register] shortcode. The name was previously fixed at registration time, which left a user with two "iCloud Keychain" entries no way to tell which one to revoke after losing a device. Renaming is owner-only and is recorded in the audit log.
 
 = 0.10.0 =
 * Two-factor plugins now also cover the logins that are weaker than a passkey. Wordfence Login Security, Two-Factor and the like enforce their second factor only inside the wp-login.php password chain; the email magic link and the recovery-code login (Pro) set the auth cookie without entering it, so they were a way around the site's 2FA. Those logins now stop at a two-factor challenge screen and are completed only after the site's own 2FA plugin verifies the code — Wordfence's own check is used, not a re-implementation of it, so a Wordfence recovery code works there as well. A passkey sign-in (including the QR cross-device flow and passkey sign-up) is itself phishing-resistant MFA and is never challenged.

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 8.2
-Stable tag: 0.13.0
+Stable tag: 0.13.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,11 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
 == Changelog ==
+
+= 0.13.1 =
+* From a code review of 0.10.0-0.13.0:
+* The setup-check notice no longer appears on a site that upgraded with passkeys already registered — a site that is plainly working has been through setup, it just predates the wizard.
+* uninstall.php now also removes the setup-check option.
 
 = 0.13.0 =
 * Added a first-run setup check. Activating a passkey plugin and landing on a settings screen leaves the two questions that actually decide whether passkeys will work unanswered: is the site served over HTTPS (browsers refuse WebAuthn otherwise), and what relying-party ID will the credentials be bound to — get that wrong later and every registered passkey stops matching. The wizard answers both, notes any security plugin it is coexisting with, and walks the administrator through registering their own passkey, since an administrator who has not tried it cannot tell whether it works for anyone else. It appears once and is reachable afterwards from "Setup check" on the settings screen.

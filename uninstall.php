@@ -19,6 +19,7 @@ require_once __DIR__ . '/src/Credentials/Schema.php';
 delete_option( 'rapls_passkey_activated_at' );
 delete_option( 'rapls_passkey_schema_version' );
 delete_option( 'rapls_passkey_settings' );
+delete_option( 'rapls_passkey_setup_done' );
 delete_option( 'rapls_passkey_wc_endpoint_flushed' );
 
 // Remove per-user meta this plugin stored, for every user.

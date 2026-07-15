@@ -100,6 +100,13 @@ final class SetupWizard {
 		if ( ! current_user_can( 'manage_options' ) || self::done() ) {
 			return;
 		}
+		// A site that already has passkeys registered has plainly been through setup
+		// — it was just running before the wizard existed. Don't nag it on upgrade;
+		// remember that instead.
+		if ( $this->already_working() ) {
+			update_option( self::DONE_OPTION, true, false );
+			return;
+		}
 		// Not on the wizard itself.
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		if ( $screen && false !== strpos( (string) $screen->id, self::SLUG ) ) {
@@ -230,6 +237,19 @@ final class SetupWizard {
 			</p>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Does this site already have at least one registered passkey?
+	 */
+	private function already_working(): bool {
+		try {
+			$stats = $this->repository->stats();
+			return (int) ( $stats['total'] ?? 0 ) > 0;
+		} catch ( \Throwable $e ) {
+			// A missing table (fresh install mid-upgrade) just means "not yet".
+			return false;
+		}
 	}
 
 	/**

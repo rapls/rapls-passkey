@@ -21,9 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * passkey sign-in happens from a device this browser hasn't been seen on before.
  * A break-glass recovery-code login (Pro) is always reported.
  *
- * "New device" is judged by a self-contained signed cookie plus a small list of
- * hashed device tokens in user meta — independent of any Pro device-trust state,
- * and storing no raw identifiers.
+ * "New device" is judged by an opaque random cookie token whose HMAC is kept in
+ * a small list in user meta (the raw token is never stored) — independent of any
+ * Pro device-trust state. The cookie is HttpOnly; because it only gates a
+ * notification (never authentication), it is a recognition token, not a
+ * security credential.
  */
 final class Notifications {
 

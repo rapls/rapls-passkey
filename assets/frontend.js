@@ -6,20 +6,20 @@
  * wp-login.php). Registration reuses the nonce-protected register routes (the
  * visitor is logged in). All DOM hooks are bound with addEventListener so the
  * markup carries no inline handlers (CSP-friendly).
+ *
+ * Every element is resolved relative to its own `.rapls-pk-fe-login` /
+ * `.rapls-pk-fe-register` container, so several shortcodes (or a shortcode plus
+ * the WooCommerce integration) can appear on one page without their controls
+ * colliding on a shared DOM id.
  */
 ( function () {
 	'use strict';
 
 	const cfg = window.raplsPasskeyFrontend || {};
 	const wa = window.RaplsPasskeyWebAuthn;
-	let conditionalAbort = null;
 
-	function el( id ) {
-		return document.getElementById( id );
-	}
-
-	function status( id, msg ) {
-		const node = el( id );
+	function status( root, msg ) {
+		const node = root && root.querySelector( '.rapls-pk-fe-status' );
 		if ( node ) {
 			node.textContent = msg || '';
 		}
@@ -65,9 +65,8 @@
 
 	// --- Login --------------------------------------------------------------
 
-	async function runLogin( mediation, signal ) {
-		const root = document.querySelector( '.rapls-pk-fe-login' );
-		const field = el( 'rapls-pk-fe-username' );
+	async function runLogin( root, mediation, signal ) {
+		const field = root.querySelector( '.rapls-pk-fe-username' );
 		const username = field ? field.value.trim() : '';
 
 		const options = await postJson( 'login/options', { username: username }, { signal: signal } );
@@ -83,37 +82,37 @@
 		const result = await postJson( 'login/verify', {
 			state: options.state,
 			credential: wa.assertionToJson( assertion ),
-			redirect_to: ( root && root.getAttribute( 'data-redirect' ) ) || '',
+			redirect_to: root.getAttribute( 'data-redirect' ) || '',
 		}, { signal: signal } );
 
 		window.location.href = result.redirect || window.location.href;
 	}
 
-	function abortConditional() {
-		if ( conditionalAbort ) {
+	function abortConditional( root ) {
+		if ( root._raplsAbort ) {
 			try {
-				conditionalAbort.abort();
+				root._raplsAbort.abort();
 			} catch ( e ) {}
-			conditionalAbort = null;
+			root._raplsAbort = null;
 		}
 	}
 
-	async function explicitLogin() {
+	async function explicitLogin( root ) {
 		if ( ! wa || ! wa.isSupported() ) {
-			status( 'rapls-pk-fe-login-status', cfg.i18n.unsupported );
+			status( root, cfg.i18n.unsupported );
 			return;
 		}
-		abortConditional();
-		status( 'rapls-pk-fe-login-status', cfg.i18n.authenticating );
+		abortConditional( root );
+		status( root, cfg.i18n.authenticating );
 		try {
-			await runLogin( '', null );
+			await runLogin( root, '', null );
 		} catch ( e ) {
-			status( 'rapls-pk-fe-login-status', loginFriendly( e ) );
+			status( root, loginFriendly( e ) );
 		}
 	}
 
-	async function startConditional() {
-		if ( ! wa || ! wa.isSupported() || ! el( 'rapls-pk-fe-username' ) ) {
+	async function startConditional( root ) {
+		if ( ! wa || ! wa.isSupported() || ! root.querySelector( '.rapls-pk-fe-username' ) ) {
 			return;
 		}
 		if ( ! window.PublicKeyCredential || ! window.PublicKeyCredential.isConditionalMediationAvailable ) {
@@ -128,9 +127,9 @@
 		if ( ! available ) {
 			return;
 		}
-		conditionalAbort = new AbortController();
+		root._raplsAbort = new AbortController();
 		try {
-			await runLogin( 'conditional', conditionalAbort.signal );
+			await runLogin( root, 'conditional', root._raplsAbort.signal );
 		} catch ( e ) {
 			// Background flow: stay silent on abort / no-selection.
 		}
@@ -138,12 +137,12 @@
 
 	// --- Registration -------------------------------------------------------
 
-	async function registerPasskey() {
+	async function registerPasskey( root ) {
 		if ( ! wa || ! wa.isSupported() ) {
-			status( 'rapls-pk-fe-register-status', cfg.i18n.unsupported );
+			status( root, cfg.i18n.unsupported );
 			return;
 		}
-		status( 'rapls-pk-fe-register-status', cfg.i18n.registering );
+		status( root, cfg.i18n.registering );
 		try {
 			const options = await postJson( 'register/options', {}, { nonce: cfg.nonce } );
 			const credential = await navigator.credentials.create( {
@@ -155,14 +154,14 @@
 				credential: wa.attestationToJson( credential ),
 				label: label,
 			}, { nonce: cfg.nonce } );
-			status( 'rapls-pk-fe-register-status', cfg.i18n.registered );
+			status( root, cfg.i18n.registered );
 			window.location.reload();
 		} catch ( e ) {
-			status( 'rapls-pk-fe-register-status', registerFriendly( e ) );
+			status( root, registerFriendly( e ) );
 		}
 	}
 
-	async function deletePasskey( row ) {
+	async function deletePasskey( root, row ) {
 		const id = row.getAttribute( 'data-id' );
 		if ( ! id || ! window.confirm( cfg.i18n.confirmDel ) ) {
 			return;
@@ -173,11 +172,11 @@
 				row.parentNode.removeChild( row );
 			}
 		} catch ( e ) {
-			status( 'rapls-pk-fe-register-status', ( e && e.message ) || cfg.i18n.registerFailed );
+			status( root, ( e && e.message ) || cfg.i18n.registerFailed );
 		}
 	}
 
-	async function renamePasskey( row ) {
+	async function renamePasskey( root, row ) {
 		const id = row.getAttribute( 'data-id' );
 		const cell = row.querySelector( '.rapls-pk-fe-label' );
 		if ( ! id || ! cell ) {
@@ -199,7 +198,7 @@
 			);
 			cell.textContent = ( result && result.label ) || cfg.i18n.noLabel;
 		} catch ( e ) {
-			status( 'rapls-pk-fe-register-status', ( e && e.message ) || cfg.i18n.renameFailed );
+			status( root, ( e && e.message ) || cfg.i18n.renameFailed );
 		}
 	}
 
@@ -207,7 +206,7 @@
 	 * Suspending stops a passkey working without destroying it — the answer to a
 	 * device that is temporarily out of reach rather than gone for good.
 	 */
-	async function togglePasskey( row, button ) {
+	async function togglePasskey( root, row, button ) {
 		const id = row.getAttribute( 'data-id' );
 		const active = row.getAttribute( 'data-active' ) === '1';
 		if ( ! id ) {
@@ -232,45 +231,56 @@
 				state.textContent = now ? cfg.i18n.active : cfg.i18n.suspended;
 			}
 		} catch ( e ) {
-			status( 'rapls-pk-fe-register-status', ( e && e.message ) || cfg.i18n.registerFailed );
+			status( root, ( e && e.message ) || cfg.i18n.registerFailed );
 		}
 	}
 
 	// --- Wiring -------------------------------------------------------------
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		const loginBtn = el( 'rapls-pk-fe-login-btn' );
-		if ( loginBtn ) {
-			loginBtn.addEventListener( 'click', explicitLogin );
-			startConditional();
-		}
+		// Each login shortcode instance is wired independently.
+		document.querySelectorAll( '.rapls-pk-fe-login' ).forEach( function ( root ) {
+			const btn = root.querySelector( '.rapls-pk-fe-btn' );
+			if ( btn ) {
+				btn.addEventListener( 'click', function () {
+					explicitLogin( root );
+				} );
+			}
+			startConditional( root );
+		} );
 
-		const registerBtn = el( 'rapls-pk-fe-register-btn' );
-		if ( registerBtn ) {
-			registerBtn.addEventListener( 'click', registerPasskey );
-		}
-		document.querySelectorAll( '.rapls-pk-fe-delete' ).forEach( function ( node ) {
-			node.addEventListener( 'click', function () {
-				const row = node.closest( 'tr' );
-				if ( row ) {
-					deletePasskey( row );
-				}
+		// Each register / management shortcode instance is wired independently, with
+		// its row controls scoped to that container.
+		document.querySelectorAll( '.rapls-pk-fe-register' ).forEach( function ( root ) {
+			const btn = root.querySelector( '.rapls-pk-fe-btn' );
+			if ( btn ) {
+				btn.addEventListener( 'click', function () {
+					registerPasskey( root );
+				} );
+			}
+			root.querySelectorAll( '.rapls-pk-fe-delete' ).forEach( function ( node ) {
+				node.addEventListener( 'click', function () {
+					const row = node.closest( 'tr' );
+					if ( row ) {
+						deletePasskey( root, row );
+					}
+				} );
 			} );
-		} );
-		document.querySelectorAll( '.rapls-pk-fe-rename' ).forEach( function ( node ) {
-			node.addEventListener( 'click', function () {
-				const row = node.closest( 'tr' );
-				if ( row ) {
-					renamePasskey( row );
-				}
+			root.querySelectorAll( '.rapls-pk-fe-rename' ).forEach( function ( node ) {
+				node.addEventListener( 'click', function () {
+					const row = node.closest( 'tr' );
+					if ( row ) {
+						renamePasskey( root, row );
+					}
+				} );
 			} );
-		} );
-		document.querySelectorAll( '.rapls-pk-fe-toggle' ).forEach( function ( node ) {
-			node.addEventListener( 'click', function () {
-				const row = node.closest( 'tr' );
-				if ( row ) {
-					togglePasskey( row, node );
-				}
+			root.querySelectorAll( '.rapls-pk-fe-toggle' ).forEach( function ( node ) {
+				node.addEventListener( 'click', function () {
+					const row = node.closest( 'tr' );
+					if ( row ) {
+						togglePasskey( root, row, node );
+					}
+				} );
 			} );
 		} );
 	} );

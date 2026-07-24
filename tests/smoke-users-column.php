@@ -116,9 +116,9 @@ namespace {
 	$c9 = $col->render_column( '', 'rapls_passkey', 9 );
 	$c7 = $col->render_column( '', 'rapls_passkey', 7 ); // no passkeys
 
-	check( 'user 5 cell shows the count', false !== strpos( $c5, '2 passkeys' ) );
+	check( 'user 5 cell shows the count', false !== strpos( $c5, 'Passkeys: 2' ) );
 	check( 'user 5 cell shows last-used date', false !== strpos( $c5, '2026-03-15' ) );
-	check( 'user 9 cell shows the count without a date', false !== strpos( $c9, '1 passkeys' ) && false === strpos( $c9, 'Last ' ) );
+	check( 'user 9 cell shows the count without a date', false !== strpos( $c9, 'Passkeys: 1' ) && false === strpos( $c9, 'Last ' ) );
 	check( 'user 7 cell shows 未登録', false !== strpos( $c7, 'Not registered' ) );
 	check( 'counts loaded with a single grouped query for all rows', $wpdb->group_queries === 1 );
 

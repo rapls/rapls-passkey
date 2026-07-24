@@ -27,7 +27,7 @@ final class Schema {
 	/**
 	 * Current schema version. Bump when a table definition changes.
 	 */
-	private const VERSION = '3';
+	private const VERSION = '4';
 
 	/**
 	 * Fully-qualified credentials table name.
@@ -82,7 +82,10 @@ final class Schema {
 		 *
 		 * credential_id stores the base64url-encoded WebAuthn credential id and
 		 * carries a UNIQUE index so the same authenticator cannot be registered
-		 * twice. credential_data holds the full serialised CredentialRecord
+		 * twice. It is varchar(512): a non-resident authenticator that wraps state
+		 * into the credential id can produce ids whose base64url form exceeds 255
+		 * characters, which the old width would have silently truncated (breaking
+		 * later look-ups). credential_data holds the full serialised CredentialRecord
 		 * (public key, transports, aaguid, trust path, counter, …) as JSON — the
 		 * source of truth round-tripped through web-auth's serializer. sign_count
 		 * is denormalised for display and updated after every assertion.
@@ -90,7 +93,7 @@ final class Schema {
 		$sql = "CREATE TABLE {$credentials} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			user_id bigint(20) unsigned NOT NULL,
-			credential_id varchar(255) NOT NULL,
+			credential_id varchar(512) NOT NULL,
 			credential_data longtext NOT NULL,
 			sign_count bigint(20) unsigned NOT NULL DEFAULT 0,
 			label varchar(191) DEFAULT NULL,

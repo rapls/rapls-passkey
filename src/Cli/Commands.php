@@ -96,8 +96,13 @@ final class Commands {
 			WP_CLI::error( 'Provide a valid credential row id.' );
 		}
 
+		// Resolve the owner before deleting, so the audit row is attributed to the
+		// user (and is included when their personal data is exported/erased).
+		$existing = $this->repository->find_by_id( $id );
+		$owner    = $existing ? (int) $existing->user_id : 0;
+
 		if ( $this->repository->delete_by_id( $id ) ) {
-			AuditLog::record( AuditLog::REMOVED, 0, 'wp-cli id=' . $id );
+			AuditLog::record( AuditLog::REMOVED, $owner, 'wp-cli id=' . $id );
 			WP_CLI::success( sprintf( 'Removed passkey #%d.', $id ) );
 		} else {
 			WP_CLI::error( sprintf( 'No passkey found with id %d.', $id ) );

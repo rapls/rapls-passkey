@@ -22,11 +22,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * ceremonies *must* run before the visitor is logged in — and, for Pro's
  * cross-device flow, from a phone that carries no auth cookie at all.
  *
- * This allowlist re-opens **only** this plugin's own namespace. It never
- * weakens the per-route permission callbacks: registration and credential
- * deletion still require `is_user_logged_in()` / capability checks. All we do
- * is clear a blanket "REST is for logged-in users only" error for our routes so
- * those per-route checks get a chance to run.
+ * This allowlist re-opens **only** the anonymous passkey-login ceremony routes
+ * (`…/v1/login/*`). Those are the ones that must run before the visitor is
+ * logged in; the authenticated routes (`register/*`, `credentials/*`) are for
+ * users who are already signed in, so a "logged-in only" security plugin does
+ * not block them and they need no help here.
+ *
+ * Restricting the scope to `/login` also matters for CSRF: clearing the
+ * authentication error for the whole namespace would swallow core's
+ * `rest_cookie_invalid_nonce` error on the authenticated routes too, defeating
+ * the cookie-nonce check those routes rely on. Only the anonymous login routes
+ * (which carry no nonce and mint no side effects until a valid assertion) are
+ * re-opened.
  */
 final class RestAccess {
 
@@ -79,7 +86,7 @@ final class RestAccess {
 	 * @return mixed Null lets normal dispatch proceed.
 	 */
 	public function allow_pre_dispatch( $result, $server, $request ) {
-		if ( is_wp_error( $result ) && $this->request_is_ours( $request ) ) {
+		if ( is_wp_error( $result ) && $this->request_is_ours( $request ) && $this->is_clearable( $result ) ) {
 			return null;
 		}
 		return $result;
@@ -94,10 +101,43 @@ final class RestAccess {
 	 * @return mixed Null lets the route callback run.
 	 */
 	public function allow_before_callbacks( $response, $handler, $request ) {
-		if ( is_wp_error( $response ) && $this->request_is_ours( $request ) ) {
+		if ( is_wp_error( $response ) && $this->request_is_ours( $request ) && $this->is_clearable( $response ) ) {
 			return null;
 		}
 		return $response;
+	}
+
+	/**
+	 * Only clear errors that represent a blanket "REST is locked to logged-in
+	 * users" restriction — not an arbitrary WP_Error another plugin (a WAF, an IP
+	 * gate, maintenance mode, a forced-auth check) may have returned on this route.
+	 * The default set covers the WordPress core authentication codes; a site whose
+	 * security plugin uses a different code can add it via the filter.
+	 *
+	 * The authentication-error hook (allow_authentication) is intentionally left
+	 * broad: clearing there only marks the request authenticated and the route's
+	 * own permission callback still runs, so it cannot bypass a real restriction.
+	 *
+	 * @param \WP_Error $error The error being considered.
+	 * @return bool
+	 */
+	private function is_clearable( $error ): bool {
+		$codes = array(
+			'rest_not_logged_in',
+			'rest_cannot_access',
+			'rest_login_required',
+			'rest_authorization_required',
+			'rest_forbidden',
+			'rest_forbidden_context',
+			'rest_user_cannot_view',
+		);
+		/**
+		 * REST error codes the passkey-login allowlist may clear on its own routes.
+		 *
+		 * @param string[] $codes Clearable error codes.
+		 */
+		$codes = (array) apply_filters( 'rapls_passkey/rest_clearable_error_codes', $codes );
+		return in_array( (string) $error->get_error_code(), $codes, true );
 	}
 
 	/**
@@ -130,7 +170,10 @@ final class RestAccess {
 	}
 
 	/**
-	 * Match a route/URI string against our namespace prefix.
+	 * Match a route/URI string against our anonymous login routes.
+	 *
+	 * Deliberately scoped to `{namespace}/login` — not the whole namespace — so
+	 * only the pre-authentication ceremony is re-opened. See the class docblock.
 	 *
 	 * @param string $route Route or request URI.
 	 * @return bool
@@ -139,6 +182,10 @@ final class RestAccess {
 		if ( '' === $route ) {
 			return false;
 		}
-		return false !== strpos( $route, $this->namespace );
+		// Match `{namespace}/login` only on path-segment boundaries so an
+		// unrelated route that merely contains the string (e.g.
+		// `/other/rapls-passkey/v1/login-export`) is not mistaken for ours.
+		$pattern = '#(?:^|/)' . preg_quote( $this->namespace . '/login', '#' ) . '(?:/|$)#';
+		return 1 === preg_match( $pattern, $route );
 	}
 }

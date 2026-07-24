@@ -50,15 +50,28 @@ final class AuthSession {
 		// A login weaker than a passkey (magic link, recovery code) must still meet
 		// the site's 2FA plugin. Park it and send the caller to the challenge; the
 		// error carries the URL, so a caller that ignores it fails closed.
-		if ( ! $second_factor && SecondFactor::required( $user, $context ) ) {
-			return new WP_Error(
-				'rapls_passkey_2fa_required',
-				__( 'Enter your two-factor authentication code to finish signing in.', 'rapls-passkey' ),
-				array(
-					'status'   => 403,
-					'redirect' => SecondFactor::begin( $user, $context, $remember ),
-				)
-			);
+		if ( ! $second_factor ) {
+			$gate = SecondFactor::evaluate( $user, $context );
+			if ( SecondFactor::GATE_CHALLENGE === $gate ) {
+				return new WP_Error(
+					'rapls_passkey_2fa_required',
+					__( 'Enter your two-factor authentication code to finish signing in.', 'rapls-passkey' ),
+					array(
+						'status'   => 403,
+						'redirect' => SecondFactor::begin( $user, $context, $remember ),
+					)
+				);
+			}
+			// The site's 2FA plugin is active but its state could not be read. Refuse
+			// this weaker login rather than let it bypass a second factor the user may
+			// have — a passkey (or password) login is unaffected and remains available.
+			if ( SecondFactor::GATE_BLOCK === $gate ) {
+				return new WP_Error(
+					'rapls_passkey_2fa_unavailable',
+					__( 'Two-factor authentication cannot be verified right now. Please sign in with your passkey or password.', 'rapls-passkey' ),
+					array( 'status' => 503 )
+				);
+			}
 		}
 
 		// Administrators never get a persistent cookie (shared-PC / theft risk),

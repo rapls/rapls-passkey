@@ -60,6 +60,11 @@ final class ProfileUi {
 			RAPLS_PASSKEY_VERSION,
 			true
 		);
+		// A tiny bit of layout CSS, attached the sanctioned way (no inline <style>).
+		wp_register_style( 'rapls-passkey-profile', false, array(), RAPLS_PASSKEY_VERSION );
+		wp_enqueue_style( 'rapls-passkey-profile' );
+		wp_add_inline_style( 'rapls-passkey-profile', '#rapls-passkey-list th,#rapls-passkey-list td{padding-left:14px}' );
+
 		wp_localize_script(
 			'rapls-passkey-profile',
 			'raplsPasskeyProfile',
@@ -104,13 +109,9 @@ final class ProfileUi {
 			&& apply_filters( 'rapls_passkey/allow_admin_enrolment', false );
 		?>
 		<h2 id="rapls-passkey"><?php esc_html_e( 'Passkey', 'rapls-passkey' ); ?></h2>
-		<style>
-			#rapls-passkey-list th,
-			#rapls-passkey-list td { padding-left: 14px; }
-		</style>
 		<table class="form-table" role="presentation">
 			<tr>
-				<th><?php esc_html_e( 'Your registered passkeys', 'rapls-passkey' ); ?></th>
+				<th><?php echo esc_html( $is_self ? __( 'Your registered passkeys', 'rapls-passkey' ) : __( 'Registered passkeys', 'rapls-passkey' ) ); ?></th>
 				<td>
 					<table class="widefat striped" id="rapls-passkey-list" style="max-width:640px">
 						<thead>

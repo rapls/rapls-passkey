@@ -23,7 +23,10 @@ function is_wp_error( $thing ) { return $thing instanceof WP_Error; }
 function __( $t, $d = null ) { return $t; }
 function sanitize_text_field( $v ) { return is_string( $v ) ? trim( $v ) : ''; }
 function wp_unslash( $v ) { return $v; }
-function apply_filters( $tag, $value ) { return $value; }
+function apply_filters( $tag, $value ) {
+	if ( 'rapls_passkey/recaptcha_fail_open' === $tag && isset( $GLOBALS['__fail_open'] ) ) { return $GLOBALS['__fail_open']; }
+	return $value;
+}
 
 $GLOBALS['__opt'] = array(
 	'rapls_passkey_settings' => array(
@@ -91,6 +94,12 @@ check( 'wrong action -> WP_Error', $rc->verify( $user, 'admin', 'secret' ) insta
 
 $GLOBALS['__rc'] = new WP_Error( 'http_request_failed' );
 check( 'transport error -> fail open (pass)', $rc->verify( $user, 'admin', 'secret' ) === $user );
+
+// F-26: a site can flip the transport-error behaviour to fail closed.
+$GLOBALS['__fail_open'] = false;
+check( 'transport error -> fail closed when opted in', $rc->verify( $user, 'admin', 'secret' ) instanceof WP_Error );
+unset( $GLOBALS['__fail_open'] );
+check( 'default is still fail open after opt-out', $rc->verify( $user, 'admin', 'secret' ) === $user );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

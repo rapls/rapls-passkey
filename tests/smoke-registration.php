@@ -23,6 +23,12 @@ function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 $GLOBALS['__m'] = array();
 function get_user_meta( $id, $key, $single = false ) { return $GLOBALS['__m'][ "$id:$key" ] ?? ''; }
 function update_user_meta( $id, $key, $val ) { $GLOBALS['__m'][ "$id:$key" ] = $val; return true; }
+function add_user_meta( $id, $key, $val, $unique = false ) {
+	if ( $unique && isset( $GLOBALS['__m'][ "$id:$key" ] ) ) { return false; }
+	$GLOBALS['__m'][ "$id:$key" ] = $val;
+	return true;
+}
+function wp_cache_delete( $id, $group = '' ) { return true; }
 function get_option( $k, $d = false ) {
 	if ( 'rapls_passkey_settings' === $k ) { return array( 'webauthn_hints' => array( 'hybrid', 'security-key' ) ); }
 	return $d;

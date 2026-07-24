@@ -10,6 +10,7 @@ namespace RaplsPasskey\Rest;
 use ParagonIE\ConstantTime\Base64UrlSafe;
 use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
+use RaplsPasskey\Credentials\UserHandle;
 use RaplsPasskey\WebAuthn\AssertionManager;
 use RaplsPasskey\Support\Settings;
 use RaplsPasskey\Support\Str;
@@ -192,13 +193,7 @@ final class Endpoints {
 			return ! $strict;
 		}
 
-		$source_host = wp_parse_url( $source, PHP_URL_HOST );
-		$allowed     = array(
-			wp_parse_url( home_url(), PHP_URL_HOST ),
-			wp_parse_url( site_url(), PHP_URL_HOST ),
-		);
-
-		return in_array( $source_host, $allowed, true );
+		return \RaplsPasskey\Support\Origin::matches_site( (string) $source );
 	}
 
 	// --- Registration --------------------------------------------------------
@@ -219,9 +214,22 @@ final class Endpoints {
 			return $limit;
 		}
 
+		// Build the exclude list from the user's existing credentials. A single
+		// corrupt row must not break enrolment of a new passkey, so decode each row
+		// in isolation and skip (and flag) any that cannot be parsed — the worst
+		// case is that one unusable credential is missing from the exclude list.
 		$records = array();
 		foreach ( $this->repository->find_by_user( (int) $user->ID ) as $credential ) {
-			$records[] = $this->codec->record_from_json( $credential->record_json );
+			try {
+				$records[] = $this->codec->record_from_json( $credential->record_json );
+			} catch ( \Throwable $e ) {
+				// One corrupt row must not stop a user from enrolling a replacement
+				// passkey; skip it (the worst case is it is missing from the exclude
+				// list) and note it for review rather than returning a 500.
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( '[rapls-passkey] register/options: skipping unreadable credential #' . $credential->id ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				}
+			}
 		}
 
 		$result = $this->registration->create_options(
@@ -270,6 +278,16 @@ final class Endpoints {
 			return $this->fail( 'rapls_passkey_register_failed', __( 'Failed to register the passkey.', 'rapls-passkey' ), 400, 'verify: ' . $e->getMessage() );
 		}
 
+		// Bind the credential to the user the ceremony was actually built for. The
+		// verified record carries the userHandle from the creation options, so it
+		// must match the (re-resolved) owner — otherwise a caller who is allowed to
+		// enrol for others could fetch options for user A and then save the
+		// resulting credential to user B. Compared in constant time.
+		$expected_handle = UserHandle::raw( $owner_id );
+		if ( '' === $expected_handle || ! hash_equals( $expected_handle, (string) $record->userHandle ) ) {
+			return $this->fail( 'rapls_passkey_register_failed', __( 'Failed to register the passkey.', 'rapls-passkey' ), 400, 'owner_handle_mismatch: owner=' . $owner_id );
+		}
+
 		$credential_id = Base64UrlSafe::encodeUnpadded( $record->publicKeyCredentialId );
 		if ( null !== $this->repository->find_by_credential_id( $credential_id ) ) {
 			return new WP_Error( 'rapls_passkey_already_registered', __( 'This passkey is already registered.', 'rapls-passkey' ), array( 'status' => 409 ) );
@@ -279,10 +297,23 @@ final class Endpoints {
 		 * Let a policy (e.g. Pro's authenticator policy) veto a credential before
 		 * it is stored. Return a WP_Error to reject; any non-error value allows it.
 		 *
-		 * @param mixed                     $veto   Null by default; a WP_Error rejects.
-		 * @param \Webauthn\CredentialRecord $record The verified credential record.
+		 * @param mixed                     $veto    Null by default; a WP_Error rejects.
+		 * @param \Webauthn\CredentialRecord $record  The verified credential record.
+		 * @param array                     $context Registration context: owner_id
+		 *        (the user the passkey is for), actor_id (who is registering it), and
+		 *        'context' => 'register'. Lets a policy scope rules to the real owner
+		 *        rather than the current user (which differs for admin enrolment).
 		 */
-		$veto = apply_filters( 'rapls_passkey/registration_policy', null, $record );
+		$veto = apply_filters(
+			'rapls_passkey/registration_policy',
+			null,
+			$record,
+			array(
+				'owner_id' => $owner_id,
+				'actor_id' => $actor_id,
+				'context'  => 'register',
+			)
+		);
 		if ( is_wp_error( $veto ) ) {
 			return $veto;
 		}
@@ -305,6 +336,20 @@ final class Endpoints {
 
 		if ( 0 === $id ) {
 			return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
+		}
+
+		// The pre-insert limit checks are not atomic, so two simultaneous
+		// registrations could both pass them and both insert. Re-count AFTER the
+		// insert; if this row pushed the user over the cap, roll it back so the
+		// limit is never actually exceeded.
+		$max = Settings::max_passkeys();
+		if ( $max > 0 && count( $this->repository->find_by_user( $owner_id ) ) > $max ) {
+			$this->repository->delete_by_id( $id );
+			return $this->limit_error( $owner_id ) ?? new WP_Error(
+				'rapls_passkey_limit_reached',
+				__( 'You have reached the passkey limit. Please try again.', 'rapls-passkey' ),
+				array( 'status' => 409 )
+			);
 		}
 
 		AuditLog::record(
@@ -347,7 +392,7 @@ final class Endpoints {
 		$username = sanitize_text_field( (string) $request->get_param( 'username' ) );
 		$records  = array();
 
-		if ( '' !== $username ) {
+		if ( '' !== $username && $this->login_options_enumeration_ok() ) {
 			$user = get_user_by( 'login', $username );
 			if ( ! $user && is_email( $username ) ) {
 				$user = get_user_by( 'email', $username );
@@ -356,12 +401,30 @@ final class Endpoints {
 				// Suspended passkeys are not offered: the browser must not put a
 				// credential in the picker that the server would then reject.
 				foreach ( $this->repository->find_active_by_user( (int) $user->ID ) as $credential ) {
-					$records[] = $this->codec->record_from_json( $credential->record_json );
+					try {
+						$records[] = $this->codec->record_from_json( $credential->record_json );
+					} catch ( \Throwable $e ) {
+						// One corrupt row must not break the whole picker; skip it and
+						// note it for review rather than returning a 500.
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( '[rapls-passkey] login/options: skipping unreadable credential #' . $credential->id ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+						}
+					}
 				}
 			}
 		}
 
-		return rest_ensure_response( $this->assertion->create_options( $records ) );
+		// A caller (e.g. Pro's step-up confirmation) may RAISE the requirement to
+		// user-verification=required so the login counts as MFA; it can only
+		// strengthen it, never weaken the site's setting. A site can turn this
+		// client-driven elevation off with the filter.
+		$uv = null;
+		if ( 'required' === (string) $request->get_param( 'uv' )
+			&& (bool) apply_filters( 'rapls_passkey/allow_uv_elevation', true, $request ) ) {
+			$uv = 'required';
+		}
+
+		return rest_ensure_response( $this->assertion->create_options( $records, $uv ) );
 	}
 
 	/**
@@ -410,7 +473,12 @@ final class Endpoints {
 			return $this->login_fail( 'verify: ' . $e->getMessage() );
 		}
 
-		$this->repository->touch( $stored->id, $this->codec->record_to_json( $updated ), $updated->counter );
+		// Persist the advanced counter atomically. If it did not commit (a
+		// concurrent assertion already advanced the counter, or a DB error), refuse
+		// the login rather than signing in on stale state.
+		if ( $this->repository->touch( $stored->id, $this->codec->record_to_json( $updated ), $updated->counter ) < 1 ) {
+			return $this->login_fail( 'counter_not_advanced: cred=' . $stored->id );
+		}
 
 		$user = get_user_by( 'id', $stored->user_id );
 		if ( ! $user ) {
@@ -696,12 +764,13 @@ final class Endpoints {
 	 * @return WP_Error
 	 */
 	private function fail( string $code, string $message, int $status, ?string $reason = null ): WP_Error {
-		$data = array( 'status' => $status );
+		// The internal reason is only ever written to the server log — never
+		// returned to the client, even under WP_DEBUG, so a production site left
+		// with WP_DEBUG on cannot leak credential ids or library errors to callers.
 		if ( null !== $reason && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 			error_log( '[rapls-passkey] ' . $code . ' — ' . $reason ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			$data['reason'] = $reason;
 		}
-		return new WP_Error( $code, $message, $data );
+		return new WP_Error( $code, $message, array( 'status' => $status ) );
 	}
 
 	/**
@@ -729,6 +798,33 @@ final class Endpoints {
 			return true;
 		}
 		return false !== stripos( $e->getMessage(), 'counter' );
+	}
+
+	/**
+	 * Throttle username-bearing /login/options lookups per IP, to blunt scripted
+	 * enumeration of which accounts hold passkeys (and their credential ids).
+	 *
+	 * Usernameless autofill (discoverable credentials) sends no username and is
+	 * never throttled here. The cap is generous so ordinary logins — even from a
+	 * shared office IP — are unaffected; only wordlist-style probing hits it. On
+	 * the cap the caller returns empty options (as if the user were unknown),
+	 * which reveals nothing and does not break the client.
+	 *
+	 * @return bool True to proceed with the per-user credential lookup.
+	 */
+	private function login_options_enumeration_ok(): bool {
+		/** Filter: max username-bearing /login/options lookups per IP per window (0 disables). */
+		$max = (int) apply_filters( 'rapls_passkey/login_options_max', 50 );
+		if ( $max <= 0 ) {
+			return true;
+		}
+		$key = $this->rate_key( 'login_options' );
+		$n   = (int) get_transient( $key );
+		if ( $n >= $max ) {
+			return false;
+		}
+		set_transient( $key, $n + 1, Settings::login_rate_window() );
+		return true;
 	}
 
 	/**

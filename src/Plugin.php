@@ -192,7 +192,7 @@ final class Plugin {
 	 * @return bool
 	 */
 	public function webauthn_library_available(): bool {
-		return class_exists( '\Webauthn\PublicKeyCredentialSource' );
+		return class_exists( \Webauthn\PublicKeyCredentialSource::class );
 	}
 
 	/**

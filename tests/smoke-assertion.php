@@ -69,6 +69,17 @@ check( 'userVerification is preferred', ( $pk['userVerification'] ?? null ) === 
 check( 'timeout reflects the setting (60000ms)', ( $pk['timeout'] ?? null ) === 60000 );
 check( 'hints injected into the request options', ( $pk['hints'] ?? null ) === array( 'hybrid' ) );
 
+// MFA contexts (step-up, QR second factor) can raise the UV requirement so the
+// library enforces the UV flag; the stored ceremony carries it too.
+$mfa    = $manager->create_options( array(), 'required' );
+$mfa_pk = $mfa['publicKey'];
+check( 'UV override raises userVerification to required', ( $mfa_pk['userVerification'] ?? null ) === 'required' );
+$mfa_stored = $codec->request_options_from_json( $challenges->take( $mfa['state'] ) );
+check( 'stored ceremony records the required UV', $mfa_stored->userVerification === 'required' );
+// A bogus override falls back to the site setting (never weaker than intended).
+$bogus = $manager->create_options( array(), 'nonsense' );
+check( 'an invalid UV override falls back to the setting', ( $bogus['publicKey']['userVerification'] ?? null ) === 'preferred' );
+
 $stored = $challenges->take( $result['state'] );
 check( 'challenge state was stored', is_string( $stored ) );
 $options = $codec->request_options_from_json( $stored );

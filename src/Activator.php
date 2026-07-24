@@ -28,5 +28,10 @@ final class Activator {
 		if ( false === get_option( 'rapls_passkey_activated_at' ) ) {
 			add_option( 'rapls_passkey_activated_at', gmdate( 'Y-m-d H:i:s' ), '', false );
 		}
+
+		// Force the WooCommerce account endpoint's rewrite rule to be re-registered
+		// and re-flushed on the next init, so it survives a deactivate/reactivate
+		// cycle in which the rules were flushed away.
+		delete_option( \RaplsPasskey\Integrations\WooCommerceAccount::FLUSH_FLAG );
 	}
 }

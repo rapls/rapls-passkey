@@ -7,6 +7,10 @@
 		"php": ">=8.2",
 		"web-auth/webauthn-lib": "^5.0"
 	},
+	"require-dev": {
+		"humbug/php-scoper": "^0.18",
+		"sniccowp/php-scoper-wordpress-excludes": "^6.0"
+	},
 	"autoload": {
 		"psr-4": {
 			"RaplsPasskey\\": "src/"

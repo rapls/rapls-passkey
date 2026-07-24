@@ -146,10 +146,10 @@ final class Shortcodes {
 		<div class="rapls-pk-fe rapls-pk-fe-login" data-redirect="<?php echo esc_attr( $redirect ); ?>">
 			<label class="rapls-pk-fe-field">
 				<span class="rapls-pk-fe-label"><?php esc_html_e( 'Username or email address', 'rapls-passkey' ); ?></span>
-				<input type="text" id="rapls-pk-fe-username" autocomplete="username webauthn" autocapitalize="off" autocorrect="off" spellcheck="false">
+				<input type="text" class="rapls-pk-fe-username" autocomplete="username webauthn" autocapitalize="off" autocorrect="off" spellcheck="false">
 			</label>
-			<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-login-btn"><?php echo esc_html( (string) $atts['label'] ); ?></button>
-			<p class="rapls-pk-fe-status" id="rapls-pk-fe-login-status" role="status" aria-live="polite"></p>
+			<button type="button" class="rapls-pk-fe-btn"><?php echo esc_html( (string) $atts['label'] ); ?></button>
+			<p class="rapls-pk-fe-status" role="status" aria-live="polite"></p>
 			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
 		<?php
@@ -177,7 +177,7 @@ final class Shortcodes {
 		ob_start();
 		?>
 		<div class="rapls-pk-fe rapls-pk-fe-register">
-			<table class="rapls-pk-fe-table" id="rapls-pk-fe-list">
+			<table class="rapls-pk-fe-table">
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Name', 'rapls-passkey' ); ?></th>
@@ -210,8 +210,8 @@ final class Shortcodes {
 				</tbody>
 			</table>
 			<p>
-				<button type="button" class="rapls-pk-fe-btn" id="rapls-pk-fe-register-btn"><?php esc_html_e( 'Register a passkey', 'rapls-passkey' ); ?></button>
-				<span class="rapls-pk-fe-status" id="rapls-pk-fe-register-status" role="status" aria-live="polite"></span>
+				<button type="button" class="rapls-pk-fe-btn"><?php esc_html_e( 'Register a passkey', 'rapls-passkey' ); ?></button>
+				<span class="rapls-pk-fe-status" role="status" aria-live="polite"></span>
 			</p>
 			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>

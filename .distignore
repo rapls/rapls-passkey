@@ -6,9 +6,11 @@
 /.github
 /.gitignore
 /.distignore
-/.claude
+.claude/
+.cc-writes/
 CLAUDE.md
 README.md
+.DS_Store
 
 /docs
 /tests
@@ -18,6 +20,8 @@ README.md
 
 /composer.json
 /composer.lock
+/scoper.inc.php
+/build
 
 .DS_Store
 *.log

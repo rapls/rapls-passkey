@@ -36,7 +36,7 @@ final class Ceremonies {
 	 */
 	public function __construct( RelyingParty $rp ) {
 		$factory = new CeremonyStepManagerFactory();
-		$factory->setAllowedOrigins( array( $rp->origin() ), false );
+		$factory->setAllowedOrigins( $rp->allowed_origins(), false );
 		$factory->setSecuredRelyingPartyId( array( $rp->id() ) );
 		$this->factory = $factory;
 	}

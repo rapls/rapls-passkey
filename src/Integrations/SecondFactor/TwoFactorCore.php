@@ -45,10 +45,19 @@ final class TwoFactorCore implements Provider {
 	 */
 	public function enabled_for( WP_User $user ): bool {
 		try {
-			return (bool) \Two_Factor_Core::is_user_using_two_factor( $user->ID ) && null !== $this->provider( $user );
+			$using = (bool) \Two_Factor_Core::is_user_using_two_factor( $user->ID );
 		} catch ( \Throwable $e ) {
+			throw new ProviderUnavailable( 'Two-Factor status could not be read.', 0, $e );
+		}
+		if ( ! $using ) {
 			return false;
 		}
+		// The user has a second factor, but if we cannot resolve a usable provider
+		// to challenge with, fail closed rather than let a weak login through.
+		if ( null === $this->provider( $user ) ) {
+			throw new ProviderUnavailable( 'Two-Factor primary provider could not be resolved.' );
+		}
+		return true;
 	}
 
 	/**

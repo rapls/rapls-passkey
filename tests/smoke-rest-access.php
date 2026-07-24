@@ -14,7 +14,11 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 define( 'ABSPATH', __DIR__ . '/' );
 
 // Minimal WP test doubles.
-class WP_Error {}
+class WP_Error {
+	private $code;
+	public function __construct( $code = 'rest_not_logged_in' ) { $this->code = $code; }
+	public function get_error_code() { return $this->code; }
+}
 class WP_REST_Request {
 	private $route;
 	public function __construct( $route ) { $this->route = $route; }
@@ -23,6 +27,7 @@ class WP_REST_Request {
 function is_wp_error( $thing ) { return $thing instanceof WP_Error; }
 function wp_unslash( $v ) { return $v; }
 function add_filter() {}
+function apply_filters( $tag, $value, ...$rest ) { return $value; }
 
 require_once dirname( __DIR__ ) . '/src/Security/RestAccess.php';
 
@@ -72,6 +77,13 @@ check( 'before_callbacks clears our route', $guard->allow_before_callbacks( $err
 check( 'before_callbacks preserves foreign', $guard->allow_before_callbacks( $err, array(), $foreign ) === $err );
 $ok = (object) array( 'data' => 1 );
 check( 'before_callbacks passes a real response through', $guard->allow_before_callbacks( $ok, array(), $ours ) === $ok );
+
+// --- Only "REST locked to logged-in users" codes are cleared (F-14). ---
+$waf = new WP_Error( 'waf_blocked' ); // a security plugin's own error, not an auth-lock
+check( 'pre_dispatch does NOT clear a non-auth error on our route', $guard->allow_pre_dispatch( $waf, null, $ours ) === $waf );
+check( 'before_callbacks does NOT clear a non-auth error on our route', $guard->allow_before_callbacks( $waf, array(), $ours ) === $waf );
+$forbidden = new WP_Error( 'rest_forbidden' );
+check( 'pre_dispatch clears a known auth-restriction code', $guard->allow_pre_dispatch( $forbidden, null, $ours ) === null );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

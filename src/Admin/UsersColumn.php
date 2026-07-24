@@ -82,7 +82,7 @@ final class UsersColumn {
 		$cell .= esc_html(
 			sprintf(
 				/* translators: %d: number of passkeys. */
-				__( '%d passkeys', 'rapls-passkey' ),
+				__( 'Passkeys: %d', 'rapls-passkey' ),
 				$count
 			)
 		);

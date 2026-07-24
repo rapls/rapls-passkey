@@ -53,8 +53,10 @@ final class WordfenceLs implements Provider {
 		try {
 			return (bool) \WordfenceLS\Controller_Users::shared()->has_2fa_active( $user );
 		} catch ( \Throwable $e ) {
-			// An API change must not lock anyone out: treat as "no second factor".
-			return false;
+			// We cannot tell whether this user has a second factor. Surface it as
+			// "unavailable" so the gate fails closed on a weak alternative login
+			// rather than silently letting it skip a 2FA the user may have.
+			throw new ProviderUnavailable( 'Wordfence Login Security 2FA status could not be read.', 0, $e );
 		}
 	}
 

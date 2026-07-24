@@ -91,7 +91,7 @@ final class SettingsPage {
 		return array(
 			'recaptcha_enabled'    => ! empty( $input['recaptcha_enabled'] ),
 			'recaptcha_site_key'   => isset( $input['recaptcha_site_key'] ) ? sanitize_text_field( $input['recaptcha_site_key'] ) : '',
-			'recaptcha_secret_key' => \RaplsPasskey\Security\Secret::encrypt( isset( $input['recaptcha_secret_key'] ) ? sanitize_text_field( $input['recaptcha_secret_key'] ) : '' ),
+			'recaptcha_secret_key' => $this->store_secret( isset( $input['recaptcha_secret_key'] ) ? (string) $input['recaptcha_secret_key'] : '' ),
 			'recaptcha_threshold'  => $threshold,
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
@@ -108,6 +108,20 @@ final class SettingsPage {
 				? array_values( array_intersect( array( 'security-key', 'client-device', 'hybrid' ), array_map( 'strval', $input['webauthn_hints'] ) ) )
 				: array(),
 		);
+	}
+
+	/**
+	 * Store a secret, idempotently. An already-encrypted value (e.g. re-sanitised
+	 * during a settings import) is kept as-is rather than double-encrypted.
+	 *
+	 * @param string $value Plaintext secret, or existing ciphertext.
+	 * @return string Tagged ciphertext, or '' for empty input.
+	 */
+	private function store_secret( string $value ): string {
+		if ( \RaplsPasskey\Security\Secret::is_encrypted( $value ) ) {
+			return $value;
+		}
+		return \RaplsPasskey\Security\Secret::encrypt( sanitize_text_field( $value ) );
 	}
 
 	/**
@@ -343,8 +357,51 @@ final class SettingsPage {
 
 			<?php $this->render_compat(); ?>
 			<?php $this->render_audit(); ?>
+			<?php $this->render_upsell(); ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Upgrade-to-Pro panel. Shown only when Pro is not active (Pro flips the
+	 * rapls_passkey/is_pro filter), and only on this settings screen — not a
+	 * site-wide nag. All copy is translatable and the URL is filterable.
+	 */
+	private function render_upsell(): void {
+		/** Filter: whether Pro is active (Pro returns true). */
+		if ( (bool) apply_filters( 'rapls_passkey/is_pro', false ) ) {
+			return;
+		}
+
+		/** Filter: whether to show the upgrade panel at all. */
+		if ( ! (bool) apply_filters( 'rapls_passkey/show_upsell', true ) ) {
+			return;
+		}
+
+		/** Filter: the "learn more" URL for Rapls Passkey Pro. */
+		$url = (string) apply_filters( 'rapls_passkey/pro_url', 'https://raplsworks.com/rapls-passkey-pro/' );
+
+		$features = array(
+			__( 'Cross-device sign-in: approve a login on your computer from your phone via a QR code.', 'rapls-passkey' ),
+			__( 'Passwordless recovery: one-time recovery codes and email magic-link sign-in.', 'rapls-passkey' ),
+			__( 'Require passkeys for chosen roles, with a grace period, and optionally turn off password login.', 'rapls-passkey' ),
+			__( 'Adaptive step-up: ask for a passkey again after a risky password sign-in.', 'rapls-passkey' ),
+			__( 'Authenticator policy (FIDO Metadata Service / AAGUID allow & deny) and trusted-device management.', 'rapls-passkey' ),
+			__( 'Security webhooks, adoption reports, multisite network settings and WP-CLI commands.', 'rapls-passkey' ),
+		);
+
+		echo '<h2>' . esc_html__( 'Rapls Passkey Pro', 'rapls-passkey' ) . '</h2>';
+		echo '<div class="card" style="max-width:820px">';
+		echo '<p>' . esc_html__( 'Everything here is free forever. If you want more, Rapls Passkey Pro adds:', 'rapls-passkey' ) . '</p>';
+		echo '<ul style="list-style:disc;margin-left:20px">';
+		foreach ( $features as $feature ) {
+			echo '<li>' . esc_html( $feature ) . '</li>';
+		}
+		echo '</ul>';
+		echo '<p><a class="button button-primary" href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">'
+			. esc_html__( 'Learn more about Pro', 'rapls-passkey' )
+			. '</a></p>';
+		echo '</div>';
 	}
 
 	/**

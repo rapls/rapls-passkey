@@ -81,13 +81,19 @@ final class PersonalData {
 	 * @return array{data:array<int,array<string,mixed>>,done:bool}
 	 */
 	public function export( $email, $page = 1 ): array {
-		unset( $page );
-		$data = array();
-		$user = get_user_by( 'email', (string) $email );
+		$page     = max( 1, (int) $page );
+		$per_page = 200;
+		$data     = array();
+		$user     = get_user_by( 'email', (string) $email );
 
-		if ( $user ) {
-			$uid = (int) $user->ID;
+		if ( ! $user ) {
+			return array( 'data' => array(), 'done' => true );
+		}
 
+		$uid = (int) $user->ID;
+
+		// Credentials are a small, bounded set — export them all on the first page.
+		if ( 1 === $page ) {
 			foreach ( $this->repository->find_by_user( $uid ) as $c ) {
 				$data[] = array(
 					'group_id'    => 'rapls-passkey-credentials',
@@ -113,33 +119,37 @@ final class PersonalData {
 					),
 				);
 			}
+		}
 
-			foreach ( AuditLog::for_user( $uid ) as $row ) {
-				$data[] = array(
-					'group_id'    => 'rapls-passkey-audit',
-					'group_label' => __( 'Passkey audit log', 'rapls-passkey' ),
-					'item_id'     => 'rapls-passkey-audit-' . (int) $row['id'],
-					'data'        => array(
-						array(
-							'name'  => __( 'Event', 'rapls-passkey' ),
-							'value' => (string) $row['event'],
-						),
-						array(
-							'name'  => __( 'Date/time (UTC)', 'rapls-passkey' ),
-							'value' => (string) $row['created_at'],
-						),
-						array(
-							'name'  => 'IP',
-							'value' => (string) ( $row['ip'] ?? '' ),
-						),
+		// Audit rows can be numerous, so page through them — WordPress calls the
+		// exporter repeatedly with an increasing $page until it returns done.
+		$rows = AuditLog::for_user( $uid, $per_page, ( $page - 1 ) * $per_page );
+		foreach ( $rows as $row ) {
+			$data[] = array(
+				'group_id'    => 'rapls-passkey-audit',
+				'group_label' => __( 'Passkey audit log', 'rapls-passkey' ),
+				'item_id'     => 'rapls-passkey-audit-' . (int) $row['id'],
+				'data'        => array(
+					array(
+						'name'  => __( 'Event', 'rapls-passkey' ),
+						'value' => (string) $row['event'],
 					),
-				);
-			}
+					array(
+						'name'  => __( 'Date/time (UTC)', 'rapls-passkey' ),
+						'value' => (string) $row['created_at'],
+					),
+					array(
+						'name'  => 'IP',
+						'value' => (string) ( $row['ip'] ?? '' ),
+					),
+				),
+			);
 		}
 
 		return array(
 			'data' => $data,
-			'done' => true,
+			// More audit rows may remain only if this page came back full.
+			'done' => count( $rows ) < $per_page,
 		);
 	}
 

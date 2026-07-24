@@ -23,8 +23,13 @@ final class WooCommerceAccount {
 	/** Account endpoint slug. */
 	private const ENDPOINT = 'rapls-passkeys';
 
-	/** Option flag so rewrite rules are flushed only once. */
-	private const FLUSH_FLAG = 'rapls_passkey_wc_endpoint_flushed';
+	/**
+	 * Option flag so rewrite rules are flushed only once per activation. Cleared
+	 * on (de)activation (see Activator/Deactivator) so the endpoint's rewrite rule
+	 * is regenerated after a deactivation that flushed the rules away — otherwise
+	 * the My Account tab would 404 on reactivation.
+	 */
+	public const FLUSH_FLAG = 'rapls_passkey_wc_endpoint_flushed';
 
 	/**
 	 * @param Shortcodes $shortcodes Shared front-end renderer.

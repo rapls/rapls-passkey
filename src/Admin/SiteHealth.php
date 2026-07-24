@@ -42,7 +42,7 @@ final class SiteHealth {
 		$info = is_array( $info ) ? $info : array();
 
 		$secure   = is_ssl() || $this->is_local_host();
-		$library  = class_exists( '\\Webauthn\\PublicKeyCredentialSource' );
+		$library  = class_exists( \Webauthn\PublicKeyCredentialSource::class );
 		$tables   = $this->tables_exist();
 		$detected = Compat::detect();
 
@@ -140,7 +140,7 @@ final class SiteHealth {
 	 * @return array<string,mixed>
 	 */
 	public function test_library(): array {
-		$present = class_exists( '\\Webauthn\\PublicKeyCredentialSource' );
+		$present = class_exists( \Webauthn\PublicKeyCredentialSource::class );
 		$desc    = $present
 			? __( 'The WebAuthn library is loaded.', 'rapls-passkey' )
 			: __( 'The WebAuthn library was not found. Run `composer install` to install dependencies. Passkey authentication is disabled.', 'rapls-passkey' );
@@ -251,11 +251,11 @@ final class SiteHealth {
 	 * @return bool
 	 */
 	private function is_local_host(): bool {
+		// Only true loopback hosts are secure contexts without HTTPS. Browsers do
+		// not exempt .local/.test, so neither do we — matching SetupWizard so the
+		// two screens never disagree about whether the site can use WebAuthn.
 		$host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-		if ( in_array( $host, array( 'localhost', '127.0.0.1', '::1' ), true ) ) {
-			return true;
-		}
-		return (bool) preg_match( '/\.(local|test|localhost)$/', $host );
+		return in_array( $host, array( 'localhost', '127.0.0.1', '::1' ), true );
 	}
 
 	/**

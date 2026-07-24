@@ -83,14 +83,14 @@ $sc = new Shortcodes( new CredentialRepository() );
 $GLOBALS['__logged_in'] = false;
 $GLOBALS['__enqueued']  = array();
 $login = $sc->render_login( array() );
-check( 'login: renders the sign-in button', strpos( $login, 'rapls-pk-fe-login-btn' ) !== false );
+check( 'login: renders the sign-in container + button', strpos( $login, 'rapls-pk-fe-login' ) !== false && strpos( $login, 'rapls-pk-fe-btn' ) !== false );
 check( 'login: username field opts into webauthn autofill', strpos( $login, 'username webauthn' ) !== false );
 check( 'login: enqueues frontend assets', in_array( 'rapls-passkey-frontend', $GLOBALS['__enqueued'], true ) );
 check( 'login: nonce empty when logged out', isset( $GLOBALS['__localized']['nonce'] ) && $GLOBALS['__localized']['nonce'] === '' );
 
 $reg_out = $sc->render_register( array() );
 check( 'register: prompts to log in when logged out', strpos( $reg_out, 'Please sign in' ) !== false );
-check( 'register: does not render the register button when logged out', strpos( $reg_out, 'rapls-pk-fe-register-btn' ) === false );
+check( 'register: does not render the register container when logged out', strpos( $reg_out, 'rapls-pk-fe-register' ) === false );
 
 // --- Logged in. --- (fresh instance: assets enqueue once per request.)
 $GLOBALS['__logged_in'] = true;
@@ -100,7 +100,7 @@ $login_in = $sc->render_login( array() );
 check( 'login: shows "already logged in" note', strpos( $login_in, 'already signed in' ) !== false );
 
 $reg_in = $sc->render_register( array() );
-check( 'register: renders the register button when logged in', strpos( $reg_in, 'rapls-pk-fe-register-btn' ) !== false );
+check( 'register: renders the register container + button when logged in', strpos( $reg_in, 'rapls-pk-fe-register' ) !== false && strpos( $reg_in, 'rapls-pk-fe-btn' ) !== false );
 check( 'register: shows empty-state row with no credentials', strpos( $reg_in, 'No passkeys are registered' ) !== false );
 check( 'register: nonce present when logged in', isset( $GLOBALS['__localized']['nonce'] ) && $GLOBALS['__localized']['nonce'] === 'nonce-wp_rest' );
 

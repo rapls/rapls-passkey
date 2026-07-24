@@ -42,7 +42,7 @@ final class Blocks {
 		wp_register_script(
 			'rapls-passkey-blocks',
 			RAPLS_PASSKEY_URL . 'assets/blocks.js',
-			array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-server-side-render', 'wp-i18n' ),
+			array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-server-side-render', 'wp-i18n' ),
 			RAPLS_PASSKEY_VERSION,
 			true
 		);

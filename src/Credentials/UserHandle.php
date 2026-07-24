@@ -32,11 +32,22 @@ final class UserHandle {
 	 */
 	public static function get( int $user_id ): string {
 		$handle = get_user_meta( $user_id, self::META, true );
-		if ( ! is_string( $handle ) || '' === $handle ) {
-			$handle = Base64UrlSafe::encodeUnpadded( random_bytes( 32 ) );
-			update_user_meta( $user_id, self::META, $handle );
+		if ( is_string( $handle ) && '' !== $handle ) {
+			return $handle;
 		}
-		return $handle;
+
+		// First use. add_user_meta( …, true ) inserts only when no row exists yet,
+		// so two concurrent first registrations cannot mint two different handles
+		// for the same account (which would give one user two WebAuthn user.ids):
+		// the loser's insert fails and it re-reads the winner's value.
+		$candidate = Base64UrlSafe::encodeUnpadded( random_bytes( 32 ) );
+		if ( add_user_meta( $user_id, self::META, $candidate, true ) ) {
+			return $candidate;
+		}
+
+		wp_cache_delete( $user_id, 'user_meta' );
+		$handle = get_user_meta( $user_id, self::META, true );
+		return is_string( $handle ) && '' !== $handle ? $handle : $candidate;
 	}
 
 	/**

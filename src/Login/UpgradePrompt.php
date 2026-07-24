@@ -164,7 +164,9 @@ final class UpgradePrompt {
 	 * @return bool
 	 */
 	private function has_passkey( int $user_id ): bool {
-		return array() !== $this->repository->find_by_user( $user_id );
+		// Count only usable passkeys — a user whose only passkey is suspended still
+		// needs the prompt to register a working one.
+		return array() !== $this->repository->find_active_by_user( $user_id );
 	}
 
 	/**

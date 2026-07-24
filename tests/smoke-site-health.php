@@ -88,9 +88,13 @@ namespace {
 	check( 'result carries a badge + description + test key', isset( $r['badge']['color'], $r['description'] ) && $r['test'] === 'rapls_passkey_https' );
 	check( 'critical badge is red', $r['badge']['color'] === 'red' );
 
-	// Local host is treated as secure even without SSL.
-	$GLOBALS['__home'] = 'https://example.test'; // ends with .test -> local -> good.
-	check( 'local host is treated as secure', $sh->test_https()['status'] === 'good' );
+	// Only true loopback hosts are treated as secure without SSL (browsers do not
+	// exempt .local/.test), matching SetupWizard.
+	$GLOBALS['__home'] = 'https://example.test'; // .test is NOT a secure context.
+	check( 'a .test host without SSL is not treated as secure', $sh->test_https()['status'] === 'critical' );
+	$GLOBALS['__home'] = 'http://localhost'; // loopback -> secure context -> good.
+	check( 'localhost is treated as secure', $sh->test_https()['status'] === 'good' );
+	$GLOBALS['__home'] = 'https://example.test'; // restore for the RP-id checks below.
 
 	// RP test is informational/good and reports the RP id.
 	check( 'rp test is good', $sh->test_rp()['status'] === 'good' );

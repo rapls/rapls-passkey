@@ -41,9 +41,13 @@ final class AssertionManager {
 	 * Build request options.
 	 *
 	 * @param CredentialRecord[] $allowed_records Records to allow (empty = discoverable / usernameless).
+	 * @param string|null        $user_verification Override the UV requirement
+	 *        (required|preferred|discouraged). MFA contexts (step-up, QR second
+	 *        factor) pass "required" so the library enforces the UV flag; null uses
+	 *        the site's compatibility-first setting for ordinary login.
 	 * @return array{state:string,publicKey:array<string,mixed>}
 	 */
-	public function create_options( array $allowed_records ): array {
+	public function create_options( array $allowed_records, ?string $user_verification = null ): array {
 		$allow = array();
 		foreach ( $allowed_records as $record ) {
 			$allow[] = PublicKeyCredentialDescriptor::create(
@@ -53,11 +57,15 @@ final class AssertionManager {
 			);
 		}
 
+		$uv = in_array( $user_verification, array( 'required', 'preferred', 'discouraged' ), true )
+			? $user_verification
+			: Settings::webauthn_user_verification();
+
 		$options = PublicKeyCredentialRequestOptions::create(
 			random_bytes( 32 ),
 			$this->rp->id(),
 			$allow,
-			Settings::webauthn_user_verification(),
+			$uv,
 			Settings::webauthn_timeout()
 		);
 

@@ -117,8 +117,10 @@ final class Recaptcha {
 	}
 
 	/**
-	 * Call Google to validate the token. Fails open on a transport error (so a
-	 * Google outage can't lock everyone out) but closed on an explicit reject.
+	 * Call Google to validate the token. On a transport error it fails OPEN by
+	 * default (a Google outage should not lock everyone out), but a site can flip
+	 * that to fail-closed for a stricter posture; an explicit reject always fails
+	 * closed.
 	 *
 	 * @param string $token Client token.
 	 * @return bool
@@ -137,17 +139,29 @@ final class Recaptcha {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return true; // Fail open on transport failure.
+			/**
+			 * Whether reCAPTCHA fails OPEN when Google cannot be reached. Default
+			 * true (availability over strictness); return false to reject the login
+			 * when verification cannot complete.
+			 *
+			 * @param bool $fail_open Whether to allow the login on a transport error.
+			 */
+			return (bool) apply_filters( 'rapls_passkey/recaptcha_fail_open', true );
 		}
 
 		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		if ( ! is_array( $data ) || empty( $data['success'] ) ) {
 			return false;
 		}
-		if ( isset( $data['action'] ) && self::ACTION !== $data['action'] ) {
+		// This is a reCAPTCHA v3 integration (it sends an action and scores each
+		// request), so both fields must be present and correct. Treat a missing
+		// action or score as a failure rather than silently skipping the check —
+		// otherwise a token minted for a different action, or a scoreless v2
+		// token, would satisfy the gate.
+		if ( ! isset( $data['action'] ) || self::ACTION !== $data['action'] ) {
 			return false;
 		}
-		if ( isset( $data['score'] ) && (float) $data['score'] < Settings::recaptcha_threshold() ) {
+		if ( ! isset( $data['score'] ) || (float) $data['score'] < Settings::recaptcha_threshold() ) {
 			return false;
 		}
 

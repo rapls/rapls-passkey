@@ -3,12 +3,14 @@
  * using the wp.* globals. Both blocks are server-rendered, so the editor shows a
  * live ServerSideRender preview and `save` returns null.
  */
-( function ( blocks, element, blockEditor, serverSideRender, i18n ) {
+( function ( blocks, element, blockEditor, components, serverSideRender, i18n ) {
 	'use strict';
 
 	const el = element.createElement;
 	const __ = i18n.__;
 	const InspectorControls = blockEditor.InspectorControls;
+	const PanelBody = components.PanelBody;
+	const TextControl = components.TextControl;
 	const SSR = serverSideRender;
 
 	blocks.registerBlockType( 'rapls-passkey/login', {
@@ -22,12 +24,38 @@
 			label: { type: 'string', default: '' },
 		},
 		edit: function ( props ) {
+			const attributes = props.attributes;
+			const setAttributes = props.setAttributes;
 			return el(
 				element.Fragment,
 				null,
+				el(
+					InspectorControls,
+					null,
+					el(
+						PanelBody,
+						{ title: __( 'Passkey button', 'rapls-passkey' ), initialOpen: true },
+						el( TextControl, {
+							label: __( 'Redirect URL after sign-in', 'rapls-passkey' ),
+							help: __( 'Where to send the visitor after they sign in. Leave blank for the default.', 'rapls-passkey' ),
+							value: attributes.redirect || '',
+							onChange: function ( value ) {
+								setAttributes( { redirect: value } );
+							},
+						} ),
+						el( TextControl, {
+							label: __( 'Button label', 'rapls-passkey' ),
+							help: __( 'Custom text for the sign-in button. Leave blank for the default.', 'rapls-passkey' ),
+							value: attributes.label || '',
+							onChange: function ( value ) {
+								setAttributes( { label: value } );
+							},
+						} )
+					)
+				),
 				el( SSR, {
 					block: 'rapls-passkey/login',
-					attributes: props.attributes,
+					attributes: attributes,
 				} )
 			);
 		},
@@ -49,4 +77,4 @@
 			return null;
 		},
 	} );
-} )( window.wp.blocks, window.wp.element, window.wp.blockEditor, window.wp.serverSideRender, window.wp.i18n );
+} )( window.wp.blocks, window.wp.element, window.wp.blockEditor, window.wp.components, window.wp.serverSideRender, window.wp.i18n );

@@ -81,26 +81,56 @@ final class CredentialRepository {
 	}
 
 	/**
-	 * Update the stored record and counter after a successful assertion.
+	 * Persist the record and signature counter after a successful assertion, as an
+	 * optimistic (compare-and-set) update so a concurrent replay cannot slip past
+	 * the counter check between our read and write.
+	 *
+	 * For a counter-using authenticator (new counter > 0) the row is advanced only
+	 * when the stored counter is still strictly lower; a concurrent assertion that
+	 * already advanced it updates zero rows and the caller must abort the login.
+	 * A counter-less authenticator (always 0) has no freshness signal here — replay
+	 * is prevented upstream by the one-time challenge — so it updates by row id.
 	 *
 	 * @param int    $id          Row id.
 	 * @param string $record_json Re-serialised CredentialRecord JSON.
 	 * @param int    $sign_count  New signature counter.
-	 * @return void
+	 * @return int  1 when the row was committed, 0 when the counter did not advance
+	 *              (reject the login), -1 on a database error (reject the login).
 	 */
-	public function touch( int $id, string $record_json, int $sign_count ): void {
+	public function touch( int $id, string $record_json, int $sign_count ): int {
 		global $wpdb;
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			Schema::credentials_table(),
-			array(
-				'credential_data' => $record_json,
-				'sign_count'      => $sign_count,
-				'last_used_at'    => gmdate( 'Y-m-d H:i:s' ),
-			),
-			array( 'id' => $id ),
-			array( '%s', '%d', '%s' ),
-			array( '%d' )
+		$table = Schema::credentials_table();
+		$now   = gmdate( 'Y-m-d H:i:s' );
+
+		if ( $sign_count > 0 ) {
+			$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare(
+					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d AND sign_count < %d",
+					$record_json,
+					$sign_count,
+					$now,
+					$id,
+					$sign_count
+				)
+			);
+			if ( false === $affected ) {
+				return -1;
+			}
+			return (int) $affected >= 1 ? 1 : 0;
+		}
+
+		$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare(
+				"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d",
+				$record_json,
+				$sign_count,
+				$now,
+				$id
+			)
 		);
+		// A matched-but-unchanged row can report 0 affected; that is fine for a
+		// counter-less authenticator, so only a hard DB error (false) is a failure.
+		return false === $affected ? -1 : 1;
 	}
 
 	/**

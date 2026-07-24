@@ -18,9 +18,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Deactivator {
 
 	/**
-	 * No scheduled work or runtime state to tear down yet. Stored credentials
-	 * and options are intentionally preserved so reactivation is seamless.
+	 * Stored credentials and options are intentionally preserved so reactivation
+	 * is seamless. We do clear the WooCommerce account endpoint's rewrite rule and
+	 * its one-time flush flag, so the rules do not keep a stale endpoint and the
+	 * tab's rewrite rule is regenerated cleanly on reactivation.
 	 */
 	public static function deactivate(): void {
+		delete_option( \RaplsPasskey\Integrations\WooCommerceAccount::FLUSH_FLAG );
+		if ( function_exists( 'flush_rewrite_rules' ) ) {
+			flush_rewrite_rules( false );
+		}
 	}
 }

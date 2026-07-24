@@ -43,6 +43,15 @@ final class SecondFactor {
 	/** Transient prefix for the pending login. */
 	private const TRANSIENT = 'rapls_passkey_2fa_';
 
+	/** Gate result: the login may proceed without a second factor. */
+	public const GATE_PASS = 'pass';
+
+	/** Gate result: the login must answer a provider's second-factor challenge. */
+	public const GATE_CHALLENGE = 'challenge';
+
+	/** Gate result: a 2FA plugin is active but its state is unreadable — refuse. */
+	public const GATE_BLOCK = 'block';
+
 	/** How long the visitor has to answer the challenge, in seconds. */
 	private const TTL = 600;
 
@@ -86,11 +95,76 @@ final class SecondFactor {
 	 */
 	public static function provider_for( WP_User $user ): ?Provider {
 		foreach ( self::providers() as $provider ) {
-			if ( $provider->enabled_for( $user ) ) {
-				return $provider;
+			try {
+				if ( $provider->enabled_for( $user ) ) {
+					return $provider;
+				}
+			} catch ( \Throwable $e ) {
+				// A provider that cannot report its state can neither render nor
+				// validate a challenge; skip it here. The gate (evaluate()) treats
+				// the same condition as a reason to refuse a weak login.
+				continue;
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Evaluate the second-factor gate for a login, distinguishing three outcomes:
+	 * no challenge needed, a challenge is required, or an active 2FA plugin's
+	 * state could not be read and the (weaker) login must be refused fail-closed.
+	 *
+	 * @param WP_User $user    The user signing in.
+	 * @param string  $context Login context.
+	 * @return string One of GATE_PASS, GATE_CHALLENGE, GATE_BLOCK.
+	 */
+	public static function evaluate( WP_User $user, string $context ): string {
+		// Break-glass: the emergency constant disables enforcement everywhere.
+		if ( defined( 'RAPLS_PASSKEY_BYPASS' ) && RAPLS_PASSKEY_BYPASS ) {
+			return self::GATE_PASS;
+		}
+		if ( ! Settings::alt_login_second_factor() ) {
+			return self::GATE_PASS;
+		}
+		if ( ! self::weak_context( $context ) ) {
+			return self::GATE_PASS;
+		}
+
+		$enabled       = false;
+		$indeterminate = false;
+		foreach ( self::providers() as $provider ) {
+			try {
+				if ( $provider->enabled_for( $user ) ) {
+					$enabled = true;
+					break;
+				}
+			} catch ( \Throwable $e ) {
+				// An active 2FA plugin errored while reporting the user's state.
+				$indeterminate = true;
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'rapls-passkey: second-factor provider unavailable: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				}
+			}
+		}
+
+		/**
+		 * Override whether a second factor is demanded for this login.
+		 *
+		 * @param bool    $required Whether to challenge.
+		 * @param WP_User $user     The user signing in.
+		 * @param string  $context  Login context.
+		 */
+		$required = (bool) apply_filters( 'rapls_passkey/require_second_factor', $enabled, $user, $context );
+
+		if ( $required ) {
+			return self::GATE_CHALLENGE;
+		}
+		// A provider could not tell us the state: fail closed rather than let a weak
+		// login skip a second factor the user may actually have configured.
+		if ( $indeterminate ) {
+			return self::GATE_BLOCK;
+		}
+		return self::GATE_PASS;
 	}
 
 	/**
@@ -100,27 +174,7 @@ final class SecondFactor {
 	 * @param string  $context Login context (login|qr-channel|magic-link|recovery-code|signup).
 	 */
 	public static function required( WP_User $user, string $context ): bool {
-		// Break-glass: the emergency constant disables enforcement everywhere.
-		if ( defined( 'RAPLS_PASSKEY_BYPASS' ) && RAPLS_PASSKEY_BYPASS ) {
-			return false;
-		}
-		if ( ! Settings::alt_login_second_factor() ) {
-			return false;
-		}
-		if ( ! self::weak_context( $context ) ) {
-			return false;
-		}
-
-		$required = null !== self::provider_for( $user );
-
-		/**
-		 * Override whether a second factor is demanded for this login.
-		 *
-		 * @param bool    $required Whether to challenge.
-		 * @param WP_User $user     The user signing in.
-		 * @param string  $context  Login context.
-		 */
-		return (bool) apply_filters( 'rapls_passkey/require_second_factor', $required, $user, $context );
+		return self::GATE_CHALLENGE === self::evaluate( $user, $context );
 	}
 
 	/**

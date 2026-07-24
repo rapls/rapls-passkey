@@ -57,6 +57,28 @@ class WPDB_Mem {
 	public function prepare( $query, ...$args ) {
 		return array( 'q' => $query, 'args' => $args );
 	}
+	// touch() runs an optimistic UPDATE via query() (not update()).
+	public function query( $prepared ) {
+		$q = $prepared['q'];
+		$a = $prepared['args'];
+		if ( false === strpos( $q, 'UPDATE' ) || false === strpos( $q, 'credential_data' ) ) {
+			return 0;
+		}
+		$id = (int) $a[3];
+		if ( ! isset( $this->rows[ $id ] ) ) {
+			return 0;
+		}
+		if ( false !== strpos( $q, 'sign_count < %d' ) ) {
+			$min = (int) $a[4];
+			if ( (int) $this->rows[ $id ]['sign_count'] >= $min ) {
+				return 0; // Counter did not advance.
+			}
+		}
+		$this->rows[ $id ]['credential_data'] = (string) $a[0];
+		$this->rows[ $id ]['sign_count']      = (int) $a[1];
+		$this->rows[ $id ]['last_used_at']    = (string) $a[2];
+		return 1;
+	}
 	public function get_row( $prepared, $output = OBJECT ) {
 		$arg    = $prepared['args'][0];
 		$by_id  = is_string( $prepared['q'] ) && strpos( $prepared['q'], 'WHERE id =' ) !== false;
@@ -179,10 +201,19 @@ check( 'find_all returns every passkey, newest first', count( $repo->find_all() 
 check( 'count_all counts them', $repo->count_all() === 3 );
 check( 'find_all paginates', count( $repo->find_all( '', 2, 0 ) ) === 2 && count( $repo->find_all( '', 2, 2 ) ) === 1 );
 
-$repo->touch( $id2, '{"r":2,"u":1}', 6 );
+check( 'touch commits an advancing counter (returns 1)', $repo->touch( $id2, '{"r":2,"u":1}', 6 ) === 1 );
 $after = $repo->find_by_credential_id( 'credBBB' );
 check( 'touch updates record + counter', $after->sign_count === 6 && $after->record_json === '{"r":2,"u":1}' );
 check( 'touch sets last_used_at', ! empty( $after->last_used_at ) );
+
+// Optimistic CAS (F-13): a replay whose counter does not advance is rejected,
+// and the stored record is left untouched.
+check( 'touch rejects a non-advancing counter (returns 0)', $repo->touch( $id2, '{"r":2,"u":99}', 6 ) === 0 );
+$still = $repo->find_by_credential_id( 'credBBB' );
+check( 'a rejected touch leaves the record unchanged', $still->record_json === '{"r":2,"u":1}' && $still->sign_count === 6 );
+// A counter-less authenticator (always 0) commits by row id (challenge is the
+// replay guard there), so it is not blocked by the CAS.
+check( 'touch on a counter-less authenticator commits (returns 1)', $repo->touch( $id3, '{"r":3,"u":1}', 0 ) === 1 );
 
 // find_by_id (used by admin delete path).
 $by_id = $repo->find_by_id( $id3 );

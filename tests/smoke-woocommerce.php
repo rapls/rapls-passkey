@@ -88,7 +88,7 @@ $GLOBALS['__logged_in'] = false;
 $GLOBALS['__filter_wc'] = true;
 $wc = new WooCommerce( new Shortcodes( new CredentialRepository() ) );
 $out = capture( $wc );
-check( 'renders the passkey login button', strpos( $out, 'rapls-pk-fe-login-btn' ) !== false );
+check( 'renders the passkey login container + button', strpos( $out, 'rapls-pk-fe-login' ) !== false && strpos( $out, 'rapls-pk-fe-btn' ) !== false );
 check( 'wraps it in the WooCommerce container', strpos( $out, 'rapls-pk-wc' ) !== false );
 
 // Second call in the same request => guarded, no output.

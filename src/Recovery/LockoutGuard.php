@@ -49,6 +49,11 @@ final class LockoutGuard {
 		if ( Bypass::active() ) {
 			return false;
 		}
+		// The last administrator is never enforced, so this helper is safe to use
+		// as a standalone preflight without repeating the check at the call site.
+		if ( $this->is_last_administrator( $user_id ) ) {
+			return false;
+		}
 		return $this->user_has_passkey( $user_id );
 	}
 
@@ -61,16 +66,35 @@ final class LockoutGuard {
 	 */
 	public function is_last_administrator( int $user_id ): bool {
 		$user = get_userdata( $user_id );
-		if ( ! $user || ! in_array( 'administrator', (array) $user->roles, true ) ) {
+		if ( ! $user ) {
 			return false;
 		}
-		$admins = get_users(
-			array(
-				'role'   => 'administrator',
-				'fields' => 'ID',
-				'number' => 2,
-			)
-		);
-		return count( $admins ) <= 1;
+
+		$multisite  = is_multisite();
+		$is_super   = $multisite && function_exists( 'is_super_admin' ) && is_super_admin( $user_id );
+		$is_admin   = in_array( 'administrator', (array) $user->roles, true ) || $is_super;
+		if ( ! $is_admin ) {
+			return false;
+		}
+
+		if ( ! $multisite ) {
+			// Single site: two is enough to know we are not the last one.
+			$admins = get_users( array( 'role' => 'administrator', 'fields' => 'ID', 'number' => 2 ) );
+			return count( $admins ) <= 1;
+		}
+
+		// Multisite: count everyone who can still administer this site, including
+		// super admins, who may administer a subsite without holding its local
+		// administrator role — otherwise the last one could be locked out.
+		$admins = array_map( 'intval', (array) get_users( array( 'role' => 'administrator', 'fields' => 'ID' ) ) );
+		if ( function_exists( 'get_super_admins' ) ) {
+			foreach ( (array) get_super_admins() as $login ) {
+				$super = get_user_by( 'login', $login );
+				if ( $super ) {
+					$admins[] = (int) $super->ID;
+				}
+			}
+		}
+		return count( array_unique( $admins ) ) <= 1;
 	}
 }

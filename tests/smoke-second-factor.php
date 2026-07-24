@@ -191,6 +191,37 @@ check( 'recovery-code login is parked too', null === $GLOBALS['__auth'] );
 check( 'the completed challenge lets the login through', AuthSession::login( $alice, 'recovery-code', false, true ) === null );
 check( 'the auth cookie is set only then', is_array( $GLOBALS['__auth'] ) && 1 === $GLOBALS['__auth']['uid'] );
 
+// --- Fail-closed: a 2FA plugin that cannot report its state. --------------
+
+use RaplsPasskey\Integrations\SecondFactor\ProviderUnavailable;
+
+class BrokenProvider implements Provider {
+	public function is_available(): bool { return true; }
+	public function label(): string { return 'Broken 2FA'; }
+	public function enabled_for( WP_User $user ): bool { throw new ProviderUnavailable( 'api changed' ); }
+	public function render( WP_User $user ): void {}
+	public function validate( WP_User $user ): bool { return false; }
+}
+$GLOBALS['__filters']['rapls_passkey/second_factor_providers'] = function () {
+	return array( new BrokenProvider() );
+};
+
+check( 'an unreadable provider makes the gate BLOCK', SecondFactor::evaluate( $alice, 'magic-link' ) === SecondFactor::GATE_BLOCK );
+check( 'a BLOCK is not reported as a challenge', SecondFactor::required( $alice, 'magic-link' ) === false );
+
+$GLOBALS['__auth'] = null;
+$_COOKIE           = array();
+$blocked           = AuthSession::login( $alice, 'magic-link', false );
+check( 'a weak login is refused when 2FA cannot be verified', $blocked instanceof WP_Error && 'rapls_passkey_2fa_unavailable' === $blocked->get_error_code() );
+check( 'no cookie is set on a fail-closed refusal', null === $GLOBALS['__auth'] );
+
+// A non-weak login (passkey) is unaffected even while the provider is broken.
+$GLOBALS['__auth'] = null;
+check( 'a passkey login still completes while 2FA is unreadable', AuthSession::login( $alice, 'login', false ) === null );
+check( 'the passkey login set its cookie', is_array( $GLOBALS['__auth'] ) && 1 === $GLOBALS['__auth']['uid'] );
+
+fake_2fa( true );
+
 // --- Break-glass: the bypass constant lifts the gate. ---------------------
 
 define( 'RAPLS_PASSKEY_BYPASS', true );

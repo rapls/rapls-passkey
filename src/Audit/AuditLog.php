@@ -81,11 +81,12 @@ final class AuditLog {
 	 * @param int $limit   Max rows.
 	 * @return array<int,array<string,mixed>>
 	 */
-	public static function for_user( int $user_id, int $limit = 1000 ): array {
+	public static function for_user( int $user_id, int $limit = 1000, int $offset = 0 ): array {
 		global $wpdb;
-		$table = Schema::audit_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC LIMIT %d", $user_id, $limit ),
+		$table  = Schema::audit_table();
+		$offset = max( 0, $offset );
+		$rows   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC LIMIT %d OFFSET %d", $user_id, $limit, $offset ),
 			ARRAY_A
 		);
 

@@ -19,3 +19,6 @@
 
 # ビルド成果物
 /rapls-passkey.zip
+/build/
+# scope ビルド用ツール(手動ダウンロードの phar)
+/bin/php-scoper.phar

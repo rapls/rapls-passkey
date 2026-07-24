@@ -32,6 +32,20 @@ final class Secret {
 	private const TAG_OPENSSL = 'o1:';
 
 	/**
+	 * Whether a stored value is already tagged ciphertext produced by encrypt().
+	 *
+	 * Lets callers keep a value idempotent: a sanitiser that runs twice (e.g. the
+	 * settings import, where update_option() re-triggers the registered
+	 * sanitize_callback) must not encrypt an already-encrypted value again.
+	 *
+	 * @param string $value Stored value.
+	 * @return bool
+	 */
+	public static function is_encrypted( string $value ): bool {
+		return 0 === strncmp( $value, self::TAG_SODIUM, 3 ) || 0 === strncmp( $value, self::TAG_OPENSSL, 3 );
+	}
+
+	/**
 	 * Encrypt a plaintext secret. Empty stays empty (so "unset" is preserved).
 	 *
 	 * @param string $plain Plaintext.

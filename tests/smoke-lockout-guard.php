@@ -59,6 +59,7 @@ $GLOBALS['__users'] = array(
 	3 => (object) array( 'ID' => 3, 'roles' => array( 'subscriber' ) ),
 );
 $GLOBALS['__admin_count'] = 2;
+function is_multisite() { return false; }
 function get_userdata( $id ) { return $GLOBALS['__users'][ $id ] ?? false; }
 function get_users( $args ) {
 	// Honour 'number' => 2 cap used by the guard.

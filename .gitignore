@@ -9,7 +9,8 @@
 
 # CI 関連
 /.ci/
-/.github/
+# /.github/ は追跡する: tests.yml がスモークテストと実DB並行テスト
+# (MySQL 8.0/8.4・MariaDB 10.11/11.4) を回す。配布 ZIP には .distignore で入らない。
 
 # --- 一般的な除外 ---
 /vendor/

@@ -1,0 +1,103 @@
+name: tests
+
+# Smoke suites plus the REAL-DATABASE concurrency test, run against both MySQL and
+# MariaDB. The concurrency job is the one that matters for the cap/quota
+# invariants: they are enforced by UNIQUE constraints, and only a real server with
+# many simultaneous connections can demonstrate that.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: smoke tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '8.2', '8.3', '8.4' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, sodium, gmp, mysqli
+          coverage: none
+      - name: Run the smoke suite
+        run: bash bin/run-tests.sh
+
+  concurrency:
+    name: real-DB concurrency (${{ matrix.db.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - name: mysql-8.0
+            image: mysql:8.0
+          - name: mysql-8.4
+            image: mysql:8.4
+          - name: mariadb-10.11
+            image: mariadb:10.11
+          - name: mariadb-11.4
+            image: mariadb:11.4
+    services:
+      db:
+        image: ${{ matrix.db.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: rapls_test
+          MARIADB_ROOT_PASSWORD: rootpw
+          MARIADB_DATABASE: rapls_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+          --max-connections=300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+          coverage: none
+
+      - name: Server identity
+        run: |
+          php -r '$c=new mysqli("127.0.0.1","root","rootpw","rapls_test",3306);
+            printf("server=%s\n", $c->server_info);
+            printf("version_comment=%s\n", $c->query("SELECT @@version_comment")->fetch_row()[0]);
+            printf("uuid=%s\n", $c->query("SELECT @@server_uuid")->fetch_row()[0] ?? "n/a");'
+
+      # 100 simultaneous workers, each on its own connection, released together by a
+      # barrier. Asserts: cap=1 -> at most 1 row; cap=3 -> at most 3; quota cap=5 ->
+      # at most 5; admission at max-1 -> at most 1 of 20 proceeds; at max -> 0 of 20;
+      # a replayed write after reconnect stores exactly one row.
+      - name: Concurrency test (100 workers)
+        run: |
+          php tests/db/concurrency.php \
+            --host=127.0.0.1 --port=3306 --db=rapls_test --user=root --pass=rootpw \
+            --workers=100 --json=concurrency-${{ matrix.db.name }}.json
+
+      # The quota reservation must not depend on affected-row counts, so it has to
+      # behave identically with MYSQLI_CLIENT_FOUND_ROWS on the connection.
+      - name: Concurrency test with CLIENT_FOUND_ROWS
+        env:
+          RAPLS_CLIENT_FOUND_ROWS: '1'
+        run: |
+          php tests/db/concurrency.php \
+            --host=127.0.0.1 --port=3306 --db=rapls_test --user=root --pass=rootpw \
+            --workers=100 --json=concurrency-${{ matrix.db.name }}-foundrows.json
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: concurrency-${{ matrix.db.name }}
+          path: concurrency-*.json

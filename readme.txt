@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.20
+Stable tag: 0.13.21
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.21 =
+* Fourth re-review fixes (concurrency correctness):
+* The passkey per-user limit is now enforced under a real database row lock (a short transaction on a per-user row), so it holds exactly regardless of the server's transaction isolation level — not just the default. The lock releases automatically on commit/rollback, so a crashed request cannot leave it stuck.
+* The atomic quota primitive reads its own result before the opportunistic cleanup runs (a stray cleanup query could otherwise flip a reservation's success/failure), and a slot is now handed back only to the exact time-window it was taken in, so a late failure from an expired window cannot subtract from a newer one.
+* Re-opening the anonymous passkey-login REST routes when a security plugin locks the REST API to logged-in users is now an explicit, off-by-default admin setting (Settings -> Rapls Passkey -> REST API). It never overrides a firewall / IP-block / maintenance response, and does nothing unless you turn it on.
+
 = 0.13.20 =
 * Third re-review fixes (concurrency and REST hardening):
 * The passkey per-user limit is now enforced in a single atomic INSERT ... SELECT statement, so two simultaneous registrations can never both exceed the maximum — the cap no longer depends on a post-insert rollback. The per-user registration lock is released only by its owner (compare-and-delete), so a stale lock cannot be freed out from under the request that stole it.
@@ -103,32 +109,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * The WebAuthn user handle is minted under an atomic database lock, the per-user passkey-limit rollback is deterministic under concurrent registrations, and the per-IP login rate counter is an atomic fixed-window count — closing read-modify-write races.
 * reCAPTCHA fail-open vs fail-closed on a Google outage is now an explicit setting (Settings -> Rapls Passkey), not just a filter.
 
-= 0.13.16 =
-* Build hardening for distribution (no runtime behaviour change): the bundled libraries (web-auth/webauthn-lib, Symfony, Brick, spomky-labs, ParagonIE) are now rewritten into the plugin-private RaplsPasskey\Vendor\ namespace at build time with PHP-Scoper, so another plugin bundling a different version of the same library can no longer collide with this one. The WebAuthn availability checks were switched to a `::class` reference so the prefixing is deterministic. Committed source stays unscoped; only the distributed ZIP is prefixed.
-
-= 0.13.15 =
-* Documentation: clarified that sharing an RP ID / Related Origins aligns the WebAuthn protocol across domains but does not by itself make a passkey usable on another site — that also needs shared users and a shared credential store (Multisite or shared tables). Independent installs use a passkey per domain. No behaviour change.
-
-= 0.13.14 =
-* Related Origin Requests (cross-domain passkeys) now work end-to-end: a site can use a shared relying-party ID that is not its own registrable domain when its origin is one of the authorized related origins, and the ceremony verifier accepts assertions from those origins. Filter: rapls_passkey/related_origins (Pro's "related origins" setting wires it). Requires real cross-domain WebAuthn testing to validate for your domains.
-
-= 0.13.13 =
-* The WooCommerce "My account" passkey endpoint's rewrite rule is now cleared and regenerated across a deactivate/reactivate cycle, so the tab no longer 404s if the rewrite rules were flushed while the plugin was inactive.
-
-= 0.13.12 =
-* The login and passkey-management shortcodes/blocks now scope their controls to each instance instead of shared DOM ids, so more than one of them (or a shortcode alongside the WooCommerce account integration) can appear on the same page and all of them work.
-* The registration policy filter (rapls_passkey/registration_policy) now also receives a context array (owner_id, actor_id, context) so a policy can be scoped to the real owner rather than the current user, which differs during admin enrolment.
-
-= 0.13.11 =
-* The "Export Personal Data" tool now pages through the audit log instead of stopping at the first 1000 rows, so a data-subject export is complete no matter how many events a user has.
-
-= 0.13.10 =
-* The per-user passkey limit is now enforced atomically: after storing a new credential the count is re-checked and the insert is rolled back if two simultaneous registrations both slipped past the pre-insert check, so the configured maximum can never be exceeded.
-
-= 0.13.9 =
-* More hardening from a follow-up review:
-* Passkey registration now binds the new credential to the user the ceremony was actually built for (a constant-time check of the verified userHandle against the re-resolved owner), so a caller allowed to enrol on behalf of others cannot request options for one user and then save the credential to another.
-* A user's WebAuthn user handle is now created atomically on first use, so two simultaneous first registrations can no longer mint two different handles for the same account.
-* reCAPTCHA can now be set to fail closed when Google cannot be reached (it still fails open by default so an outage does not lock everyone out). Filter: rapls_passkey/recaptcha_fail_open.
-
-For the change history of 0.13.8 and earlier releases, see changelog.txt.
+For the change history of 0.13.16 and earlier releases, see changelog.txt.

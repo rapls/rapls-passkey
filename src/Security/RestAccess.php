@@ -8,6 +8,7 @@
 
 namespace RaplsPasskey\Security;
 
+use RaplsPasskey\Support\Settings;
 use WP_Error;
 use WP_REST_Request;
 
@@ -125,6 +126,12 @@ final class RestAccess {
 	 * @return bool
 	 */
 	private function is_clearable( $error ): bool {
+		// Off by default: do NOT override another product's REST restriction unless
+		// the admin has opted in. We cannot tell an unknown WAF/IP-gate 401 from a
+		// blanket login-lockdown 401, so clearing is an explicit choice, not implicit.
+		if ( ! apply_filters( 'rapls_passkey/rest_relax_login', Settings::rest_relax_login() ) ) {
+			return false;
+		}
 		$data   = $error->get_error_data();
 		$status = ( is_array( $data ) && isset( $data['status'] ) ) ? (int) $data['status'] : 0;
 		// A 403 (WAF / IP gate / maintenance / capability) is NOT ours to clear.

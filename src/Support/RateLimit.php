@@ -84,13 +84,14 @@ final class RateLimit {
 	 * @param string $key    Logical key.
 	 * @param int    $window Window length in seconds.
 	 * @param int    $cap    Maximum reservations allowed within the window.
-	 * @return bool True if THIS call reserved a slot; false if the cap is reached or
-	 *              on a DB error (fail closed).
+	 * @return int The reserved window's end (unix time) on success — pass it to
+	 *             release() so a hand-back is scoped to THIS window — or 0 if the cap
+	 *             is reached or on a DB error (fail closed).
 	 */
-	public static function reserve( string $key, int $window, int $cap ): bool {
+	public static function reserve( string $key, int $window, int $cap ): int {
 		global $wpdb;
 		if ( $cap <= 0 ) {
-			return false;
+			return 0;
 		}
 		$name   = self::PREFIX . md5( $key );
 		$window = max( 1, $window );
@@ -118,24 +119,44 @@ final class RateLimit {
 		);
 		// DB error → no reservation (fail closed).
 		if ( false === $ok ) {
-			return false;
+			return 0;
 		}
+		// Capture the reservation's row count BEFORE gc(): gc() runs a separate DELETE
+		// that would otherwise overwrite $wpdb->rows_affected. rows_affected: 1 =
+		// inserted (first this window), 2 = window reset or incremented, 0 = unchanged
+		// because the cap is already reached (WordPress connects mysqli WITHOUT
+		// CLIENT_FOUND_ROWS, so an UPDATE that changes nothing reports 0 rows).
+		$reserved = (int) $wpdb->rows_affected > 0;
 		self::gc();
-		// rows_affected: 1 = inserted (first this window), 2 = window reset or
-		// incremented, 0 = unchanged because the cap is already reached. WordPress
-		// connects mysqli WITHOUT CLIENT_FOUND_ROWS, so an UPDATE that changes
-		// nothing reports 0 affected rows — which is exactly "cap reached".
-		return (int) $wpdb->rows_affected > 0;
+		if ( ! $reserved ) {
+			return 0;
+		}
+		// Read back the window end so release() can be scoped to exactly this window
+		// (a stale request from an earlier, since-reset window must not decrement a
+		// newer window's count).
+		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
+		);
+		if ( ! is_string( $val ) || false === strpos( $val, ':' ) ) {
+			return 0;
+		}
+		return (int) substr( $val, strpos( $val, ':' ) + 1 );
 	}
 
 	/**
-	 * Hand one reserved slot back within the current window (e.g. the sign-up the
-	 * reservation was taken for failed before it completed). Never drops below zero
-	 * and does nothing once the window has passed.
+	 * Hand one reserved slot back to a specific window (e.g. the sign-up the
+	 * reservation was taken for failed). Decrements ONLY when the row still belongs
+	 * to $window_end — the value returned by the matching reserve() — so a late
+	 * failure from an earlier window cannot subtract from a newer window's count.
+	 * Never drops below zero.
 	 *
-	 * @param string $key Logical key.
+	 * @param string $key        Logical key.
+	 * @param int    $window_end The window end returned by reserve() (0 = no-op).
 	 */
-	public static function release( string $key ): void {
+	public static function release( string $key, int $window_end ): void {
+		if ( $window_end <= 0 ) {
+			return;
+		}
 		global $wpdb;
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->prepare(
@@ -146,9 +167,9 @@ final class RateLimit {
 					SUBSTRING_INDEX(option_value, ':', -1)
 				 )
 				 WHERE option_name = %s
-				   AND CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) >= %d",
+				   AND CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) = %d",
 				self::PREFIX . md5( $key ),
-				time()
+				$window_end
 			)
 		);
 	}

@@ -35,6 +35,11 @@ final class Settings {
 			'recaptcha_secret_key' => '',
 			'recaptcha_threshold'  => 0.5,
 			'audit_enabled'        => true,
+			// Opt-in: re-open the anonymous passkey-login REST routes when a security
+			// plugin restricts the REST API to logged-in users. OFF by default so the
+			// plugin never overrides another product's REST restriction unless the
+			// admin has explicitly asked for it (see RestAccess).
+			'rest_relax_login'     => false,
 			// Max passkeys a user may register (0 = unlimited).
 			'max_passkeys'         => 0,
 			// Per-IP login rate limit: failed attempts allowed within the window,
@@ -120,6 +125,18 @@ final class Settings {
 	 */
 	public static function recaptcha_fail_open(): bool {
 		return (bool) self::get( 'recaptcha_fail_open' );
+	}
+
+	/**
+	 * Whether the plugin may re-open its anonymous passkey-login REST routes when a
+	 * security plugin has restricted the REST API to logged-in users. OFF by default
+	 * — the plugin does not clear another product's REST restriction unless the admin
+	 * opts in (a WAF / IP gate / maintenance block is never overridden by default).
+	 *
+	 * @return bool
+	 */
+	public static function rest_relax_login(): bool {
+		return (bool) self::get( 'rest_relax_login' );
 	}
 
 	/**

@@ -318,128 +318,76 @@ final class Endpoints {
 			return $veto;
 		}
 
-		// Serialize concurrent registrations for the SAME user with a short,
-		// self-expiring lock so duplicate work is avoided; a crashed request cannot
-		// deadlock (the lock is stolen once it goes stale). The per-user LIMIT itself
-		// is enforced atomically in the insert below, so correctness does not depend
-		// on this lock nor on any post-insert rollback.
-		$lock = $this->acquire_reg_lock( $owner_id );
-		if ( '' === $lock ) {
-			return new WP_Error( 'rapls_passkey_busy', __( 'Another passkey registration is already in progress for this account. Please try again in a moment.', 'rapls-passkey' ), array( 'status' => 409 ) );
-		}
+		// Enforce the per-user limit under a real database ROW LOCK so it is exact
+		// regardless of the server's transaction isolation level. A bare
+		// `INSERT ... SELECT COUNT(*)` is a non-locking consistent read under READ
+		// COMMITTED (two concurrent registrations could both see the same under-limit
+		// count); locking a per-user row that ALWAYS exists serialises every
+		// registration for this user instead, and the lock releases automatically on
+		// COMMIT/ROLLBACK or a dropped connection (no stale-lock steal, no deadlock).
+		global $wpdb;
+		$lock_row = 'rapls_pk_reg_lock_' . $owner_id;
+		// Make sure the lockable per-user row exists (idempotent; outside the txn).
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, '1', 'no')", $lock_row )
+		);
 
+		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		try {
-			// Atomic cap: insert only while the user is below the limit, in a single
-			// INSERT ... SELECT ... WHERE (count) < max statement. Two simultaneous
-			// registrations cannot both slip past — the one that would exceed the cap
-			// inserts nothing (-1) — so the maximum holds without a best-effort
-			// rollback that could fail.
-			$id = $this->repository->insert_within_limit(
+			// Take the row lock. All registrations for this user serialise here.
+			$wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s FOR UPDATE", $lock_row )
+			);
+
+			// With the user serialised, this count-then-insert is atomic w.r.t. any
+			// other registration for the same user, so the cap holds exactly.
+			$limit = $this->limit_error( $owner_id );
+			if ( null !== $limit ) {
+				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				return $limit;
+			}
+
+			$id = $this->repository->insert(
 				$owner_id,
 				$credential_id,
 				$this->codec->record_to_json( $record ),
 				$record->counter,
-				$label,
-				Settings::max_passkeys()
+				$label
 			);
-
-			if ( -1 === $id ) {
-				return $this->limit_error( $owner_id ) ?? new WP_Error(
-					'rapls_passkey_limit_reached',
-					__( 'You have reached the passkey limit. Please try again.', 'rapls-passkey' ),
-					array( 'status' => 409 )
-				);
-			}
 			if ( 0 === $id ) {
+				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
 			}
 
-			AuditLog::record(
-				AuditLog::REGISTERED,
-				$owner_id,
-				'id=' . $id . ( $owner_id === $actor_id ? '' : ' by-admin=' . $actor_id )
-			);
-
-			/**
-			 * Fires after a passkey is registered and stored.
-			 *
-			 * @param int         $user_id User the passkey belongs to.
-			 * @param int         $id      Stored credential row id.
-			 * @param string|null $label   Optional passkey label.
-			 */
-			do_action( 'rapls_passkey/credential_registered', $owner_id, $id, $label );
-
-			return rest_ensure_response(
-				array(
-					'success'    => true,
-					'credential' => array(
-						'id'         => $id,
-						'label'      => $label,
-						'created_at' => gmdate( 'Y-m-d H:i:s' ),
-					),
-				)
-			);
-		} finally {
-			$this->release_reg_lock( $owner_id, $lock );
+			$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		} catch ( \Throwable $e ) {
+			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 500, 'reg-tx: ' . $e->getMessage() );
 		}
-	}
 
-	/**
-	 * Take a short, self-expiring per-user registration lock (an atomic wp_options
-	 * insert; a stale lock from a crashed request is stolen). Returns the unique
-	 * owner token to the single winner, or '' if the lock is held by someone else.
-	 *
-	 * @param int $user_id User the registration is for.
-	 * @return string Owner token to pass to release_reg_lock(), or '' if not acquired.
-	 */
-	private function acquire_reg_lock( int $user_id ): string {
-		global $wpdb;
-		$name = 'rapls_pk_reg_lock_' . $user_id;
-		$now  = time();
-		$mine = $now . ':' . bin2hex( random_bytes( 6 ) ); // unique per acquirer
-		$suppress = $wpdb->suppress_errors( true );
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare(
-				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
-				 ON DUPLICATE KEY UPDATE option_value = IF(
-					CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) <= %d,
-					VALUES(option_value),
-					option_value
-				 )",
-				$name,
-				$mine,
-				$now - 15
-			)
+		AuditLog::record(
+			AuditLog::REGISTERED,
+			$owner_id,
+			'id=' . $id . ( $owner_id === $actor_id ? '' : ' by-admin=' . $actor_id )
 		);
-		$wpdb->suppress_errors( $suppress );
-		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
-		);
-		return $val === $mine ? $mine : '';
-	}
 
-	/**
-	 * Release the per-user registration lock — but only if WE still hold it.
-	 *
-	 * Deletes the row only when its value still equals our owner token
-	 * (compare-and-delete). If our lease went stale and another request stole the
-	 * lock in the meantime, its token differs and we leave its lock intact rather
-	 * than freeing it out from under the new owner (which would let a third request
-	 * enter). A no-op if the token is empty (lock was never acquired).
-	 *
-	 * @param int    $user_id User the registration is for.
-	 * @param string $token   Owner token returned by acquire_reg_lock().
-	 */
-	private function release_reg_lock( int $user_id, string $token ): void {
-		if ( '' === $token ) {
-			return;
-		}
-		global $wpdb;
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->options,
+		/**
+		 * Fires after a passkey is registered and stored.
+		 *
+		 * @param int         $user_id User the passkey belongs to.
+		 * @param int         $id      Stored credential row id.
+		 * @param string|null $label   Optional passkey label.
+		 */
+		do_action( 'rapls_passkey/credential_registered', $owner_id, $id, $label );
+
+		return rest_ensure_response(
 			array(
-				'option_name'  => 'rapls_pk_reg_lock_' . $user_id,
-				'option_value' => $token,
+				'success'    => true,
+				'credential' => array(
+					'id'         => $id,
+					'label'      => $label,
+					'created_at' => gmdate( 'Y-m-d H:i:s' ),
+				),
 			)
 		);
 	}

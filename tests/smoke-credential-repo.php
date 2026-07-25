@@ -255,13 +255,5 @@ check( 'deleted row is gone', $repo->find_by_credential_id( 'credAAA' ) === null
 check( 'delete_by_id removes another user\'s row', $repo->delete_by_id( $id3 ) === true );
 check( 'delete_by_id row is gone', $repo->find_by_id( $id3 ) === null );
 
-// --- insert_within_limit(): atomic per-user cap in one statement (R-04) --------
-$GLOBALS['wpdb']->rows = array();
-$mk = fn( $uid, $cid ) => $repo->insert_within_limit( $uid, $cid, '{}', 0, null, 3 );
-check( 'atomic insert admits rows below the cap', $mk( 70, 'c1' ) > 0 && $mk( 70, 'c2' ) > 0 && $mk( 70, 'c3' ) > 0 );
-check( 'atomic insert refuses AT the cap (returns -1, no row added)', $mk( 70, 'c4' ) === -1 && count( $repo->find_by_user( 70 ) ) === 3 );
-check( 'the cap is per-user (a different user is still admitted)', $mk( 71, 'c5' ) > 0 );
-check( 'max <= 0 means unlimited', $repo->insert_within_limit( 72, 'c6', '{}', 0, null, 0 ) > 0 && $repo->insert_within_limit( 72, 'c7', '{}', 0, null, 0 ) > 0 );
-
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

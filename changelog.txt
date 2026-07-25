@@ -2,6 +2,10 @@
 
 The full release history for Rapls Passkey. The most recent releases are also
 listed in readme.txt; older entries live here.
+
+= 0.13.16 =
+* Build hardening for distribution (no runtime behaviour change): the bundled libraries (web-auth/webauthn-lib, Symfony, Brick, spomky-labs, ParagonIE) are now rewritten into the plugin-private RaplsPasskey\Vendor\ namespace at build time with PHP-Scoper, so another plugin bundling a different version of the same library can no longer collide with this one. The WebAuthn availability checks were switched to a `::class` reference so the prefixing is deterministic. Committed source stays unscoped; only the distributed ZIP is prefixed.
+
 = 0.13.15 =
 * Documentation: clarified that sharing an RP ID / Related Origins aligns the WebAuthn protocol across domains but does not by itself make a passkey usable on another site — that also needs shared users and a shared credential store (Multisite or shared tables). Independent installs use a passkey per domain. No behaviour change.
 

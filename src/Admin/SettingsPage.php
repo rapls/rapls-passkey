@@ -95,6 +95,7 @@ final class SettingsPage {
 			'recaptcha_secret_key' => $this->store_secret( isset( $input['recaptcha_secret_key'] ) ? (string) $input['recaptcha_secret_key'] : '' ),
 			'recaptcha_threshold'  => $threshold,
 			'audit_enabled'        => ! empty( $input['audit_enabled'] ),
+			'rest_relax_login'     => ! empty( $input['rest_relax_login'] ),
 			'max_passkeys'         => isset( $input['max_passkeys'] ) ? max( 0, (int) $input['max_passkeys'] ) : 0,
 			'login_rate_max'       => isset( $input['login_rate_max'] ) ? max( 0, (int) $input['login_rate_max'] ) : 30,
 			'login_rate_window'    => isset( $input['login_rate_window'] ) ? max( 1, (int) $input['login_rate_window'] ) : 300,
@@ -347,6 +348,20 @@ final class SettingsPage {
 								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[audit_enabled]" value="1" <?php checked( ! empty( $s['audit_enabled'] ) ); ?>>
 								<?php esc_html_e( 'Record events such as registration, login, and removal', 'rapls-passkey' ); ?>
 							</label>
+						</td>
+					</tr>
+				</table>
+
+					<h2><?php esc_html_e( 'REST API', 'rapls-passkey' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Passkey login when REST is restricted', 'rapls-passkey' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[rest_relax_login]" value="1" <?php checked( ! empty( $s['rest_relax_login'] ) ); ?>>
+								<?php esc_html_e( 'Allow the anonymous passkey-login endpoints when a security plugin restricts the REST API to logged-in users', 'rapls-passkey' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Off by default. Only turn this on if a security plugin locks the REST API to logged-in users and passkey sign-in has stopped working. When on, the plugin re-opens only its own anonymous login routes and only for a "must be logged in" (HTTP 401) restriction; a firewall, IP-block or maintenance page (HTTP 403) is never overridden.', 'rapls-passkey' ); ?></p>
 						</td>
 					</tr>
 				</table>

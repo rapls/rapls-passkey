@@ -19,7 +19,7 @@ function get_option( $k, $d = false ) { return $GLOBALS['__opt'][ $k ] ?? $d; }
 function apply_filters( $tag, $value ) { return $value; }
 function sanitize_text_field( $s ) { return is_string( $s ) ? trim( $s ) : ''; }
 function wp_unslash( $s ) { return $s; }
-function wp_rand( $min = 0, $max = 1 ) { return 1; } // never trigger opportunistic gc in tests
+function wp_rand( $min = 0, $max = 1 ) { return $GLOBALS['__wp_rand'] ?? 1; } // 0 forces the opportunistic gc branch
 
 /**
  * Minimal wpdb double emulating the atomic fixed-window counter: option_name is
@@ -81,21 +81,24 @@ class FakeWpdb {
 			$this->rows_affected = 1;
 			return 1;
 		}
-		// release(): UPDATE ... GREATEST(count - 1, 0) within the current window.
+		// release(): UPDATE ... GREATEST(count - 1, 0) scoped to an EXACT window end.
 		if ( false !== strpos( $q, 'GREATEST' ) && preg_match( "/option_name = '([^']*)'/", $q, $m ) ) {
-			preg_match( "/', -1\\) AS UNSIGNED\\) >= (\\d+)/", $q, $n );
-			$name = $m[1]; $now = (int) ( $n[1] ?? 0 );
+			preg_match( "/', -1\\) AS UNSIGNED\\) = (\\d+)/", $q, $n );
+			$name = $m[1]; $end = (int) ( $n[1] ?? 0 );
 			if ( isset( $this->store[ $name ] ) ) {
 				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
-				if ( (int) $e >= $now ) {
+				if ( (int) $e === $end ) { // only the matching window
 					$this->store[ $name ] = max( (int) $c - 1, 0 ) . ':' . $e;
 					$this->rows_affected = 1;
 				}
 			}
 			return 1;
 		}
+		// gc(): DELETE of expired rows. Sets rows_affected so a test can prove reserve()
+		// reads its OWN rows_affected and not the GC DELETE's.
 		if ( 0 === strpos( ltrim( $q ), 'DELETE' ) ) {
-			return 0; // gc is stubbed out (wp_rand never triggers it)
+			$this->rows_affected = (int) ( $GLOBALS['__gc_deleted'] ?? 0 );
+			return $this->rows_affected;
 		}
 		return 0;
 	}
@@ -190,23 +193,46 @@ $GLOBALS['wpdb']->store = array( 'rapls_passkey_rl_' . md5( 'k|x' ) => '1:' . ( 
 $GLOBALS['wpdb']->fail_next = true;
 check( 'count() returns OVERFLOW on a DB read error (fail closed)', $RL::count( 'k|x' ) === $RL::OVERFLOW );
 
-// reserve() admits exactly $cap slots within the window, then refuses — the
-// check-and-act is one atomic statement so concurrent callers cannot overshoot.
+// reserve() returns the window end (>0) while admitting; 0 once the cap is reached.
+// The check-and-act is one atomic statement so concurrent callers cannot overshoot.
 $GLOBALS['wpdb']->store = array();
-$admitted = 0;
-for ( $i = 0; $i < 8; $i++ ) { if ( $RL::reserve( 'q|y', 3600, 5 ) ) { $admitted++; } }
+$admitted = 0; $last_end = 0;
+for ( $i = 0; $i < 8; $i++ ) { $e = $RL::reserve( 'q|y', 3600, 5 ); if ( $e > 0 ) { $admitted++; $last_end = $e; } }
 check( 'reserve() admits exactly the cap and no more', $admitted === 5 && $RL::count( 'q|y' ) === 5 );
-check( 'reserve() refuses once the cap is reached', $RL::reserve( 'q|y', 3600, 5 ) === false );
+check( 'reserve() returns 0 once the cap is reached', $RL::reserve( 'q|y', 3600, 5 ) === 0 );
 
-// release() hands one slot back (floored at 0) so a failed commit does not burn quota.
-$RL::release( 'q|y' );
+// release() hands one slot back to the SAME window (floored at 0).
+$RL::release( 'q|y', $last_end );
 check( 'release() returns one slot', $RL::count( 'q|y' ) === 4 );
-check( 'a released slot can be reserved again', $RL::reserve( 'q|y', 3600, 5 ) === true && $RL::count( 'q|y' ) === 5 );
+check( 'a released slot can be reserved again', $RL::reserve( 'q|y', 3600, 5 ) > 0 && $RL::count( 'q|y' ) === 5 );
 
-// reserve() also fails closed (no reservation) on a DB error, and cap<=0 admits none.
+// reserve() also fails closed (0) on a DB error, and cap<=0 admits none.
 $GLOBALS['wpdb']->fail_next = true;
-check( 'reserve() fails closed on a DB error', $RL::reserve( 'q|z', 3600, 5 ) === false );
-check( 'reserve() with cap 0 admits nothing', $RL::reserve( 'q|z', 3600, 0 ) === false );
+check( 'reserve() fails closed on a DB error', $RL::reserve( 'q|z', 3600, 5 ) === 0 );
+check( 'reserve() with cap 0 admits nothing', $RL::reserve( 'q|z', 3600, 0 ) === 0 );
+
+// V11-02: reserve() must read its OWN rows_affected, not the GC DELETE's, when the
+// opportunistic gc runs (wp_rand()===0).
+$GLOBALS['__wp_rand'] = 0;
+// (a) fresh reservation succeeds even though the GC deletes 0 rows.
+$GLOBALS['__gc_deleted'] = 0; $GLOBALS['wpdb']->store = array();
+check( 'reserve() still succeeds when gc runs and deletes 0 (no false refusal)', $RL::reserve( 'gc|a', 3600, 5 ) > 0 );
+// (b) at-cap reservation still fails even though the GC deletes some rows.
+$GLOBALS['__gc_deleted'] = 3;
+$GLOBALS['wpdb']->store = array( 'rapls_passkey_rl_' . md5( 'gc|b' ) => '5:' . ( time() + 3600 ) );
+check( 'reserve() still refuses at the cap when gc deletes rows (no false admit)', $RL::reserve( 'gc|b', 3600, 5 ) === 0 );
+$GLOBALS['__wp_rand'] = 1; $GLOBALS['__gc_deleted'] = 0;
+
+// V11-04: release() is scoped to the exact window it was issued for, so a late
+// failure from an old window cannot decrement a newer (reset) window's count.
+$end  = time() + 1000;
+$name = 'rapls_passkey_rl_' . md5( 'w|k' );
+$GLOBALS['wpdb']->store[ $name ] = '3:' . $end;
+$RL::release( 'w|k', $end - 1 ); // a different (older) window end
+check( 'release for a different window is a no-op (V11-04)', $GLOBALS['wpdb']->store[ $name ] === '3:' . $end );
+$RL::release( 'w|k', $end ); // the matching window
+check( 'release for the matching window decrements (V11-04)', $GLOBALS['wpdb']->store[ $name ] === '2:' . $end );
+check( 'release with window_end 0 is a no-op', ( $RL::release( 'w|k', 0 ) ) === null && $GLOBALS['wpdb']->store[ $name ] === '2:' . $end );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

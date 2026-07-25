@@ -15,7 +15,9 @@ define( 'ABSPATH', __DIR__ . '/' );
 // --- In-memory $wpdb ------------------------------------------------------
 class WPDB_Mem {
 	public $prefix = 'wp_';
+	public $users = 'wp_users';
 	public $insert_id = 0;
+	public $rows_affected = 0;
 	public $rows = array();
 	private $auto = 0;
 
@@ -57,10 +59,35 @@ class WPDB_Mem {
 	public function prepare( $query, ...$args ) {
 		return array( 'q' => $query, 'args' => $args );
 	}
-	// touch() runs an optimistic UPDATE via query() (not update()).
+	// touch() runs an optimistic UPDATE via query() (not update()); registration
+	// uses insert_within_limit()'s atomic INSERT ... SELECT ... WHERE (count) < max.
 	public function query( $prepared ) {
 		$q = $prepared['q'];
 		$a = $prepared['args'];
+		// insert_within_limit(): count this user's rows, insert only if below the cap.
+		if ( false !== strpos( $q, 'INSERT INTO' ) && false !== strpos( $q, 'cnt.c <' ) ) {
+			$uid = (int) $a[0];
+			$max = (int) end( $a );
+			$count = 0;
+			foreach ( $this->rows as $r ) {
+				if ( (int) $r['user_id'] === $uid ) { $count++; }
+			}
+			if ( $count >= $max ) { $this->rows_affected = 0; return 1; } // cap reached
+			$null_label = false !== strpos( $q, ', NULL,' );
+			$id = ++$this->auto;
+			$this->rows[ $id ] = array(
+				'id'              => $id,
+				'user_id'         => $uid,
+				'credential_id'   => (string) $a[1],
+				'credential_data' => (string) $a[2],
+				'sign_count'      => (int) $a[3],
+				'label'           => $null_label ? null : (string) $a[4],
+				'created_at'      => (string) ( $null_label ? $a[4] : $a[5] ),
+			);
+			$this->insert_id     = $id;
+			$this->rows_affected = 1;
+			return 1;
+		}
 		if ( false === strpos( $q, 'UPDATE' ) || false === strpos( $q, 'credential_data' ) ) {
 			return 0;
 		}
@@ -227,6 +254,14 @@ check( 'deleted row is gone', $repo->find_by_credential_id( 'credAAA' ) === null
 // delete_by_id (admin/CLI path) ignores ownership.
 check( 'delete_by_id removes another user\'s row', $repo->delete_by_id( $id3 ) === true );
 check( 'delete_by_id row is gone', $repo->find_by_id( $id3 ) === null );
+
+// --- insert_within_limit(): atomic per-user cap in one statement (R-04) --------
+$GLOBALS['wpdb']->rows = array();
+$mk = fn( $uid, $cid ) => $repo->insert_within_limit( $uid, $cid, '{}', 0, null, 3 );
+check( 'atomic insert admits rows below the cap', $mk( 70, 'c1' ) > 0 && $mk( 70, 'c2' ) > 0 && $mk( 70, 'c3' ) > 0 );
+check( 'atomic insert refuses AT the cap (returns -1, no row added)', $mk( 70, 'c4' ) === -1 && count( $repo->find_by_user( 70 ) ) === 3 );
+check( 'the cap is per-user (a different user is still admitted)', $mk( 71, 'c5' ) > 0 );
+check( 'max <= 0 means unlimited', $repo->insert_within_limit( 72, 'c6', '{}', 0, null, 0 ) > 0 && $repo->insert_within_limit( 72, 'c7', '{}', 0, null, 0 ) > 0 );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

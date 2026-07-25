@@ -27,8 +27,11 @@ function wp_rand( $min = 0, $max = 1 ) { return 1; } // never trigger opportunis
  * increments "count:window_end" in place.
  */
 class FakeWpdb {
-	public $options = 'wp_options';
-	public $store   = array();
+	public $options       = 'wp_options';
+	public $store         = array();
+	public $rows_affected = 0;
+	public $last_error    = '';
+	public $fail_next     = false; // simulate a single DB error on the next query/get_var
 	public function prepare( $q, ...$a ) {
 		foreach ( $a as $x ) {
 			$rep = is_int( $x ) ? (string) $x : "'" . str_replace( "'", "''", (string) $x ) . "'";
@@ -38,15 +41,56 @@ class FakeWpdb {
 	}
 	public function esc_like( $s ) { return $s; }
 	public function query( $q ) {
+		$this->rows_affected = 0;
+		$this->last_error    = '';
+		if ( $this->fail_next ) {
+			$this->fail_next  = false;
+			$this->last_error = 'simulated DB error';
+			return false; // wpdb::query() returns false on a DB error
+		}
+		// reserve(): ON DUPLICATE with a cap check on the COUNT part (":1") — must be
+		// matched BEFORE the plain incr branch, which shares "ON DUPLICATE KEY UPDATE".
+		if ( false !== strpos( $q, 'ON DUPLICATE KEY UPDATE' ) && preg_match( "/', 1\\) AS UNSIGNED\\) < (\\d+)/", $q, $cap ) ) {
+			preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m );
+			preg_match( "/', -1\\) AS UNSIGNED\\) < (\\d+)/", $q, $n );
+			$name = $m[1]; $init = $m[2]; $now = (int) $n[1]; $capn = (int) $cap[1];
+			if ( ! isset( $this->store[ $name ] ) ) {
+				$this->store[ $name ] = $init; $this->rows_affected = 1; // inserted
+			} else {
+				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
+				if ( (int) $e < $now ) {
+					$this->store[ $name ] = $init; $this->rows_affected = 2; // window reset
+				} elseif ( (int) $c < $capn ) {
+					$this->store[ $name ] = ( (int) $c + 1 ) . ':' . $e; $this->rows_affected = 2; // reserved
+				} else {
+					$this->rows_affected = 0; // cap reached — unchanged
+				}
+			}
+			return 1;
+		}
 		if ( false !== strpos( $q, 'ON DUPLICATE KEY UPDATE' ) ) {
 			preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m );
-			preg_match( '/AS UNSIGNED\) < (\d+),/', $q, $n );
+			preg_match( "/', -1\\) AS UNSIGNED\\) < (\\d+)/", $q, $n );
 			$name = $m[1]; $init = $m[2]; $now = (int) $n[1];
 			if ( ! isset( $this->store[ $name ] ) ) {
 				$this->store[ $name ] = $init;
 			} else {
 				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
 				$this->store[ $name ] = ( (int) $e < $now ) ? $init : ( ( (int) $c + 1 ) . ':' . $e );
+			}
+			$this->rows_affected = 1;
+			return 1;
+		}
+		// release(): UPDATE ... GREATEST(count - 1, 0) within the current window.
+		if ( false !== strpos( $q, 'GREATEST' ) && preg_match( "/option_name = '([^']*)'/", $q, $m ) ) {
+			preg_match( "/', -1\\) AS UNSIGNED\\) >= (\\d+)/", $q, $n );
+			$name = $m[1]; $now = (int) ( $n[1] ?? 0 );
+			if ( isset( $this->store[ $name ] ) ) {
+				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
+				if ( (int) $e >= $now ) {
+					$this->store[ $name ] = max( (int) $c - 1, 0 ) . ':' . $e;
+					$this->rows_affected = 1;
+				}
 			}
 			return 1;
 		}
@@ -56,6 +100,12 @@ class FakeWpdb {
 		return 0;
 	}
 	public function get_var( $q ) {
+		$this->last_error = '';
+		if ( $this->fail_next ) {
+			$this->fail_next  = false;
+			$this->last_error = 'simulated DB error';
+			return null; // get_var() returns null on a DB error
+		}
 		if ( preg_match( "/option_name = '([^']*)'/", $q, $m ) ) {
 			return $this->store[ $m[1] ] ?? null;
 		}
@@ -70,6 +120,7 @@ class FakeWpdb {
 $GLOBALS['wpdb'] = new FakeWpdb();
 
 require dirname( __DIR__ ) . '/src/Support/Settings.php';
+require_once dirname( __DIR__ ) . '/src/Support/RateLimit.php';
 require dirname( __DIR__ ) . '/src/Rest/Endpoints.php';
 
 use RaplsPasskey\Rest\Endpoints;
@@ -126,6 +177,36 @@ $k1 = $key->invoke( $ep, 'login' );
 $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
 $k2 = $key->invoke( $ep, 'login' );
 check( 'per-IP key differs by IP', $k1 !== $k2 );
+
+// --- RateLimit primitives: fail-closed + atomic reservation (R-03) ------------
+$RL = 'RaplsPasskey\\Support\\RateLimit';
+
+// incr()/count() FAIL CLOSED (return OVERFLOW) on a DB error, so a caller that
+// gates on "count > max" blocks instead of silently admitting the request.
+$GLOBALS['wpdb']->store = array();
+$GLOBALS['wpdb']->fail_next = true;
+check( 'incr() returns OVERFLOW on a DB write error (fail closed)', $RL::incr( 'k|x', 60 ) === $RL::OVERFLOW );
+$GLOBALS['wpdb']->store = array( 'rapls_passkey_rl_' . md5( 'k|x' ) => '1:' . ( time() + 60 ) );
+$GLOBALS['wpdb']->fail_next = true;
+check( 'count() returns OVERFLOW on a DB read error (fail closed)', $RL::count( 'k|x' ) === $RL::OVERFLOW );
+
+// reserve() admits exactly $cap slots within the window, then refuses — the
+// check-and-act is one atomic statement so concurrent callers cannot overshoot.
+$GLOBALS['wpdb']->store = array();
+$admitted = 0;
+for ( $i = 0; $i < 8; $i++ ) { if ( $RL::reserve( 'q|y', 3600, 5 ) ) { $admitted++; } }
+check( 'reserve() admits exactly the cap and no more', $admitted === 5 && $RL::count( 'q|y' ) === 5 );
+check( 'reserve() refuses once the cap is reached', $RL::reserve( 'q|y', 3600, 5 ) === false );
+
+// release() hands one slot back (floored at 0) so a failed commit does not burn quota.
+$RL::release( 'q|y' );
+check( 'release() returns one slot', $RL::count( 'q|y' ) === 4 );
+check( 'a released slot can be reserved again', $RL::reserve( 'q|y', 3600, 5 ) === true && $RL::count( 'q|y' ) === 5 );
+
+// reserve() also fails closed (no reservation) on a DB error, and cap<=0 admits none.
+$GLOBALS['wpdb']->fail_next = true;
+check( 'reserve() fails closed on a DB error', $RL::reserve( 'q|z', 3600, 5 ) === false );
+check( 'reserve() with cap 0 admits nothing', $RL::reserve( 'q|z', 3600, 0 ) === false );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

@@ -16,8 +16,10 @@ define( 'ABSPATH', __DIR__ . '/' );
 // Minimal WP test doubles.
 class WP_Error {
 	private $code;
-	public function __construct( $code = 'rest_not_logged_in' ) { $this->code = $code; }
+	private $data;
+	public function __construct( $code = 'rest_not_logged_in', $message = '', $data = array( 'status' => 401 ) ) { $this->code = $code; $this->data = $data; }
 	public function get_error_code() { return $this->code; }
+	public function get_error_data() { return $this->data; }
 }
 class WP_REST_Request {
 	private $route;
@@ -78,12 +80,21 @@ check( 'before_callbacks preserves foreign', $guard->allow_before_callbacks( $er
 $ok = (object) array( 'data' => 1 );
 check( 'before_callbacks passes a real response through', $guard->allow_before_callbacks( $ok, array(), $ours ) === $ok );
 
-// --- Only "REST locked to logged-in users" codes are cleared (F-14). ---
-$waf = new WP_Error( 'waf_blocked' ); // a security plugin's own error, not an auth-lock
+// --- Only a 401 "must be logged in" restriction is cleared; 403s preserved (F-14/R-02). ---
+$waf = new WP_Error( 'waf_blocked', '', array( 'status' => 403 ) ); // a security plugin's own error
 check( 'pre_dispatch does NOT clear a non-auth error on our route', $guard->allow_pre_dispatch( $waf, null, $ours ) === $waf );
 check( 'before_callbacks does NOT clear a non-auth error on our route', $guard->allow_before_callbacks( $waf, array(), $ours ) === $waf );
-$forbidden = new WP_Error( 'rest_forbidden' );
-check( 'pre_dispatch clears a known auth-restriction code', $guard->allow_pre_dispatch( $forbidden, null, $ours ) === null );
+
+// A 403 forbidden (WAF / IP gate / maintenance / capability) is preserved even if
+// it reuses an auth-flavoured code name — the status gate keeps it.
+$forbidden = new WP_Error( 'rest_forbidden', '', array( 'status' => 403 ) );
+check( 'pre_dispatch preserves a 403 forbidden on our route', $guard->allow_pre_dispatch( $forbidden, null, $ours ) === $forbidden );
+$reused = new WP_Error( 'rest_not_logged_in', '', array( 'status' => 403 ) );
+check( 'a 403 that reuses an auth code is still preserved', $guard->allow_pre_dispatch( $reused, null, $ours ) === $reused );
+
+// A genuine 401 authentication-required block on our route IS cleared.
+$login_required = new WP_Error( 'rest_login_required', '', array( 'status' => 401 ) );
+check( 'pre_dispatch clears a 401 authentication-required code', $guard->allow_pre_dispatch( $login_required, null, $ours ) === null );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

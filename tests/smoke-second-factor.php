@@ -66,8 +66,9 @@ function wp_rand( $min = 0, $max = 1 ) { return 1; } // never trigger RateLimit 
 // $wpdb double for the atomic RateLimit counter (option_name unique; value
 // "count:window_end"; INSERT ... ON DUPLICATE KEY UPDATE resets or increments).
 class WPDB_SF {
-	public $options = 'wp_options';
-	public $store   = array();
+	public $options    = 'wp_options';
+	public $last_error = '';
+	public $store      = array();
 	public function esc_like( $s ) { return $s; }
 	public function prepare( $q, ...$a ) {
 		foreach ( $a as $x ) {

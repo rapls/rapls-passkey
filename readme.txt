@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.19
+Stable tag: 0.13.20
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,12 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.20 =
+* Third re-review fixes (concurrency and REST hardening):
+* The passkey per-user limit is now enforced in a single atomic INSERT ... SELECT statement, so two simultaneous registrations can never both exceed the maximum — the cap no longer depends on a post-insert rollback. The per-user registration lock is released only by its owner (compare-and-delete), so a stale lock cannot be freed out from under the request that stole it.
+* The shared rate/attempt counter now FAILS CLOSED on a database error (a read or write failure blocks the guarded action instead of silently allowing it), and gained an atomic "reserve one slot under a cap" primitive for callers that need a strict quota.
+* The REST re-open for the anonymous passkey-login routes now clears ONLY a genuine 401 "authentication required" restriction; a 403 from a WAF, IP gate, maintenance mode or capability check is preserved even on the plugin's own routes.
 
 = 0.13.19 =
 * Second re-review fixes (concurrency, 2FA and distribution build):

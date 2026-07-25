@@ -108,31 +108,38 @@ final class RestAccess {
 	}
 
 	/**
-	 * Only clear errors that represent a blanket "REST is locked to logged-in
-	 * users" restriction — not an arbitrary WP_Error another plugin (a WAF, an IP
-	 * gate, maintenance mode, a forced-auth check) may have returned on this route.
-	 * The default set covers the WordPress core authentication codes; a site whose
-	 * security plugin uses a different code can add it via the filter.
+	 * Only clear an error that represents a blanket "you must be logged in to use
+	 * the REST API" restriction — never a WAF, IP gate, maintenance mode, capability
+	 * or context error another plugin returned on this route, which must be preserved.
 	 *
-	 * The authentication-error hook (allow_authentication) is intentionally left
-	 * broad: clearing there only marks the request authenticated and the route's
-	 * own permission callback still runs, so it cannot bypass a real restriction.
+	 * Two conditions must BOTH hold:
+	 *  1. The error carries HTTP status 401 (authentication required). A WAF / IP
+	 *     gate / maintenance / capability block is a 403 (forbidden) and is left
+	 *     untouched, even if it happens to reuse one of the code names below.
+	 *  2. The error code is one of the known "authentication required" codes (the
+	 *     WordPress core code plus the ones the common REST-lockdown plugins use). A
+	 *     site whose lockdown plugin uses a different 401 code can add it via the
+	 *     filter.
 	 *
 	 * @param \WP_Error $error The error being considered.
 	 * @return bool
 	 */
 	private function is_clearable( $error ): bool {
+		$data   = $error->get_error_data();
+		$status = ( is_array( $data ) && isset( $data['status'] ) ) ? (int) $data['status'] : 0;
+		// A 403 (WAF / IP gate / maintenance / capability) is NOT ours to clear.
+		if ( 401 !== $status ) {
+			return false;
+		}
 		$codes = array(
 			'rest_not_logged_in',
-			'rest_cannot_access',
 			'rest_login_required',
+			'rest_cannot_access',
 			'rest_authorization_required',
-			'rest_forbidden',
-			'rest_forbidden_context',
-			'rest_user_cannot_view',
 		);
 		/**
-		 * REST error codes the passkey-login allowlist may clear on its own routes.
+		 * 401 "authentication required" REST codes the passkey-login allowlist may
+		 * clear on its own anonymous ceremony routes.
 		 *
 		 * @param string[] $codes Clearable error codes.
 		 */

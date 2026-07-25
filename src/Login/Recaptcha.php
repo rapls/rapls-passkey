@@ -140,13 +140,13 @@ final class Recaptcha {
 
 		if ( is_wp_error( $response ) ) {
 			/**
-			 * Whether reCAPTCHA fails OPEN when Google cannot be reached. Default
-			 * true (availability over strictness); return false to reject the login
-			 * when verification cannot complete.
+			 * Whether reCAPTCHA fails OPEN when Google cannot be reached. Defaults to
+			 * the admin "fail open" setting (availability over strictness); return
+			 * false to reject the login when verification cannot complete.
 			 *
 			 * @param bool $fail_open Whether to allow the login on a transport error.
 			 */
-			return (bool) apply_filters( 'rapls_passkey/recaptcha_fail_open', true );
+			return (bool) apply_filters( 'rapls_passkey/recaptcha_fail_open', Settings::recaptcha_fail_open() );
 		}
 
 		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );

@@ -28,6 +28,9 @@ final class Settings {
 	public static function defaults(): array {
 		return array(
 			'recaptcha_enabled'    => false,
+			// On a transport error reaching Google, allow the login (availability)
+			// rather than block it (strictness). A passkey login never uses reCAPTCHA.
+			'recaptcha_fail_open'  => true,
 			'recaptcha_site_key'   => '',
 			'recaptcha_secret_key' => '',
 			'recaptcha_threshold'  => 0.5,
@@ -107,6 +110,16 @@ final class Settings {
 	 */
 	public static function recaptcha_threshold(): float {
 		return (float) self::get( 'recaptcha_threshold' );
+	}
+
+	/**
+	 * Whether a reCAPTCHA transport error (Google unreachable) should allow the
+	 * login (fail open) rather than block it (fail closed).
+	 *
+	 * @return bool
+	 */
+	public static function recaptcha_fail_open(): bool {
+		return (bool) self::get( 'recaptcha_fail_open' );
 	}
 
 	/**

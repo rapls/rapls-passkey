@@ -90,6 +90,7 @@ final class SettingsPage {
 
 		return array(
 			'recaptcha_enabled'    => ! empty( $input['recaptcha_enabled'] ),
+			'recaptcha_fail_open'  => ! empty( $input['recaptcha_fail_open'] ),
 			'recaptcha_site_key'   => isset( $input['recaptcha_site_key'] ) ? sanitize_text_field( $input['recaptcha_site_key'] ) : '',
 			'recaptcha_secret_key' => $this->store_secret( isset( $input['recaptcha_secret_key'] ) ? (string) $input['recaptcha_secret_key'] : '' ),
 			'recaptcha_threshold'  => $threshold,
@@ -296,6 +297,16 @@ final class SettingsPage {
 						<td>
 							<input type="number" step="0.1" min="0" max="1" id="rapls-recaptcha-threshold" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_threshold]" value="<?php echo esc_attr( (string) $s['recaptcha_threshold'] ); ?>">
 							<p class="description"><?php esc_html_e( '0.0 to 1.0. Scores below this are rejected (default 0.5).', 'rapls-passkey' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'If Google is unreachable', 'rapls-passkey' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Settings::OPTION ); ?>[recaptcha_fail_open]" value="1" <?php checked( ! empty( $s['recaptcha_fail_open'] ) ); ?>>
+								<?php esc_html_e( 'Allow the password login when reCAPTCHA cannot be verified (fail open)', 'rapls-passkey' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'On by default (availability): a Google outage will not lock everyone out. Turn it off to fail closed (reject password logins that cannot be scored) — a passkey login never uses reCAPTCHA, so it stays available either way.', 'rapls-passkey' ); ?></p>
 						</td>
 					</tr>
 				</table>

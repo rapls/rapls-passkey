@@ -35,6 +35,32 @@ function get_option( $k, $d = false ) {
 }
 function apply_filters( $tag, $value ) { return $value; }
 
+// Minimal $wpdb: UserHandle mints the handle under an atomic wp_options insert.
+class WPDB_Reg {
+	public $options = 'wp_options';
+	public $store   = array();
+	public function suppress_errors( $s = null ) { return false; }
+	public function prepare( $q, ...$a ) {
+		foreach ( $a as $x ) {
+			$rep = is_int( $x ) ? (string) $x : "'" . str_replace( "'", "''", (string) $x ) . "'";
+			$q   = preg_replace( '/%[dsf]/', $rep, $q, 1 );
+		}
+		return $q;
+	}
+	public function query( $q ) {
+		if ( preg_match( "/INSERT INTO .*VALUES \\('([^']*)', '([^']*)'/", $q, $m ) ) {
+			if ( array_key_exists( $m[1], $this->store ) ) { return false; }
+			$this->store[ $m[1] ] = $m[2];
+			return 1;
+		}
+		return 0;
+	}
+	public function get_var( $q ) {
+		return ( preg_match( "/option_name = '([^']*)'/", $q, $m ) ) ? ( $this->store[ $m[1] ] ?? null ) : null;
+	}
+}
+$GLOBALS['wpdb'] = new WPDB_Reg();
+
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 spl_autoload_register( function ( $class ) {
 	$prefix = 'RaplsPasskey\\';

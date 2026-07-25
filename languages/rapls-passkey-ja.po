@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rapls-passkey\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-07-24 14:37+0000\n"
+"POT-Creation-Date: 2026-07-25 03:40+0000\n"
 "PO-Revision-Date: 2026-07-23 12:00+0900\n"
 "Last-Translator: Rapls <info@raplsworks.com>\n"
 "Language-Team: Japanese\n"
@@ -13,238 +13,215 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: build/src/Admin/AuditExport.php:37 build/src/Admin/SettingsPage.php:43
-#: build/src/Admin/SetupWizard.php:136 src/Admin/AuditExport.php:40
-#: src/Admin/SettingsPage.php:46 src/Admin/SetupWizard.php:134
+#: src/Admin/AuditExport.php:40 src/Admin/SettingsPage.php:46
+#: src/Admin/SetupWizard.php:134
 msgid "You do not have permission."
 msgstr "権限がありません。"
 
-#: build/src/Admin/AuditExport.php:67 build/src/Admin/SettingsPage.php:629
-#: build/src/Privacy/PersonalData.php:96 src/Admin/AuditExport.php:75
-#: src/Admin/SettingsPage.php:467 src/Privacy/PersonalData.php:138
+#: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:478
+#: src/Privacy/PersonalData.php:138
 msgid "Date/time (UTC)"
 msgstr "日時 (UTC)"
 
-#: build/src/Admin/AuditExport.php:67 build/src/Admin/SettingsPage.php:630
-#: build/src/Privacy/PersonalData.php:96 src/Admin/AuditExport.php:76
-#: src/Admin/SettingsPage.php:468 src/Privacy/PersonalData.php:134
+#: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:479
+#: src/Privacy/PersonalData.php:134
 msgid "Event"
 msgstr "イベント"
 
-#: build/src/Admin/AuditExport.php:67 src/Admin/AuditExport.php:77
+#: src/Admin/AuditExport.php:77
 msgid "User ID"
 msgstr "ユーザーID"
 
-#: build/src/Admin/AuditExport.php:67 src/Admin/AuditExport.php:78
+#: src/Admin/AuditExport.php:78
 msgid "Username"
 msgstr "ユーザー名"
 
-#: build/src/Admin/AuditExport.php:67 build/src/Admin/SettingsPage.php:632
-#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:470
+#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:481
 msgid "Details"
 msgstr "詳細"
 
-#: build/src/Admin/CredentialsPage.php:142
-#: build/src/Admin/CredentialsPage.php:148 src/Admin/CredentialsPage.php:151
-#: src/Admin/CredentialsPage.php:153
+#: src/Admin/CredentialsPage.php:151 src/Admin/CredentialsPage.php:153
 msgid "Search passkeys"
 msgstr "パスキーを検索"
 
 #. translators: %s: number of passkeys.
-#: build/src/Admin/CredentialsPage.php:157 src/Admin/CredentialsPage.php:161
+#: src/Admin/CredentialsPage.php:161
 msgid "Total passkeys: %s"
 msgstr "パスキー総数: %s"
 
-#: build/src/Admin/CredentialsPage.php:167 src/Admin/CredentialsPage.php:170
+#: src/Admin/CredentialsPage.php:170
 msgid "User"
 msgstr "ユーザー"
 
-#: build/src/Admin/CredentialsPage.php:170 build/src/Admin/ProfileUi.php:82
-#: build/src/Frontend/Shortcodes.php:135 build/src/Privacy/PersonalData.php:89
 #: src/Admin/CredentialsPage.php:171 src/Admin/ProfileUi.php:119
 #: src/Frontend/Shortcodes.php:183 src/Privacy/PersonalData.php:104
 msgid "Name"
 msgstr "名前"
 
-#: build/src/Admin/CredentialsPage.php:173 build/src/Admin/ProfileUi.php:85
-#: build/src/Frontend/Shortcodes.php:138 src/Admin/CredentialsPage.php:172
-#: src/Admin/ProfileUi.php:120 src/Frontend/Shortcodes.php:184
+#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:120
+#: src/Frontend/Shortcodes.php:184
 msgid "Authenticator"
 msgstr "認証器"
 
-#: build/src/Admin/CredentialsPage.php:176 build/src/Admin/ProfileUi.php:88
-#: build/src/Frontend/Shortcodes.php:141 build/src/Privacy/PersonalData.php:89
 #: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:121
 #: src/Frontend/Shortcodes.php:185 src/Privacy/PersonalData.php:108
 msgid "Registered"
 msgstr "登録日時"
 
-#: build/src/Admin/CredentialsPage.php:179 build/src/Admin/ProfileUi.php:91
-#: build/src/Frontend/Shortcodes.php:144 build/src/Privacy/PersonalData.php:89
 #: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:122
 #: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:112
 msgid "Last used"
 msgstr "最終使用"
 
-#: build/src/Admin/CredentialsPage.php:182 build/src/Admin/ProfileUi.php:94
-#: build/src/Frontend/Shortcodes.php:147 src/Admin/CredentialsPage.php:175
-#: src/Admin/ProfileUi.php:123 src/Frontend/Shortcodes.php:187
+#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:123
+#: src/Frontend/Shortcodes.php:187
 msgid "Status"
 msgstr "状態"
 
-#: build/src/Admin/CredentialsPage.php:192 src/Admin/CredentialsPage.php:181
+#: src/Admin/CredentialsPage.php:181
 msgid "No passkeys found."
 msgstr "パスキーが見つかりません。"
 
-#: build/src/Admin/CredentialsPage.php:218 src/Admin/CredentialsPage.php:193
+#: src/Admin/CredentialsPage.php:193
 msgid "(deleted user)"
 msgstr "(削除されたユーザー)"
 
-#: build/src/Admin/CredentialsPage.php:225 build/src/Admin/ProfileUi.php:54
-#: build/src/Admin/ProfileUi.php:118 build/src/Frontend/Shortcodes.php:73
-#: build/src/Frontend/Shortcodes.php:171 src/Admin/CredentialsPage.php:196
-#: src/Admin/ProfileUi.php:85 src/Admin/ProfileUi.php:133
-#: src/Frontend/Shortcodes.php:107 src/Frontend/Shortcodes.php:197
+#: src/Admin/CredentialsPage.php:196 src/Admin/ProfileUi.php:85
+#: src/Admin/ProfileUi.php:133 src/Frontend/Shortcodes.php:107
+#: src/Frontend/Shortcodes.php:197
 msgid "(no name)"
 msgstr "(名前なし)"
 
-#: build/src/Admin/CredentialsPage.php:228 build/src/Admin/ProfileUi.php:121
-#: build/src/Frontend/Shortcodes.php:174 src/Admin/CredentialsPage.php:197
-#: src/Admin/ProfileUi.php:134 src/Frontend/Shortcodes.php:198
+#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:134
+#: src/Frontend/Shortcodes.php:198
 msgid "Unknown"
 msgstr "不明"
 
-#: build/src/Admin/CredentialsPage.php:234 src/Admin/CredentialsPage.php:199
+#: src/Admin/CredentialsPage.php:199
 msgid "Never"
 msgstr "未使用"
 
-#: build/src/Admin/CredentialsPage.php:237 build/src/Admin/ProfileUi.php:54
-#: build/src/Admin/ProfileUi.php:131 build/src/Frontend/Shortcodes.php:73
-#: build/src/Frontend/Shortcodes.php:183 src/Admin/CredentialsPage.php:200
-#: src/Admin/ProfileUi.php:86 src/Admin/ProfileUi.php:138
-#: src/Frontend/Shortcodes.php:110 src/Frontend/Shortcodes.php:201
+#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:86
+#: src/Admin/ProfileUi.php:138 src/Frontend/Shortcodes.php:110
+#: src/Frontend/Shortcodes.php:201
 msgid "Active"
 msgstr "有効"
 
-#: build/src/Admin/CredentialsPage.php:237 build/src/Admin/ProfileUi.php:54
-#: build/src/Admin/ProfileUi.php:131 build/src/Frontend/Shortcodes.php:73
-#: build/src/Frontend/Shortcodes.php:183 src/Admin/CredentialsPage.php:200
-#: src/Admin/ProfileUi.php:87 src/Admin/ProfileUi.php:138
-#: src/Frontend/Shortcodes.php:111 src/Frontend/Shortcodes.php:201
+#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:87
+#: src/Admin/ProfileUi.php:138 src/Frontend/Shortcodes.php:111
+#: src/Frontend/Shortcodes.php:201
 msgid "Suspended"
 msgstr "一時停止中"
 
-#: build/src/Admin/CredentialsPage.php:247 build/src/Admin/ProfileUi.php:54
-#: build/src/Admin/ProfileUi.php:149 build/src/Frontend/Shortcodes.php:73
-#: build/src/Frontend/Shortcodes.php:190 src/Admin/CredentialsPage.php:204
-#: src/Admin/ProfileUi.php:88 src/Admin/ProfileUi.php:146
-#: src/Frontend/Shortcodes.php:112 src/Frontend/Shortcodes.php:204
+#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:88
+#: src/Admin/ProfileUi.php:146 src/Frontend/Shortcodes.php:112
+#: src/Frontend/Shortcodes.php:204
 msgid "Suspend"
 msgstr "一時停止"
 
-#: build/src/Admin/CredentialsPage.php:247 build/src/Admin/ProfileUi.php:54
-#: build/src/Admin/ProfileUi.php:149 build/src/Frontend/Shortcodes.php:73
-#: build/src/Frontend/Shortcodes.php:190 src/Admin/CredentialsPage.php:204
-#: src/Admin/ProfileUi.php:89 src/Admin/ProfileUi.php:146
-#: src/Frontend/Shortcodes.php:113 src/Frontend/Shortcodes.php:204
+#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:89
+#: src/Admin/ProfileUi.php:146 src/Frontend/Shortcodes.php:113
+#: src/Frontend/Shortcodes.php:204
 msgid "Resume"
 msgstr "再開"
 
-#: build/src/Admin/CredentialsPage.php:254 src/Admin/CredentialsPage.php:207
+#: src/Admin/CredentialsPage.php:207
 msgid "Delete this passkey? This cannot be undone."
 msgstr "このパスキーを削除しますか?この操作は元に戻せません。"
 
-#: build/src/Admin/CredentialsPage.php:257 build/src/Admin/ProfileUi.php:153
-#: build/src/Frontend/Shortcodes.php:193 src/Admin/CredentialsPage.php:208
-#: src/Admin/ProfileUi.php:148 src/Frontend/Shortcodes.php:205
+#: src/Admin/CredentialsPage.php:208 src/Admin/ProfileUi.php:148
+#: src/Frontend/Shortcodes.php:205
 msgid "Delete"
 msgstr "削除"
 
-#: build/src/Admin/CredentialsPage.php:309 src/Admin/CredentialsPage.php:268
+#: src/Admin/CredentialsPage.php:268
 msgid "The passkey was deleted."
 msgstr "パスキーを削除しました。"
 
-#: build/src/Admin/CredentialsPage.php:311 src/Admin/CredentialsPage.php:270
+#: src/Admin/CredentialsPage.php:270
 msgid ""
 "The passkey was suspended. It cannot be used to sign in until you resume it."
 msgstr "パスキーを一時停止しました。再開するまでログインには使えません。"
 
-#: build/src/Admin/CredentialsPage.php:313 src/Admin/CredentialsPage.php:272
+#: src/Admin/CredentialsPage.php:272
 msgid "The passkey was resumed."
 msgstr "パスキーを再開しました。"
 
-#: build/src/Admin/CredentialsPage.php:315 build/src/Rest/Endpoints.php:444
-#: src/Admin/CredentialsPage.php:274 src/Rest/Endpoints.php:593
+#: src/Admin/CredentialsPage.php:274 src/Rest/Endpoints.php:610
 msgid "That passkey no longer exists."
 msgstr "そのパスキーは存在しません。"
 
-#: build/src/Admin/CredentialsPage.php:54
-#: build/src/Admin/CredentialsPage.php:123 src/Admin/CredentialsPage.php:58
-#: src/Admin/CredentialsPage.php:59 src/Admin/CredentialsPage.php:142
+#: src/Admin/CredentialsPage.php:58 src/Admin/CredentialsPage.php:59
+#: src/Admin/CredentialsPage.php:142
 msgid "Passkeys"
 msgstr "パスキー"
 
-#: build/src/Admin/CredentialsPage.php:71 build/src/Rest/Endpoints.php:449
-#: build/src/Rest/Endpoints.php:470 src/Admin/CredentialsPage.php:81
-#: src/Rest/Endpoints.php:604 src/Rest/Endpoints.php:641
+#: src/Admin/CredentialsPage.php:81 src/Rest/Endpoints.php:621
+#: src/Rest/Endpoints.php:658
 msgid "You do not have permission to change this passkey."
 msgstr "このパスキーを変更する権限がありません。"
 
-#: build/src/Admin/DashboardWidget.php:44 src/Admin/DashboardWidget.php:46
+#: src/Admin/DashboardWidget.php:100
+msgid "Users list"
+msgstr "ユーザー一覧"
+
+#: src/Admin/DashboardWidget.php:102
+msgid "Settings"
+msgstr "設定"
+
+#: src/Admin/DashboardWidget.php:46
 msgid "Rapls Passkey: Adoption"
 msgstr "Rapls Passkey: 導入状況"
 
-#: build/src/Admin/DashboardWidget.php:62 build/src/Admin/ProfileUi.php:75
 #: src/Admin/DashboardWidget.php:71 src/Admin/ProfileUi.php:114
 msgid "Registered passkeys"
 msgstr "登録済みパスキー"
 
-#: build/src/Admin/DashboardWidget.php:63 src/Admin/DashboardWidget.php:76
+#: src/Admin/DashboardWidget.php:76
 msgid "Users with a passkey"
 msgstr "パスキーを持つユーザー"
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: build/src/Admin/DashboardWidget.php:63 src/Admin/DashboardWidget.php:80
+#: src/Admin/DashboardWidget.php:80
 msgid "%1$s / %2$s (%3$d%%)"
 msgstr "%1$s / %2$s(%3$d%%)"
 
-#: build/src/Admin/DashboardWidget.php:64 src/Admin/DashboardWidget.php:86
+#: src/Admin/DashboardWidget.php:86
 msgid "Last 30 days"
 msgstr "直近30日"
 
 #. translators: 1: passkey logins, 2: new registrations.
-#: build/src/Admin/DashboardWidget.php:66 src/Admin/DashboardWidget.php:90
+#: src/Admin/DashboardWidget.php:90
 msgid "%1$s logins / %2$s new registrations"
 msgstr "ログイン %1$s 件 / 新規登録 %2$s 件"
 
-#: build/src/Admin/DashboardWidget.php:73 src/Admin/DashboardWidget.php:100
-msgid "Users list"
-msgstr "ユーザー一覧"
+#: src/Admin/ProfileUi.php:111 src/Admin/SettingsPage.php:152
+#: src/Admin/UsersColumn.php:54 src/Integrations/WooCommerceAccount.php:91
+#: src/Integrations/WooCommerceAccount.php:106 src/Privacy/PersonalData.php:100
+msgid "Passkey"
+msgstr "パスキー"
 
-#: build/src/Admin/DashboardWidget.php:75 src/Admin/DashboardWidget.php:102
-msgid "Settings"
-msgstr "設定"
+#: src/Admin/ProfileUi.php:114
+msgid "Your registered passkeys"
+msgstr "登録済みのパスキー"
 
-#: build/src/Admin/ProfileUi.php:104 build/src/Frontend/Shortcodes.php:157
 #: src/Admin/ProfileUi.php:129 src/Frontend/Shortcodes.php:193
 msgid "No passkeys are registered."
 msgstr "登録済みのパスキーはありません。"
 
-#: build/src/Admin/ProfileUi.php:139 build/src/Frontend/Shortcodes.php:187
 #: src/Admin/ProfileUi.php:142 src/Frontend/Shortcodes.php:203
 msgid "Rename"
 msgstr "名前を変更"
 
-#: build/src/Admin/ProfileUi.php:174 build/src/Frontend/Shortcodes.php:207
 #: src/Admin/ProfileUi.php:159 src/Frontend/Shortcodes.php:213
 msgid "Register a passkey"
 msgstr "パスキーを登録"
 
-#: build/src/Admin/ProfileUi.php:188 src/Admin/ProfileUi.php:165
+#: src/Admin/ProfileUi.php:165
 msgid "Register a passkey for this user"
 msgstr "このユーザーのパスキーを登録"
 
-#: build/src/Admin/ProfileUi.php:194 src/Admin/ProfileUi.php:169
+#: src/Admin/ProfileUi.php:169
 msgid ""
 "The passkey is created on the authenticator in front of you right now (your "
 "device, or a security key you are about to hand over) — so use this only "
@@ -255,69 +232,57 @@ msgstr ""
 "キー) の中に作られます。対面でセットアップするときだけ使ってください。新しい"
 "パスキーについては本人にメールで通知され、監査ログにも記録されます。"
 
-#: build/src/Admin/ProfileUi.php:201 src/Admin/ProfileUi.php:172
+#: src/Admin/ProfileUi.php:172
 msgid "Passkeys can only be registered from your own profile screen."
 msgstr "パスキーの登録は本人のプロフィール画面からのみ行えます。"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
-#: build/src/Login/UpgradePrompt.php:108 src/Admin/ProfileUi.php:75
-#: src/Frontend/Shortcodes.php:99 src/Login/UpgradePrompt.php:125
+#: src/Admin/ProfileUi.php:75 src/Frontend/Shortcodes.php:99
+#: src/Login/UpgradePrompt.php:125
 msgid "Registering passkey..."
 msgstr "パスキーを登録しています…"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
-#: build/src/Login/UpgradePrompt.php:108 src/Admin/ProfileUi.php:76
-#: src/Frontend/Shortcodes.php:100 src/Login/UpgradePrompt.php:126
+#: src/Admin/ProfileUi.php:76 src/Frontend/Shortcodes.php:100
+#: src/Login/UpgradePrompt.php:126
 msgid "Passkey registered."
 msgstr "パスキーを登録しました。"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
-#: build/src/Login/UpgradePrompt.php:108 build/src/Rest/Endpoints.php:211
-#: build/src/Rest/Endpoints.php:220 src/Admin/ProfileUi.php:77
-#: src/Frontend/Shortcodes.php:101 src/Login/UpgradePrompt.php:127
-#: src/Rest/Endpoints.php:278 src/Rest/Endpoints.php:288
+#: src/Admin/ProfileUi.php:77 src/Frontend/Shortcodes.php:101
+#: src/Login/UpgradePrompt.php:127 src/Rest/Endpoints.php:278
+#: src/Rest/Endpoints.php:288
 msgid "Failed to register the passkey."
 msgstr "パスキーの登録に失敗しました。"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
-#: build/src/Login/LoginForm.php:37 build/src/Login/UpgradePrompt.php:108
 #: src/Admin/ProfileUi.php:78 src/Frontend/Shortcodes.php:102
 #: src/Login/LoginForm.php:60 src/Login/UpgradePrompt.php:128
 msgid "This browser does not support passkeys."
 msgstr "このブラウザはパスキーに対応していません。"
 
-#: build/src/Admin/ProfileUi.php:54 src/Admin/ProfileUi.php:79
+#: src/Admin/ProfileUi.php:79
 msgid "Registration was cancelled or timed out. Please try again."
 msgstr ""
 "登録がキャンセルされたか、時間切れになりました。もう一度お試しください。"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
-#: build/src/Login/UpgradePrompt.php:108 src/Admin/ProfileUi.php:80
-#: src/Frontend/Shortcodes.php:104 src/Login/UpgradePrompt.php:130
+#: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:104
+#: src/Login/UpgradePrompt.php:130
 msgid "This authenticator already has a passkey registered."
 msgstr "この認証器にはすでにパスキーが登録されています。"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
 #: src/Admin/ProfileUi.php:81 src/Frontend/Shortcodes.php:105
 msgid "Delete this passkey?"
 msgstr "このパスキーを削除しますか?"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
 #: src/Admin/ProfileUi.php:82 src/Frontend/Shortcodes.php:106
 msgid "Name for this passkey (optional):"
 msgstr "このパスキーの名前(任意):"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
 #: src/Admin/ProfileUi.php:83 src/Frontend/Shortcodes.php:108
 msgid "New name for this passkey:"
 msgstr "このパスキーの新しい名前:"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
 #: src/Admin/ProfileUi.php:84 src/Frontend/Shortcodes.php:109
 msgid "Could not rename the passkey."
 msgstr "パスキーの名前を変更できませんでした。"
 
-#: build/src/Admin/ProfileUi.php:54 build/src/Frontend/Shortcodes.php:73
 #: src/Admin/ProfileUi.php:90 src/Frontend/Shortcodes.php:114
 msgid ""
 "Suspend this passkey? It will stop working until you resume it, but it is "
@@ -326,38 +291,23 @@ msgstr ""
 "このパスキーを一時停止しますか?再開するまで使えなくなりますが、削除はされませ"
 "ん。"
 
-#: build/src/Admin/ProfileUi.php:70 build/src/Admin/SettingsPage.php:134
-#: build/src/Admin/UsersColumn.php:52
-#: build/src/Integrations/WooCommerceAccount.php:86
-#: build/src/Integrations/WooCommerceAccount.php:100
-#: build/src/Privacy/PersonalData.php:89 src/Admin/ProfileUi.php:111
-#: src/Admin/SettingsPage.php:151 src/Admin/UsersColumn.php:54
-#: src/Integrations/WooCommerceAccount.php:91
-#: src/Integrations/WooCommerceAccount.php:106 src/Privacy/PersonalData.php:100
-msgid "Passkey"
-msgstr "パスキー"
-
-#: build/src/Admin/ProfileUi.php:75 src/Admin/ProfileUi.php:114
-msgid "Your registered passkeys"
-msgstr "登録済みのパスキー"
-
-#: build/src/Admin/SettingsPage.php:105 src/Admin/SettingsPage.php:139
+#: src/Admin/SettingsPage.php:140
 msgid "Rapls Passkey Settings"
 msgstr "Rapls Passkey 設定"
 
-#: build/src/Admin/SettingsPage.php:110 src/Admin/SettingsPage.php:140
+#: src/Admin/SettingsPage.php:141
 msgid "Setup check"
 msgstr "セットアップ確認"
 
-#: build/src/Admin/SettingsPage.php:119 src/Admin/SettingsPage.php:144
+#: src/Admin/SettingsPage.php:145
 msgid "Settings were reset to their defaults."
 msgstr "設定を初期値に戻しました。"
 
-#: build/src/Admin/SettingsPage.php:139 src/Admin/SettingsPage.php:154
+#: src/Admin/SettingsPage.php:155
 msgid "Per-user registration limit"
 msgstr "1ユーザーあたりの登録上限"
 
-#: build/src/Admin/SettingsPage.php:148 src/Admin/SettingsPage.php:157
+#: src/Admin/SettingsPage.php:158
 msgid ""
 "Maximum number of passkeys a user can register. 0 means unlimited. We "
 "recommend 2 or more so passkeys can be used across multiple devices."
@@ -365,15 +315,15 @@ msgstr ""
 "ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮"
 "し、2 以上を推奨します。"
 
-#: build/src/Admin/SettingsPage.php:155 src/Admin/SettingsPage.php:162
+#: src/Admin/SettingsPage.php:163
 msgid "Login rate limit"
 msgstr "ログイン回数制限"
 
-#: build/src/Admin/SettingsPage.php:160 src/Admin/SettingsPage.php:165
+#: src/Admin/SettingsPage.php:166
 msgid "Attempt limit"
 msgstr "試行回数の上限"
 
-#: build/src/Admin/SettingsPage.php:169 src/Admin/SettingsPage.php:168
+#: src/Admin/SettingsPage.php:169
 msgid ""
 "How many failed passkey-login attempts from the same IP address are allowed "
 "within the window below before \"Too many attempts\" is shown. Successful "
@@ -383,11 +333,11 @@ msgstr ""
 "スキーログインの失敗回数です(下のロックアウト時間内)。成功したログインはカウ"
 "ントされません。0 で無効になります。"
 
-#: build/src/Admin/SettingsPage.php:175 src/Admin/SettingsPage.php:172
+#: src/Admin/SettingsPage.php:173
 msgid "Lockout time (seconds)"
 msgstr "ロックアウト時間(秒)"
 
-#: build/src/Admin/SettingsPage.php:184 src/Admin/SettingsPage.php:175
+#: src/Admin/SettingsPage.php:176
 msgid ""
 "The length of the counting window, and how long the lockout lasts once the "
 "attempt limit is reached (default 300 seconds = 5 minutes)."
@@ -395,21 +345,21 @@ msgstr ""
 "カウントを集計する期間であり、試行回数の上限に達した後にロックアウトが続く時"
 "間です(デフォルト 300 秒 = 5 分)。"
 
-#: build/src/Admin/SettingsPage.php:191 src/Admin/SettingsPage.php:180
+#: src/Admin/SettingsPage.php:181
 msgid "Session security"
 msgstr "セッションのセキュリティ"
 
-#: build/src/Admin/SettingsPage.php:196 src/Admin/SettingsPage.php:183
+#: src/Admin/SettingsPage.php:184
 msgid "Administrator \"remember me\""
 msgstr "管理者の「ログイン状態を保存する」"
 
-#: build/src/Admin/SettingsPage.php:206 src/Admin/SettingsPage.php:187
+#: src/Admin/SettingsPage.php:188
 msgid ""
 "Allow administrators to stay signed in (\"remember me\") after a passkey "
 "login"
 msgstr "パスキーログイン後、管理者もログイン状態を保存できるようにする"
 
-#: build/src/Admin/SettingsPage.php:210 src/Admin/SettingsPage.php:189
+#: src/Admin/SettingsPage.php:190
 msgid ""
 "Off by default for safety: administrators never get a persistent session, so "
 "a shared or stolen device cannot keep an admin logged in. Turn this on to "
@@ -421,17 +371,17 @@ msgstr ""
 "と、管理者でも「ログイン状態を保存する」チェックボックスが有効になります。管"
 "理者以外には影響しません。"
 
-#: build/src/Admin/SettingsPage.php:216 src/Admin/SettingsPage.php:193
+#: src/Admin/SettingsPage.php:194
 msgid "Two-factor on alternative logins"
 msgstr "代替ログインでの2要素認証"
 
-#: build/src/Admin/SettingsPage.php:226 src/Admin/SettingsPage.php:197
+#: src/Admin/SettingsPage.php:198
 msgid ""
 "Ask for the site's two-factor code on the logins that are weaker than a "
 "passkey"
 msgstr "パスキーより弱いログイン方法では、サイトの2要素認証コードを要求する"
 
-#: build/src/Admin/SettingsPage.php:231 src/Admin/SettingsPage.php:200
+#: src/Admin/SettingsPage.php:201
 msgid ""
 "Two-factor plugins (Wordfence Login Security, Two-Factor, ...) only enforce "
 "inside the wp-login.php password chain, which the email magic link and the "
@@ -447,7 +397,7 @@ msgstr ""
 "む) はそれ自体が2つ目の要素なので、確認画面は表示されません。実際に2要素認証"
 "を設定しているユーザーにのみ表示されます。"
 
-#: build/src/Admin/SettingsPage.php:241 src/Admin/SettingsPage.php:204
+#: src/Admin/SettingsPage.php:205
 msgid ""
 "No supported two-factor plugin detected, so this setting currently has no "
 "effect."
@@ -455,19 +405,19 @@ msgstr ""
 "対応する2要素認証プラグインが見つからないため、この設定は現在効果がありませ"
 "ん。"
 
-#: build/src/Admin/SettingsPage.php:248 src/Admin/SettingsPage.php:207
+#: src/Admin/SettingsPage.php:208
 msgid "Detected:"
 msgstr "検出:"
 
-#: build/src/Admin/SettingsPage.php:266 src/Admin/SettingsPage.php:221
+#: src/Admin/SettingsPage.php:222
 msgid "Advanced (WebAuthn)"
 msgstr "詳細設定(WebAuthn)"
 
-#: build/src/Admin/SettingsPage.php:271 src/Admin/SettingsPage.php:224
+#: src/Admin/SettingsPage.php:225
 msgid "Timeout (seconds)"
 msgstr "タイムアウト(秒)"
 
-#: build/src/Admin/SettingsPage.php:280 src/Admin/SettingsPage.php:227
+#: src/Admin/SettingsPage.php:228
 msgid ""
 "Timeout for the passkey registration and authentication dialogs. 0 uses the "
 "browser default (typically around 60 seconds)."
@@ -475,23 +425,23 @@ msgstr ""
 "パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定(通常 60 秒程"
 "度)を使用します。"
 
-#: build/src/Admin/SettingsPage.php:286 src/Admin/SettingsPage.php:231
+#: src/Admin/SettingsPage.php:232
 msgid "User verification"
 msgstr "ユーザー検証"
 
-#: build/src/Admin/SettingsPage.php:295 src/Admin/SettingsPage.php:234
+#: src/Admin/SettingsPage.php:235
 msgid "Preferred"
 msgstr "推奨(preferred)"
 
-#: build/src/Admin/SettingsPage.php:300 src/Admin/SettingsPage.php:235
+#: src/Admin/SettingsPage.php:236
 msgid "Required"
 msgstr "必須(required)"
 
-#: build/src/Admin/SettingsPage.php:305 src/Admin/SettingsPage.php:236
+#: src/Admin/SettingsPage.php:237
 msgid "Discouraged"
 msgstr "不要(discouraged)"
 
-#: build/src/Admin/SettingsPage.php:309 src/Admin/SettingsPage.php:238
+#: src/Admin/SettingsPage.php:239
 msgid ""
 "How strongly to require identity verification via biometrics or PIN. "
 "Required may reject authenticators that do not support it; leaving this at "
@@ -500,23 +450,23 @@ msgstr ""
 "生体認証や PIN による本人確認をどの程度求めるか。「必須」は対応していない認証"
 "器を弾く可能性があります。通常は「推奨」のままを推奨します。"
 
-#: build/src/Admin/SettingsPage.php:315 src/Admin/SettingsPage.php:242
+#: src/Admin/SettingsPage.php:243
 msgid "Authenticator type"
 msgstr "認証器の種類"
 
-#: build/src/Admin/SettingsPage.php:324 src/Admin/SettingsPage.php:245
+#: src/Admin/SettingsPage.php:246
 msgid "No preference (allow all)"
 msgstr "指定なし(すべて許可)"
 
-#: build/src/Admin/SettingsPage.php:329 src/Admin/SettingsPage.php:246
+#: src/Admin/SettingsPage.php:247
 msgid "Platform only (Touch ID / Windows Hello, etc.)"
 msgstr "内蔵のみ(Touch ID / Windows Hello など)"
 
-#: build/src/Admin/SettingsPage.php:334 src/Admin/SettingsPage.php:247
+#: src/Admin/SettingsPage.php:248
 msgid "Cross-platform only (security key / another device)"
 msgstr "外付けのみ(セキュリティキー / 別端末)"
 
-#: build/src/Admin/SettingsPage.php:338 src/Admin/SettingsPage.php:249
+#: src/Admin/SettingsPage.php:250
 msgid ""
 "Which authenticator type to allow at registration (applies at registration "
 "only). No preference is usually recommended."
@@ -524,23 +474,23 @@ msgstr ""
 "新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨し"
 "ます。"
 
-#: build/src/Admin/SettingsPage.php:344 src/Admin/SettingsPage.php:253
+#: src/Admin/SettingsPage.php:254
 msgid "UI hints"
 msgstr "UI ヒント"
 
-#: build/src/Admin/SettingsPage.php:349 src/Admin/SettingsPage.php:258
+#: src/Admin/SettingsPage.php:259
 msgid "Passkey on this device (client-device)"
 msgstr "この端末のパスキー(client-device)"
 
-#: build/src/Admin/SettingsPage.php:349 src/Admin/SettingsPage.php:259
+#: src/Admin/SettingsPage.php:260
 msgid "Another device / QR (hybrid)"
 msgstr "別の端末 / QR(hybrid)"
 
-#: build/src/Admin/SettingsPage.php:349 src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:261
 msgid "Security key (security-key)"
 msgstr "セキュリティキー(security-key)"
 
-#: build/src/Admin/SettingsPage.php:368 src/Admin/SettingsPage.php:269
+#: src/Admin/SettingsPage.php:270
 msgid ""
 "Give supported browsers hints about which sign-in methods to suggest first "
 "(order is respected). No hints are sent if none are selected."
@@ -548,11 +498,11 @@ msgstr ""
 "対応ブラウザに対し、優先して案内する認証方法のヒントを与えます(順序も尊重され"
 "ます)。未選択ならヒントなし。"
 
-#: build/src/Admin/SettingsPage.php:375 src/Admin/SettingsPage.php:274
+#: src/Admin/SettingsPage.php:275
 msgid "reCAPTCHA v3 (password login protection)"
 msgstr "reCAPTCHA v3(パスワードログイン保護)"
 
-#: build/src/Admin/SettingsPage.php:378 src/Admin/SettingsPage.php:275
+#: src/Admin/SettingsPage.php:276
 msgid ""
 "Protect password logins with Google reCAPTCHA v3. It does not apply to "
 "passkey logins (brute force does not work against them). Enter your site key "
@@ -562,35 +512,56 @@ msgstr ""
 "インには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレッ"
 "トを入力し、有効化してください。"
 
-#: build/src/Admin/SettingsPage.php:383 src/Admin/SettingsPage.php:278
+#: src/Admin/SettingsPage.php:279
 msgid "Enable"
 msgstr "有効化"
 
-#: build/src/Admin/SettingsPage.php:393 src/Admin/SettingsPage.php:282
+#: src/Admin/SettingsPage.php:283
 msgid "Enable reCAPTCHA"
 msgstr "reCAPTCHA を有効にする"
 
-#: build/src/Admin/SettingsPage.php:400 src/Admin/SettingsPage.php:287
+#: src/Admin/SettingsPage.php:288
 msgid "Site key"
 msgstr "サイトキー"
 
-#: build/src/Admin/SettingsPage.php:410 src/Admin/SettingsPage.php:291
+#: src/Admin/SettingsPage.php:292
 msgid "Secret key"
 msgstr "シークレットキー"
 
-#: build/src/Admin/SettingsPage.php:420 src/Admin/SettingsPage.php:295
+#: src/Admin/SettingsPage.php:296
 msgid "Score threshold"
 msgstr "スコアしきい値"
 
-#: build/src/Admin/SettingsPage.php:429 src/Admin/SettingsPage.php:298
+#: src/Admin/SettingsPage.php:299
 msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
 msgstr "0.0〜1.0。これ未満のスコアは拒否します(既定 0.5)。"
 
-#: build/src/Admin/SettingsPage.php:436 src/Admin/SettingsPage.php:303
+#: src/Admin/SettingsPage.php:303
+msgid "If Google is unreachable"
+msgstr "Google に接続できない場合"
+
+#: src/Admin/SettingsPage.php:307
+msgid "Allow the password login when reCAPTCHA cannot be verified (fail open)"
+msgstr ""
+"reCAPTCHA を検証できないときにパスワードログインを許可する（フェイルオープ"
+"ン）"
+
+#: src/Admin/SettingsPage.php:309
+msgid ""
+"On by default (availability): a Google outage will not lock everyone out. "
+"Turn it off to fail closed (reject password logins that cannot be scored) — "
+"a passkey login never uses reCAPTCHA, so it stays available either way."
+msgstr ""
+"既定でオン（可用性優先）: Google の障害時に全員がロックアウトされるのを防ぎま"
+"す。オフにするとフェイルクローズ（スコアを取得できないパスワードログインを拒"
+"否）になります。パスキーログインは reCAPTCHA を使わないため、どちらの設定でも"
+"利用可能です。"
+
+#: src/Admin/SettingsPage.php:314
 msgid "Security notification emails"
 msgstr "セキュリティ通知メール"
 
-#: build/src/Admin/SettingsPage.php:439 src/Admin/SettingsPage.php:304
+#: src/Admin/SettingsPage.php:315
 msgid ""
 "Email the affected user about passkey registration and removal, and about "
 "passkey sign-ins from a new device. Helps detect account takeover early."
@@ -598,23 +569,23 @@ msgstr ""
 "パスキーの登録・削除、および新しい端末からのパスキーサインインを、対象ユー"
 "ザー本人のメールアドレスに通知します。乗っ取りの早期発見に役立ちます。"
 
-#: build/src/Admin/SettingsPage.php:444 src/Admin/SettingsPage.php:307
+#: src/Admin/SettingsPage.php:318
 msgid "Send"
 msgstr "送信"
 
-#: build/src/Admin/SettingsPage.php:454 src/Admin/SettingsPage.php:311
+#: src/Admin/SettingsPage.php:322
 msgid "Send security notification emails"
 msgstr "セキュリティ通知メールを送信する"
 
-#: build/src/Admin/SettingsPage.php:462 src/Admin/SettingsPage.php:317
+#: src/Admin/SettingsPage.php:328
 msgid "Passkey enrolment prompt"
 msgstr "パスキー登録のうながし"
 
-#: build/src/Admin/SettingsPage.php:467 src/Admin/SettingsPage.php:320
+#: src/Admin/SettingsPage.php:331
 msgid "After login"
 msgstr "ログイン後の表示"
 
-#: build/src/Admin/SettingsPage.php:477 src/Admin/SettingsPage.php:324
+#: src/Admin/SettingsPage.php:335
 msgid ""
 "Right after a password login, suggest creating a passkey on the spot (only "
 "for users without a passkey)"
@@ -622,39 +593,33 @@ msgstr ""
 "パスワードでログインした直後に、パスキーの作成をその場でおすすめする(パスキー"
 "未登録のユーザーのみ)"
 
-#: build/src/Admin/SettingsPage.php:485 src/Admin/SettingsPage.php:330
+#: src/Admin/SettingsPage.php:341
 msgid "Audit log"
 msgstr "監査ログ"
 
-#: build/src/Admin/SettingsPage.php:490 src/Admin/SettingsPage.php:333
+#: src/Admin/SettingsPage.php:344
 msgid "Logging"
 msgstr "記録"
 
-#: build/src/Admin/SettingsPage.php:500 src/Admin/SettingsPage.php:337
+#: src/Admin/SettingsPage.php:348
 msgid "Record events such as registration, login, and removal"
 msgstr "登録・ログイン・削除などのイベントを記録する"
 
-#: build/src/Admin/SettingsPage.php:520 src/Admin/SettingsPage.php:351
+#: src/Admin/SettingsPage.php:362
 msgid ""
 "Reset all Rapls Passkey settings to their defaults? This cannot be undone."
 msgstr ""
 "Rapls Passkey のすべての設定を初期値に戻しますか?この操作は元に戻せません。"
 
-#: build/src/Admin/SettingsPage.php:529 src/Admin/SettingsPage.php:354
+#: src/Admin/SettingsPage.php:365
 msgid "Reset to defaults"
 msgstr "初期設定に戻す"
 
-#: build/src/Admin/SettingsPage.php:532 src/Admin/SettingsPage.php:355
+#: src/Admin/SettingsPage.php:366
 msgid "Restore every setting on this page to its default value."
 msgstr "このページのすべての設定を初期値に戻します。"
 
-#: build/src/Admin/SettingsPage.php:55 build/src/Admin/SiteHealth.php:48
-#: src/Admin/SettingsPage.php:61 src/Admin/SettingsPage.php:62
-#: src/Admin/SiteHealth.php:53
-msgid "Rapls Passkey"
-msgstr "Rapls Passkey"
-
-#: build/src/Admin/SettingsPage.php:565 src/Admin/SettingsPage.php:385
+#: src/Admin/SettingsPage.php:396
 msgid ""
 "Cross-device sign-in: approve a login on your computer from your phone via a "
 "QR code."
@@ -662,14 +627,14 @@ msgstr ""
 "デバイス間ログイン: パソコンでのログインを、スマートフォンから QR コードで承"
 "認できます。"
 
-#: build/src/Admin/SettingsPage.php:565 src/Admin/SettingsPage.php:386
+#: src/Admin/SettingsPage.php:397
 msgid ""
 "Passwordless recovery: one-time recovery codes and email magic-link sign-in."
 msgstr ""
 "パスワードなしの復旧: 使い切りのリカバリーコードや、メールのマジックリンクで"
 "ログインできます。"
 
-#: build/src/Admin/SettingsPage.php:565 src/Admin/SettingsPage.php:387
+#: src/Admin/SettingsPage.php:398
 msgid ""
 "Require passkeys for chosen roles, with a grace period, and optionally turn "
 "off password login."
@@ -677,14 +642,14 @@ msgstr ""
 "指定した権限グループにパスキーを必須化できます。猶予期間を設けられ、必要に応"
 "じてパスワードログインを無効化することもできます。"
 
-#: build/src/Admin/SettingsPage.php:565 src/Admin/SettingsPage.php:388
+#: src/Admin/SettingsPage.php:399
 msgid ""
 "Adaptive step-up: ask for a passkey again after a risky password sign-in."
 msgstr ""
 "アダプティブなステップアップ: リスクの高いパスワードログインのあとに、パス"
 "キーでの再確認を求めます。"
 
-#: build/src/Admin/SettingsPage.php:565 src/Admin/SettingsPage.php:389
+#: src/Admin/SettingsPage.php:400
 msgid ""
 "Authenticator policy (FIDO Metadata Service / AAGUID allow & deny) and "
 "trusted-device management."
@@ -692,7 +657,7 @@ msgstr ""
 "認証器ポリシー (FIDO メタデータサービス / AAGUID の許可と拒否) と信頼済みデバ"
 "イスの管理ができます。"
 
-#: build/src/Admin/SettingsPage.php:565 src/Admin/SettingsPage.php:390
+#: src/Admin/SettingsPage.php:401
 msgid ""
 "Security webhooks, adoption reports, multisite network settings and WP-CLI "
 "commands."
@@ -700,52 +665,52 @@ msgstr ""
 "セキュリティ Webhook、導入状況レポート、マルチサイトのネットワーク設定、WP-"
 "CLI コマンドに対応します。"
 
-#: build/src/Admin/SettingsPage.php:566 src/Admin/SettingsPage.php:393
+#: src/Admin/SettingsPage.php:404
 msgid "Rapls Passkey Pro"
 msgstr "Rapls Passkey Pro"
 
-#: build/src/Admin/SettingsPage.php:568 src/Admin/SettingsPage.php:395
+#: src/Admin/SettingsPage.php:406
 msgid ""
 "Everything here is free forever. If you want more, Rapls Passkey Pro adds:"
 msgstr ""
 "ここにある機能はすべて無料で使い続けられます。さらに必要な場合は、Rapls "
 "Passkey Pro で次の機能が加わります。"
 
-#: build/src/Admin/SettingsPage.php:574 src/Admin/SettingsPage.php:402
+#: src/Admin/SettingsPage.php:413
 msgid "Learn more about Pro"
 msgstr "Pro の詳細を見る"
 
-#: build/src/Admin/SettingsPage.php:586 src/Admin/SettingsPage.php:416
+#: src/Admin/SettingsPage.php:427
 msgid "Adoption"
 msgstr "導入状況"
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: build/src/Admin/SettingsPage.php:589 src/Admin/SettingsPage.php:420
+#: src/Admin/SettingsPage.php:431
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
 msgstr "パスキーを登録済みのユーザー: %1$d / %2$d 人(%3$d%%)"
 
 #. translators: %d: total number of registered passkeys.
-#: build/src/Admin/SettingsPage.php:596 src/Admin/SettingsPage.php:429
+#: src/Admin/SettingsPage.php:440
 msgid "Total registered passkeys: %d"
 msgstr "登録済みパスキーの総数: %d 個"
 
-#: build/src/Admin/SettingsPage.php:599 src/Admin/SettingsPage.php:433
+#: src/Admin/SettingsPage.php:444
 msgid "Per-user status is shown in the Passkey column of the Users list."
 msgstr "各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。"
 
-#: build/src/Admin/SettingsPage.php:607 src/Admin/SettingsPage.php:441
+#: src/Admin/SettingsPage.php:452
 msgid "Compatibility with security plugins"
 msgstr "セキュリティプラグインとの互換"
 
-#: build/src/Admin/SettingsPage.php:609 src/Admin/SettingsPage.php:443
+#: src/Admin/SettingsPage.php:454
 msgid "No known login-security plugins were detected."
 msgstr "既知のログイン系セキュリティプラグインは検出されませんでした。"
 
-#: build/src/Admin/SettingsPage.php:612 src/Admin/SettingsPage.php:446
+#: src/Admin/SettingsPage.php:457
 msgid "The following plugins were detected:"
 msgstr "次のプラグインを検出しました:"
 
-#: build/src/Admin/SettingsPage.php:613 src/Admin/SettingsPage.php:447
+#: src/Admin/SettingsPage.php:458
 msgid ""
 "Rapls Passkey uses only the standard login hooks and fires wp_login on a "
 "successful sign-in, so it coexists with these. If the login screen shows a "
@@ -757,27 +722,32 @@ msgstr ""
 "は、どちらか一方を無効にしてください(本プラグインの reCAPTCHA は上記設定で無"
 "効化できます)。"
 
-#: build/src/Admin/SettingsPage.php:620 src/Admin/SettingsPage.php:454
+#: src/Admin/SettingsPage.php:465
 msgid "Recent events"
 msgstr "最近のイベント"
 
-#: build/src/Admin/SettingsPage.php:623 src/Admin/SettingsPage.php:457
+#: src/Admin/SettingsPage.php:468
 msgid "No events have been recorded."
 msgstr "記録されたイベントはありません。"
 
-#: build/src/Admin/SettingsPage.php:627 src/Admin/SettingsPage.php:465
+#: src/Admin/SettingsPage.php:476
 msgid "Export CSV"
 msgstr "CSV エクスポート"
 
-#: build/src/Admin/SettingsPage.php:631 src/Admin/SettingsPage.php:469
+#: src/Admin/SettingsPage.php:480
 msgid "Users"
 msgstr "ユーザー"
 
-#: build/src/Admin/SetupWizard.php:109 src/Admin/SetupWizard.php:118
+#: src/Admin/SettingsPage.php:61 src/Admin/SettingsPage.php:62
+#: src/Admin/SiteHealth.php:53
+msgid "Rapls Passkey"
+msgstr "Rapls Passkey"
+
+#: src/Admin/SetupWizard.php:118
 msgid "Rapls Passkey is active."
 msgstr "Rapls Passkey が有効になりました。"
 
-#: build/src/Admin/SetupWizard.php:112 src/Admin/SetupWizard.php:119
+#: src/Admin/SetupWizard.php:119
 msgid ""
 "Run the three-minute setup check to confirm passkeys will work on this site, "
 "and register your own."
@@ -785,31 +755,31 @@ msgstr ""
 "セットアップ確認を実行して、このサイトでパスキーが動作することを確かめ、ご自"
 "身のパスキーを登録してください。"
 
-#: build/src/Admin/SetupWizard.php:119 src/Admin/SetupWizard.php:122
+#: src/Admin/SetupWizard.php:122
 msgid "Start setup"
 msgstr "セットアップを開始"
 
-#: build/src/Admin/SetupWizard.php:124 src/Admin/SetupWizard.php:123
+#: src/Admin/SetupWizard.php:123
 msgid "Dismiss"
 msgstr "閉じる"
 
-#: build/src/Admin/SetupWizard.php:165 src/Admin/SetupWizard.php:163
+#: src/Admin/SetupWizard.php:163
 msgid "Step 1: can this site use passkeys?"
 msgstr "ステップ 1: このサイトでパスキーは使えるか"
 
-#: build/src/Admin/SetupWizard.php:171 src/Admin/SetupWizard.php:167
+#: src/Admin/SetupWizard.php:167
 msgid "Secure connection"
 msgstr "安全な接続"
 
-#: build/src/Admin/SetupWizard.php:178 src/Admin/SetupWizard.php:170
+#: src/Admin/SetupWizard.php:170
 msgid "OK. WebAuthn requires HTTPS (localhost is exempt)."
 msgstr "問題ありません。WebAuthn には HTTPS が必要です (localhost は例外)。"
 
-#: build/src/Admin/SetupWizard.php:184 src/Admin/SetupWizard.php:172
+#: src/Admin/SetupWizard.php:172
 msgid "Not available."
 msgstr "利用できません。"
 
-#: build/src/Admin/SetupWizard.php:187 src/Admin/SetupWizard.php:173
+#: src/Admin/SetupWizard.php:173
 msgid ""
 "Browsers refuse WebAuthn without HTTPS, so no passkey can be registered or "
 "used until this site is served over HTTPS."
@@ -817,28 +787,27 @@ msgstr ""
 "HTTPS でない場合ブラウザーは WebAuthn を拒否します。このサイトが HTTPS で配信"
 "されるまで、パスキーの登録も利用もできません。"
 
-#: build/src/Admin/SetupWizard.php:196 build/src/Admin/SiteHealth.php:48
 #: src/Admin/SetupWizard.php:178 src/Admin/SiteHealth.php:65
 msgid "WebAuthn library"
 msgstr "WebAuthn ライブラリ"
 
-#: build/src/Admin/SetupWizard.php:203 src/Admin/SetupWizard.php:181
+#: src/Admin/SetupWizard.php:181
 msgid "Loaded."
 msgstr "読み込まれています。"
 
-#: build/src/Admin/SetupWizard.php:209 src/Admin/SetupWizard.php:183
+#: src/Admin/SetupWizard.php:183
 msgid "Missing."
 msgstr "見つかりません。"
 
-#: build/src/Admin/SetupWizard.php:212 src/Admin/SetupWizard.php:184
+#: src/Admin/SetupWizard.php:184
 msgid "Run composer install in the plugin directory."
 msgstr "プラグインのディレクトリーで composer install を実行してください。"
 
-#: build/src/Admin/SetupWizard.php:221 src/Admin/SetupWizard.php:189
+#: src/Admin/SetupWizard.php:189
 msgid "Relying-party ID"
 msgstr "Relying Party ID"
 
-#: build/src/Admin/SetupWizard.php:229 src/Admin/SetupWizard.php:193
+#: src/Admin/SetupWizard.php:193
 msgid ""
 "Passkeys are bound to this domain. If you later move the site to another "
 "domain, or change this with the rapls_passkey_rp_id filter, every passkey "
@@ -850,11 +819,11 @@ msgstr ""
 "すべて一致しなくなり、ユーザーは登録し直しになります。誰かが登録を始める前に"
 "決めてください。"
 
-#: build/src/Admin/SetupWizard.php:239 src/Admin/SetupWizard.php:199
+#: src/Admin/SetupWizard.php:199
 msgid "Security plugins"
 msgstr "セキュリティプラグイン"
 
-#: build/src/Admin/SetupWizard.php:247 src/Admin/SetupWizard.php:203
+#: src/Admin/SetupWizard.php:203
 msgid ""
 "Detected and coexisted with: this plugin adds no CSP header, uses only "
 "standard login hooks, and keeps its REST routes reachable where a plugin "
@@ -864,16 +833,16 @@ msgstr ""
 "フックのみを使い、REST API がログイン済みユーザーに限定されている場合でも自身"
 "のルートは通れるようにします。"
 
-#: build/src/Admin/SetupWizard.php:259 src/Admin/SetupWizard.php:211
+#: src/Admin/SetupWizard.php:211
 msgid "Step 2: register your own passkey"
 msgstr "ステップ 2: 自分のパスキーを登録する"
 
-#: build/src/Admin/SetupWizard.php:265 src/Admin/SetupWizard.php:213
+#: src/Admin/SetupWizard.php:213
 msgid ""
 "Fix the items above first — passkeys cannot be registered until they pass."
 msgstr "まず上の項目を解決してください。解決するまでパスキーは登録できません。"
 
-#: build/src/Admin/SetupWizard.php:272 src/Admin/SetupWizard.php:216
+#: src/Admin/SetupWizard.php:216
 msgid ""
 "You already have a passkey. Sign out and back in with it once, so you know "
 "the login flow works before you ask anyone else to use it."
@@ -881,7 +850,7 @@ msgstr ""
 "すでにパスキーをお持ちです。他の人に使ってもらう前に、一度ログアウトしてパス"
 "キーでログインし、動作を確認してください。"
 
-#: build/src/Admin/SetupWizard.php:280 src/Admin/SetupWizard.php:220
+#: src/Admin/SetupWizard.php:220
 msgid ""
 "Register one now. An administrator who has not tried it cannot tell whether "
 "it works for everyone else."
@@ -889,15 +858,15 @@ msgstr ""
 "いま登録してください。自分で試していない管理者には、他のユーザーで動くかどう"
 "か判断できません。"
 
-#: build/src/Admin/SetupWizard.php:288 src/Admin/SetupWizard.php:224
+#: src/Admin/SetupWizard.php:224
 msgid "Go to your profile and register"
 msgstr "プロフィールに移動して登録"
 
-#: build/src/Admin/SetupWizard.php:297 src/Admin/SetupWizard.php:229
+#: src/Admin/SetupWizard.php:229
 msgid "Step 3: decide the rollout"
 msgstr "ステップ 3: 展開方針を決める"
 
-#: build/src/Admin/SetupWizard.php:301 src/Admin/SetupWizard.php:231
+#: src/Admin/SetupWizard.php:231
 msgid ""
 "Passkeys sit alongside passwords by default: nothing is taken away, and "
 "users adopt them at their own pace. When you are ready to go further, the "
@@ -912,26 +881,77 @@ msgstr ""
 "ます。ロールごとのパスキー必須化、パスワードログインの無効化、QR での別端末ロ"
 "グイン、リカバリーコードは Rapls Passkey Pro で利用できます。"
 
-#: build/src/Admin/SetupWizard.php:309 src/Admin/SetupWizard.php:235
+#: src/Admin/SetupWizard.php:235
 msgid "Go to settings"
 msgstr "設定に移動"
 
-#: build/src/Admin/SetupWizard.php:314 src/Admin/SetupWizard.php:236
+#: src/Admin/SetupWizard.php:236
 msgid "Finish setup"
 msgstr "セットアップを完了"
 
-#: build/src/Admin/SetupWizard.php:69 build/src/Admin/SetupWizard.php:161
 #: src/Admin/SetupWizard.php:74 src/Admin/SetupWizard.php:75
 #: src/Admin/SetupWizard.php:161
 msgid "Rapls Passkey setup"
 msgstr "Rapls Passkey セットアップ"
 
-#: build/src/Admin/SiteHealth.php:110 src/Admin/SiteHealth.php:175
+#: src/Admin/SiteHealth.php:102 src/Admin/SiteHealth.php:134
+msgid "Rapls Passkey: HTTPS"
+msgstr "Rapls Passkey: HTTPS"
+
+#: src/Admin/SiteHealth.php:106 src/Admin/SiteHealth.php:148
+msgid "Rapls Passkey: WebAuthn library"
+msgstr "Rapls Passkey: WebAuthn ライブラリ"
+
+#: src/Admin/SiteHealth.php:110 src/Admin/SiteHealth.php:162
+msgid "Rapls Passkey: Database"
+msgstr "Rapls Passkey: データベース"
+
+#: src/Admin/SiteHealth.php:114 src/Admin/SiteHealth.php:189
+msgid "Rapls Passkey: RP ID"
+msgstr "Rapls Passkey: RP ID"
+
+#: src/Admin/SiteHealth.php:131
+msgid "The site is served over a secure context (HTTPS)."
+msgstr "サイトは安全なコンテキスト(HTTPS)で配信されています。"
+
+#: src/Admin/SiteHealth.php:132
+msgid ""
+"Passkeys require HTTPS (a secure context). Install an SSL certificate and "
+"serve the site over HTTPS (except on localhost)."
+msgstr ""
+"パスキーには HTTPS(安全なコンテキスト)が必要です。SSL 証明書を導入し、サイト"
+"を HTTPS で配信してください(localhost を除く)。"
+
+#: src/Admin/SiteHealth.php:145
+msgid "The WebAuthn library is loaded."
+msgstr "WebAuthn ライブラリが読み込まれています。"
+
+#: src/Admin/SiteHealth.php:146
+msgid ""
+"The WebAuthn library was not found. Run `composer install` to install "
+"dependencies. Passkey authentication is disabled."
+msgstr ""
+"WebAuthn ライブラリが見つかりません。`composer install` を実行して依存関係を"
+"導入してください。パスキー認証は無効になっています。"
+
+#: src/Admin/SiteHealth.php:159
+msgid "The credential and audit-log tables exist."
+msgstr "認証情報・監査ログのテーブルが存在します。"
+
+#: src/Admin/SiteHealth.php:160
+msgid ""
+"The plugin database tables were not found. Deactivate and reactivate the "
+"plugin to create them."
+msgstr ""
+"プラグインのデータベーステーブルが見つかりません。プラグインを一度無効化して"
+"から再度有効化すると作成されます。"
+
+#: src/Admin/SiteHealth.php:175
 msgid "No known login-security plugins are detected."
 msgstr "既知のログイン系セキュリティプラグインは検出されていません。"
 
 #. translators: %s: comma-separated plugin names.
-#: build/src/Admin/SiteHealth.php:112 src/Admin/SiteHealth.php:178
+#: src/Admin/SiteHealth.php:178
 msgid ""
 "Detected security plugins: %s. The plugin adapts automatically to work even "
 "when the REST API is restricted."
@@ -940,7 +960,7 @@ msgstr ""
 "動対応しています。"
 
 #. translators: 1: RP ID, 2: site host.
-#: build/src/Admin/SiteHealth.php:117 src/Admin/SiteHealth.php:184
+#: src/Admin/SiteHealth.php:184
 msgid ""
 "The current RP ID is %1$s and the site host is %2$s. The RP ID determines "
 "the scope of passkeys (changeable via the rapls_passkey_rp_id filter)."
@@ -948,170 +968,107 @@ msgstr ""
 "現在の RP ID は「%1$s」、サイトのホストは「%2$s」です。RP ID はパスキーの有効"
 "範囲を決めます(rapls_passkey_rp_id フィルターで変更可)。"
 
-#: build/src/Admin/SiteHealth.php:161 src/Admin/SiteHealth.php:240
+#: src/Admin/SiteHealth.php:240
 msgid "Security"
 msgstr "セキュリティ"
 
-#: build/src/Admin/SiteHealth.php:46 src/Admin/SiteHealth.php:49
+#: src/Admin/SiteHealth.php:49
 msgid "Yes"
 msgstr "はい"
 
-#: build/src/Admin/SiteHealth.php:47 src/Admin/SiteHealth.php:50
+#: src/Admin/SiteHealth.php:50
 msgid "No"
 msgstr "いいえ"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:56
+#: src/Admin/SiteHealth.php:56
 msgid "Version"
 msgstr "バージョン"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:60
+#: src/Admin/SiteHealth.php:60
 msgid "HTTPS / secure context"
 msgstr "HTTPS / セキュアコンテキスト"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:66
+#: src/Admin/SiteHealth.php:66
 msgid "Loaded"
 msgstr "読み込み済み"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:66
+#: src/Admin/SiteHealth.php:66
 msgid "Not found"
 msgstr "未検出"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:70
+#: src/Admin/SiteHealth.php:70
 msgid "Database tables"
 msgstr "データベーステーブル"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:71
+#: src/Admin/SiteHealth.php:71
 msgid "Present"
 msgstr "存在します"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:71
+#: src/Admin/SiteHealth.php:71
 msgid "Not created"
 msgstr "未作成"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:79
+#: src/Admin/SiteHealth.php:79
 msgid "Total registered passkeys"
 msgstr "登録済みパスキー総数"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:83
+#: src/Admin/SiteHealth.php:83
 msgid "Detected security plugins"
 msgstr "検出したセキュリティプラグイン"
 
-#: build/src/Admin/SiteHealth.php:48 src/Admin/SiteHealth.php:84
+#: src/Admin/SiteHealth.php:84
 msgid "None"
 msgstr "なし"
 
-#: build/src/Admin/SiteHealth.php:60 build/src/Admin/SiteHealth.php:76
-#: src/Admin/SiteHealth.php:102 src/Admin/SiteHealth.php:134
-msgid "Rapls Passkey: HTTPS"
-msgstr "Rapls Passkey: HTTPS"
-
-#: build/src/Admin/SiteHealth.php:61 build/src/Admin/SiteHealth.php:87
-#: src/Admin/SiteHealth.php:106 src/Admin/SiteHealth.php:148
-msgid "Rapls Passkey: WebAuthn library"
-msgstr "Rapls Passkey: WebAuthn ライブラリ"
-
-#: build/src/Admin/SiteHealth.php:62 build/src/Admin/SiteHealth.php:98
-#: src/Admin/SiteHealth.php:110 src/Admin/SiteHealth.php:162
-msgid "Rapls Passkey: Database"
-msgstr "Rapls Passkey: データベース"
-
-#: build/src/Admin/SiteHealth.php:63 build/src/Admin/SiteHealth.php:121
-#: src/Admin/SiteHealth.php:114 src/Admin/SiteHealth.php:189
-msgid "Rapls Passkey: RP ID"
-msgstr "Rapls Passkey: RP ID"
-
-#: build/src/Admin/SiteHealth.php:75 src/Admin/SiteHealth.php:131
-msgid "The site is served over a secure context (HTTPS)."
-msgstr "サイトは安全なコンテキスト(HTTPS)で配信されています。"
-
-#: build/src/Admin/SiteHealth.php:75 src/Admin/SiteHealth.php:132
-msgid ""
-"Passkeys require HTTPS (a secure context). Install an SSL certificate and "
-"serve the site over HTTPS (except on localhost)."
-msgstr ""
-"パスキーには HTTPS(安全なコンテキスト)が必要です。SSL 証明書を導入し、サイト"
-"を HTTPS で配信してください(localhost を除く)。"
-
-#: build/src/Admin/SiteHealth.php:86 src/Admin/SiteHealth.php:145
-msgid "The WebAuthn library is loaded."
-msgstr "WebAuthn ライブラリが読み込まれています。"
-
-#: build/src/Admin/SiteHealth.php:86 src/Admin/SiteHealth.php:146
-msgid ""
-"The WebAuthn library was not found. Run `composer install` to install "
-"dependencies. Passkey authentication is disabled."
-msgstr ""
-"WebAuthn ライブラリが見つかりません。`composer install` を実行して依存関係を"
-"導入してください。パスキー認証は無効になっています。"
-
-#: build/src/Admin/SiteHealth.php:97 src/Admin/SiteHealth.php:159
-msgid "The credential and audit-log tables exist."
-msgstr "認証情報・監査ログのテーブルが存在します。"
-
-#: build/src/Admin/SiteHealth.php:97 src/Admin/SiteHealth.php:160
-msgid ""
-"The plugin database tables were not found. Deactivate and reactivate the "
-"plugin to create them."
-msgstr ""
-"プラグインのデータベーステーブルが見つかりません。プラグインを一度無効化して"
-"から再度有効化すると作成されます。"
-
-#: build/src/Admin/UsersColumn.php:73 src/Admin/UsersColumn.php:77
+#: src/Admin/UsersColumn.php:77
 msgid "Not registered"
 msgstr "未登録"
 
 #. translators: %d: number of passkeys.
-#: build/src/Admin/UsersColumn.php:79 src/Admin/UsersColumn.php:85
+#: src/Admin/UsersColumn.php:85
 msgid "Passkeys: %d"
 msgstr "パスキー: %d"
 
 #. translators: %s: date a passkey was last used.
-#: build/src/Admin/UsersColumn.php:85 src/Admin/UsersColumn.php:95
+#: src/Admin/UsersColumn.php:95
 msgid "Last %s"
 msgstr "最終 %s"
 
-#: build/src/Frontend/Shortcodes.php:123 src/Frontend/Shortcodes.php:169
-msgid "Please sign in to manage your passkeys."
-msgstr "パスキーを管理するにはログインしてください。"
-
-#: build/src/Frontend/Shortcodes.php:73 build/src/Login/LoginForm.php:37
-#: src/Frontend/Shortcodes.php:97 src/Login/LoginForm.php:58
-msgid "Authenticating..."
-msgstr "認証しています…"
-
-#: build/src/Frontend/Shortcodes.php:73 build/src/Login/LoginForm.php:37
-#: build/src/Rest/Endpoints.php:586 src/Frontend/Shortcodes.php:98
-#: src/Login/LoginForm.php:59 src/Rest/Endpoints.php:786
-msgid "Passkey authentication failed."
-msgstr "パスキーでの認証に失敗しました。"
-
-#: build/src/Frontend/Shortcodes.php:73 src/Frontend/Shortcodes.php:103
+#: src/Frontend/Shortcodes.php:103
 msgid "The operation was cancelled or timed out. Please try again."
 msgstr ""
 "操作がキャンセルされたか、時間切れになりました。もう一度お試しください。"
 
-#: build/src/Frontend/Shortcodes.php:84
-#: build/src/Integrations/LoginForms.php:96
-#: build/src/Integrations/WooCommerce.php:62 build/src/Login/LoginForm.php:48
 #: src/Frontend/Shortcodes.php:130 src/Integrations/LoginForms.php:113
 #: src/Integrations/WooCommerce.php:65 src/Login/LoginForm.php:75
 msgid "Sign in with a passkey"
 msgstr "パスキーでログイン"
 
-#: build/src/Frontend/Shortcodes.php:86 src/Frontend/Shortcodes.php:137
+#: src/Frontend/Shortcodes.php:137
 msgid "You are already signed in."
 msgstr "すでにログインしています。"
 
-#: build/src/Frontend/Shortcodes.php:97 src/Frontend/Shortcodes.php:148
+#: src/Frontend/Shortcodes.php:148
 msgid "Username or email address"
 msgstr "ユーザー名またはメールアドレス"
 
-#: build/src/Integrations/SecondFactor/WordfenceLs.php:74
+#: src/Frontend/Shortcodes.php:169
+msgid "Please sign in to manage your passkeys."
+msgstr "パスキーを管理するにはログインしてください。"
+
+#: src/Frontend/Shortcodes.php:97 src/Login/LoginForm.php:58
+msgid "Authenticating..."
+msgstr "認証しています…"
+
+#: src/Frontend/Shortcodes.php:98 src/Login/LoginForm.php:59
+#: src/Rest/Endpoints.php:803
+msgid "Passkey authentication failed."
+msgstr "パスキーでの認証に失敗しました。"
+
 #: src/Integrations/SecondFactor/WordfenceLs.php:73
 msgid "Two-factor authentication code"
 msgstr "2要素認証コード"
 
-#: build/src/Integrations/SecondFactor/WordfenceLs.php:83
 #: src/Integrations/SecondFactor/WordfenceLs.php:76
 msgid ""
 "Enter the code from your authenticator app, or one of your Wordfence "
@@ -1119,72 +1076,65 @@ msgid ""
 msgstr ""
 "認証アプリのコード、または Wordfence のリカバリーコードを入力してください。"
 
-#: build/src/Integrations/WooCommerce.php:66
 #: src/Integrations/WooCommerce.php:68
 msgid "Or sign in with a password"
 msgstr "またはパスワードでログイン"
 
-#: build/src/Login/LoginForm.php:37 src/Login/LoginForm.php:61
+#: src/Login/LoginForm.php:61
 msgid "Authentication was cancelled or timed out. Please try again."
 msgstr ""
 "認証がキャンセルされたか、時間切れになりました。もう一度お試しください。"
 
-#: build/src/Login/LoginForm.php:37 src/Login/LoginForm.php:62
+#: src/Login/LoginForm.php:62
 msgid "Please enter your username or email address."
 msgstr "ユーザー名またはメールアドレスを入力してください。"
 
-#: build/src/Login/Recaptcha.php:91 src/Login/Recaptcha.php:110
+#: src/Login/Recaptcha.php:110
 msgid "reCAPTCHA could not be verified. Reload the page and try again."
 msgstr "reCAPTCHA の確認に失敗しました。ページを再読み込みしてお試しください。"
 
-#: build/src/Login/Recaptcha.php:94 src/Login/Recaptcha.php:113
+#: src/Login/Recaptcha.php:113
 msgid "reCAPTCHA verification failed."
 msgstr "reCAPTCHA の検証に失敗しました。"
 
-#: build/src/Login/SecondFactorScreen.php:103
 #: src/Login/SecondFactorScreen.php:114
 msgid "Two-factor authentication"
 msgstr "2要素認証"
 
 #. translators: %s: the user's login name.
-#: build/src/Login/SecondFactorScreen.php:115
 #: src/Login/SecondFactorScreen.php:125
 msgid "Signed in as %s. One more step: confirm your second factor."
 msgstr "%s としてログインしています。最後に2つ目の要素を確認してください。"
 
-#: build/src/Login/SecondFactorScreen.php:132
 #: src/Login/SecondFactorScreen.php:137
 msgid "Confirm"
 msgstr "確認"
 
-#: build/src/Login/SecondFactorScreen.php:143
 #: src/Login/SecondFactorScreen.php:142
 msgid "Back to the normal login"
 msgstr "通常のログインに戻る"
 
-#: build/src/Login/SecondFactorScreen.php:68
 #: src/Login/SecondFactorScreen.php:74
 msgid "Your session is invalid. Please try again."
 msgstr "セッションが無効です。もう一度お試しください。"
 
-#: build/src/Login/SecondFactorScreen.php:77
 #: src/Login/SecondFactorScreen.php:84
 msgid "The two-factor authentication code is not correct."
 msgstr "2要素認証コードが正しくありません。"
 
-#: build/src/Login/UpgradePrompt.php:108 src/Login/UpgradePrompt.php:129
+#: src/Login/UpgradePrompt.php:129
 msgid "Cancelled."
 msgstr "キャンセルされました。"
 
-#: build/src/Login/UpgradePrompt.php:115 src/Login/UpgradePrompt.php:140
+#: src/Login/UpgradePrompt.php:140
 msgid "Set up a passkey"
 msgstr "パスキーの設定"
 
-#: build/src/Login/UpgradePrompt.php:119 src/Login/UpgradePrompt.php:143
+#: src/Login/UpgradePrompt.php:143
 msgid "Sign in faster and more securely next time"
 msgstr "次回から、もっと速く安全にログイン"
 
-#: build/src/Login/UpgradePrompt.php:122 src/Login/UpgradePrompt.php:144
+#: src/Login/UpgradePrompt.php:144
 msgid ""
 "Set up a passkey on this device to sign in quickly next time without a "
 "password, using your fingerprint, face, or PIN. It also resists phishing."
@@ -1192,15 +1142,15 @@ msgstr ""
 "この端末にパスキーを設定すると、次回からパスワードなしで、指紋・顔認証・PIN "
 "ですばやくログインできます。フィッシングにも強くなります。"
 
-#: build/src/Login/UpgradePrompt.php:127 src/Login/UpgradePrompt.php:147
+#: src/Login/UpgradePrompt.php:147
 msgid "Create a passkey"
 msgstr "パスキーを作成"
 
-#: build/src/Login/UpgradePrompt.php:136 src/Login/UpgradePrompt.php:152
+#: src/Login/UpgradePrompt.php:152
 msgid "Later"
 msgstr "後で"
 
-#: build/src/Plugin.php:187 src/Plugin.php:206
+#: src/Plugin.php:206
 msgid ""
 "Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to "
 "install dependencies. Passkey authentication is disabled."
@@ -1208,20 +1158,19 @@ msgstr ""
 "Rapls Passkey: WebAuthn ライブラリが読み込まれていません。`composer install` "
 "を実行して依存関係を導入してください。パスキー認証は無効化されています。"
 
-#: build/src/Privacy/PersonalData.php:54 build/src/Privacy/PersonalData.php:66
+#: src/Privacy/PersonalData.php:116
+msgid "Credential ID"
+msgstr "資格情報 ID"
+
+#: src/Privacy/PersonalData.php:130
+msgid "Passkey audit log"
+msgstr "パスキーの監査ログ"
+
 #: src/Privacy/PersonalData.php:55 src/Privacy/PersonalData.php:70
 msgid "Rapls Passkey (Passkey)"
 msgstr "Rapls Passkey(パスキー)"
 
-#: build/src/Privacy/PersonalData.php:89 src/Privacy/PersonalData.php:116
-msgid "Credential ID"
-msgstr "資格情報 ID"
-
-#: build/src/Privacy/PersonalData.php:96 src/Privacy/PersonalData.php:130
-msgid "Passkey audit log"
-msgstr "パスキーの監査ログ"
-
-#: build/src/Recovery/Bypass.php:51 src/Recovery/Bypass.php:51
+#: src/Recovery/Bypass.php:51
 msgid ""
 "Rapls Passkey: The emergency bypass (RAPLS_PASSKEY_BYPASS) is enabled. "
 "Passkey enforcement is disabled. After recovery, remove the constant from wp-"
@@ -1230,49 +1179,48 @@ msgstr ""
 "Rapls Passkey: 緊急バイパス (RAPLS_PASSKEY_BYPASS) が有効です。パスキーの強制"
 "は無効化されています。復旧後は wp-config.php から定数を削除してください。"
 
-#: build/src/Rest/Endpoints.php:116 src/Rest/Endpoints.php:170
+#: src/Rest/Endpoints.php:170
 msgid "Invalid request."
 msgstr "不正なリクエストです。"
 
-#: build/src/Rest/Endpoints.php:119 src/Rest/Endpoints.php:173
+#: src/Rest/Endpoints.php:173
 msgid "Too many attempts. Please try again later."
 msgstr "試行回数が多すぎます。しばらくしてからお試しください。"
 
-#: build/src/Rest/Endpoints.php:224 src/Rest/Endpoints.php:293
+#: src/Rest/Endpoints.php:293
 msgid "This passkey is already registered."
 msgstr "このパスキーはすでに登録されています。"
 
-#: build/src/Rest/Endpoints.php:250 src/Rest/Endpoints.php:338
+#: src/Rest/Endpoints.php:338
 msgid "Failed to save the passkey."
 msgstr "パスキーの保存に失敗しました。"
 
-#: build/src/Rest/Endpoints.php:259 src/Rest/Endpoints.php:350
+#: src/Rest/Endpoints.php:364
 msgid "You have reached the passkey limit. Please try again."
 msgstr "パスキーの登録上限に達しました。もう一度お試しください。"
 
-#: build/src/Rest/Endpoints.php:415 src/Rest/Endpoints.php:547
+#: src/Rest/Endpoints.php:564
 msgid "Registering a passkey for another user is not enabled on this site."
 msgstr "このサイトでは、他のユーザーのパスキー登録は有効になっていません。"
 
-#: build/src/Rest/Endpoints.php:418 src/Rest/Endpoints.php:555
+#: src/Rest/Endpoints.php:572
 msgid "You do not have permission to register a passkey for that user."
 msgstr "そのユーザーのパスキーを登録する権限がありません。"
 
-#: build/src/Rest/Endpoints.php:422 src/Rest/Endpoints.php:564
+#: src/Rest/Endpoints.php:581
 msgid "That user does not exist."
 msgstr "そのユーザーは存在しません。"
 
-#: build/src/Rest/Endpoints.php:453 build/src/Rest/Endpoints.php:460
-#: src/Rest/Endpoints.php:613 src/Rest/Endpoints.php:625
+#: src/Rest/Endpoints.php:630 src/Rest/Endpoints.php:642
 msgid "You do not have permission to rename this passkey."
 msgstr "このパスキーの名前を変更する権限がありません。"
 
-#: build/src/Rest/Endpoints.php:514 src/Rest/Endpoints.php:708
+#: src/Rest/Endpoints.php:725
 msgid "You do not have permission to delete this passkey."
 msgstr "このパスキーを削除する権限がありません。"
 
 #. translators: %d: maximum number of passkeys.
-#: build/src/Rest/Endpoints.php:535 src/Rest/Endpoints.php:734
+#: src/Rest/Endpoints.php:751
 msgid ""
 "You can register at most %d passkeys. Remove an unused passkey before "
 "registering a new one."
@@ -1280,11 +1228,11 @@ msgstr ""
 "登録できるパスキーは最大 %d 個です。不要なパスキーを削除してから登録してくだ"
 "さい。"
 
-#: build/src/Security/AuthSession.php:54 src/Security/AuthSession.php:58
+#: src/Security/AuthSession.php:61
 msgid "Enter your two-factor authentication code to finish signing in."
 msgstr "ログインを完了するには2要素認証コードを入力してください。"
 
-#: build/src/Security/AuthSession.php:60 src/Security/AuthSession.php:71
+#: src/Security/AuthSession.php:74
 msgid ""
 "Two-factor authentication cannot be verified right now. Please sign in with "
 "your passkey or password."
@@ -1292,42 +1240,42 @@ msgstr ""
 "現在、2要素認証を確認できません。パスキーまたはパスワードでログインしてくださ"
 "い。"
 
-#: build/src/Security/LoginGate.php:50 src/Security/LoginGate.php:54
+#: src/Security/LoginGate.php:54
 msgid "You cannot sign in to this account right now."
 msgstr "現在このアカウントにはログインできません。"
 
 #. translators: %s: site name.
-#: build/src/Security/Notifications.php:104 src/Security/Notifications.php:112
+#: src/Security/Notifications.php:112
 msgid "[%s] A passkey was removed"
 msgstr "[%s] パスキーが削除されました"
 
-#: build/src/Security/Notifications.php:107 src/Security/Notifications.php:116
+#: src/Security/Notifications.php:116
 msgid "A site administrator removed one passkey from your account."
 msgstr "サイト管理者により、お使いのアカウントのパスキーが1つ削除されました。"
 
-#: build/src/Security/Notifications.php:109 src/Security/Notifications.php:118
+#: src/Security/Notifications.php:118
 msgid "One passkey was removed from your account."
 msgstr "お使いのアカウントからパスキーが1つ削除されました。"
 
-#: build/src/Security/Notifications.php:112 src/Security/Notifications.php:121
+#: src/Security/Notifications.php:121
 msgid "If this was not you, change your password immediately."
 msgstr "心当たりがない場合は、すぐにパスワードを変更してください。"
 
 #. translators: %s: site name.
-#: build/src/Security/Notifications.php:144 src/Security/Notifications.php:157
+#: src/Security/Notifications.php:157
 msgid "[%s] You signed in with a recovery code"
 msgstr "[%s] リカバリーコードでサインインしました"
 
-#: build/src/Security/Notifications.php:146 src/Security/Notifications.php:159
+#: src/Security/Notifications.php:159
 msgid "Your account was signed into using a recovery code."
 msgstr "リカバリーコードを使用してアカウントにサインインしました。"
 
 #. translators: %s: site name.
-#: build/src/Security/Notifications.php:149 src/Security/Notifications.php:162
+#: src/Security/Notifications.php:162
 msgid "[%s] New device sign-in"
 msgstr "[%s] 新しい端末からサインインしました"
 
-#: build/src/Security/Notifications.php:151 src/Security/Notifications.php:164
+#: src/Security/Notifications.php:164
 msgid ""
 "Your account was signed into with a passkey from a device or browser not "
 "seen before."
@@ -1335,7 +1283,7 @@ msgstr ""
 "これまでに記録のない端末またはブラウザから、パスキーでアカウントにサインイン"
 "しました。"
 
-#: build/src/Security/Notifications.php:154 src/Security/Notifications.php:167
+#: src/Security/Notifications.php:167
 msgid ""
 "If this was not you, change your password immediately and remove any unknown "
 "passkeys."
@@ -1344,45 +1292,45 @@ msgstr ""
 "さい。"
 
 #. translators: %s: user display name.
-#: build/src/Security/Notifications.php:221 src/Security/Notifications.php:251
+#: src/Security/Notifications.php:251
 msgid "Hello %s,"
 msgstr "%s さん"
 
 #. translators: %s: date and time.
-#: build/src/Security/Notifications.php:249 src/Security/Notifications.php:279
+#: src/Security/Notifications.php:279
 msgid "Date/time: %s"
 msgstr "日時: %s"
 
 #. translators: %s: IP address.
-#: build/src/Security/Notifications.php:255 src/Security/Notifications.php:286
+#: src/Security/Notifications.php:286
 msgid "IP address: %s"
 msgstr "IP アドレス: %s"
 
 #. translators: %s: browser user agent.
-#: build/src/Security/Notifications.php:260 src/Security/Notifications.php:292
+#: src/Security/Notifications.php:292
 msgid "Browser: %s"
 msgstr "ブラウザ: %s"
 
 #. translators: %s: site name.
-#: build/src/Security/Notifications.php:66 src/Security/Notifications.php:71
+#: src/Security/Notifications.php:71
 msgid "[%s] A new passkey was registered"
 msgstr "[%s] 新しいパスキーが登録されました"
 
-#: build/src/Security/Notifications.php:68 src/Security/Notifications.php:74
+#: src/Security/Notifications.php:74
 msgid "A new passkey was registered on your account."
 msgstr "お使いのアカウントに新しいパスキーが登録されました。"
 
 #. translators: %s: passkey label.
-#: build/src/Security/Notifications.php:71 src/Security/Notifications.php:77
+#: src/Security/Notifications.php:77
 msgid "Name: %s"
 msgstr "名前: %s"
 
 #. translators: %s: authenticator/provider name (e.g. iCloud Keychain).
-#: build/src/Security/Notifications.php:76 src/Security/Notifications.php:82
+#: src/Security/Notifications.php:82
 msgid "Authenticator: %s"
 msgstr "認証器: %s"
 
-#: build/src/Security/Notifications.php:79 src/Security/Notifications.php:85
+#: src/Security/Notifications.php:85
 msgid ""
 "If this was not you, change your password immediately and remove any unknown "
 "passkeys from your profile screen."
@@ -1390,7 +1338,7 @@ msgstr ""
 "心当たりがない場合は、すぐにパスワードを変更し、プロフィール画面から不明なパ"
 "スキーを削除してください。"
 
-#: build/src/Support/Help.php:43 src/Support/Help.php:43
+#: src/Support/Help.php:43
 msgid ""
 "A passkey lets you sign in with your fingerprint, face, or device unlock "
 "(PIN) with no password. It resists phishing and avoids the risks of password "
@@ -1400,10 +1348,10 @@ msgstr ""
 "要のしくみです。フィッシングに強く、パスワードの使い回しや漏えいの心配があり"
 "ません。"
 
-#: build/src/Support/Help.php:53 src/Support/Help.php:53
+#: src/Support/Help.php:53
 msgid "What is a passkey?"
 msgstr "パスキーとは?"
 
-#: build/src/Support/Help.php:58 src/Support/Help.php:60
+#: src/Support/Help.php:60
 msgid "Learn more"
 msgstr "詳しく"

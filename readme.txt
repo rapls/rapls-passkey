@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.16
+Stable tag: 0.13.17
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,13 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.17 =
+* Re-review fixes: make the namespace-prefixed distribution build actually boot, plus concurrency and configuration hardening.
+* The prefixed bundled libraries now load correctly — the build generates the class map BEFORE scoping (and no longer regenerates it afterwards, which had dropped the prefixed classes), so the plugin no longer mistakes WebAuthn for "missing". WordPress-core and third-party-plugin symbols are no longer prefixed by mistake. A final-artifact check (bin/verify-dist.php) guards against a regression, and the bundled third-party licence notices are kept in the ZIP.
+* A direct passkey login satisfies the site's 2FA only when the authenticator performed user verification (biometric/PIN); possession alone no longer counts as the second factor.
+* The WebAuthn user handle is minted under an atomic database lock, the per-user passkey-limit rollback is deterministic under concurrent registrations, and the per-IP login rate counter is an atomic fixed-window count — closing read-modify-write races.
+* reCAPTCHA fail-open vs fail-closed on a Google outage is now an explicit setting (Settings -> Rapls Passkey), not just a filter.
 
 = 0.13.16 =
 * Build hardening for distribution (no runtime behaviour change): the bundled libraries (web-auth/webauthn-lib, Symfony, Brick, spomky-labs, ParagonIE) are now rewritten into the plugin-private RaplsPasskey\Vendor\ namespace at build time with PHP-Scoper, so another plugin bundling a different version of the same library can no longer collide with this one. The WebAuthn availability checks were switched to a `::class` reference so the prefixing is deterministic. Committed source stays unscoped; only the distributed ZIP is prefixed.

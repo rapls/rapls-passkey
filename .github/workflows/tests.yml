@@ -67,20 +67,24 @@ jobs:
             -e MARIADB_ROOT_PASSWORD=rootpw -e MARIADB_DATABASE=rapls_test \
             ${{ matrix.db.image }} \
             --max-connections=300 --innodb-use-native-aio=0
-          for i in $(seq 1 60); do
-            if docker exec db mysqladmin ping -h127.0.0.1 -uroot -prootpw --silent 2>/dev/null; then
-              echo "database is up after ${i} attempt(s)"; exit 0
-            fi
-            sleep 2
-          done
-          echo "database did not become ready"; docker logs db; exit 1
+          # Probe from the host with the same driver the test uses: image-agnostic
+          # (MariaDB 11.x ships no `mysqladmin`) and it proves the port is reachable.
+          php -r 'mysqli_report(MYSQLI_REPORT_OFF);
+            for ($i = 1; $i <= 60; $i++) {
+              $c = @new mysqli("127.0.0.1", "root", "rootpw", "rapls_test", 3306);
+              if (!$c->connect_errno) { echo "database is up after {$i} attempt(s)\n"; exit(0); }
+              sleep(2);
+            }
+            fwrite(STDERR, "database did not become ready\n"); exit(1);' \
+            || { docker logs db; exit 1; }
 
       - name: Server identity
         run: |
-          php -r '$c = new mysqli("127.0.0.1", "root", "rootpw", "rapls_test", 3306);
+          php -r 'mysqli_report(MYSQLI_REPORT_OFF);   // do not throw on MariaDB
+            $c = new mysqli("127.0.0.1", "root", "rootpw", "rapls_test", 3306);
             printf("server=%s\n", $c->server_info);
             foreach (["@@version_comment", "@@server_uuid", "@@max_connections"] as $v) {
-              $r = @$c->query("SELECT {$v}");           // server_uuid is MySQL-only
+              $r = $c->query("SELECT {$v}");           // server_uuid is MySQL-only
               printf("%s=%s\n", $v, $r ? $r->fetch_row()[0] : "n/a");
             }'
 

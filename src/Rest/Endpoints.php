@@ -486,7 +486,9 @@ final class Endpoints {
 		}
 
 		$remember = (bool) $request->get_param( 'rememberme' );
-		$blocked  = \RaplsPasskey\Security\AuthSession::login( $user, 'login', $remember );
+		// Pass whether the assertion performed user verification, so a possession-
+		// only passkey login does not silently satisfy the site's 2FA (F-05).
+		$blocked  = \RaplsPasskey\Security\AuthSession::login( $user, 'login', $remember, false, $this->assertion->user_verified() );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
 		}

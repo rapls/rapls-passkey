@@ -44,7 +44,7 @@ final class TwoFactor {
 	 */
 	public function register(): void {
 		add_action( 'set_logged_in_cookie', array( $this, 'capture_token' ), 10, 6 );
-		add_action( 'rapls_passkey/after_login', array( $this, 'mark_session' ), 10, 2 );
+		add_action( 'rapls_passkey/after_login', array( $this, 'mark_session' ), 10, 3 );
 	}
 
 	/**
@@ -67,11 +67,20 @@ final class TwoFactor {
 	 * Mark the current session as 2FA-verified for the Automattic Two-Factor
 	 * plugin, so a passkey login is not re-challenged.
 	 *
-	 * @param WP_User $user    The user who just logged in.
-	 * @param string  $context Login context ('login', 'qr-channel', …).
+	 * @param WP_User   $user          The user who just logged in.
+	 * @param string    $context       Login context ('login', 'qr-channel', …).
+	 * @param bool|null $user_verified Whether a passkey login performed user
+	 *                                 verification; null when not applicable.
 	 */
-	public function mark_session( $user, $context = '' ): void {
-		unset( $context );
+	public function mark_session( $user, $context = '', $user_verified = null ): void {
+		// A DIRECT passkey login only counts as the second factor if the
+		// authenticator performed user verification (biometric/PIN) — possession
+		// alone is a single factor. Contexts that reach here another way (magic
+		// link, recovery code) already cleared the site's 2FA gate, and step-up/QR
+		// force UV, so only the plain 'login' path is gated on the UV result.
+		if ( 'login' === (string) $context && true !== $user_verified ) {
+			return;
+		}
 
 		if ( ! class_exists( '\\Two_Factor_Core' ) || ! class_exists( '\\WP_Session_Tokens' ) ) {
 			return;

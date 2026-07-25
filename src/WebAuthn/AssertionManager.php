@@ -25,6 +25,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class AssertionManager {
 
 	/**
+	 * Whether the last successfully-verified assertion had the user-verification
+	 * (biometric/PIN) flag set. Lets a caller decide whether the login is genuine
+	 * multi-factor (possession + inherence/knowledge) or possession only.
+	 *
+	 * @var bool
+	 */
+	private bool $user_verified = false;
+
+	/**
 	 * @param RelyingParty   $rp         Relying party identity.
 	 * @param Codec          $codec      Serialisation bridge.
 	 * @param ChallengeStore $challenges Ceremony state store.
@@ -36,6 +45,15 @@ final class AssertionManager {
 		private ChallengeStore $challenges,
 		private Ceremonies $ceremonies
 	) {}
+
+	/**
+	 * Whether the most recent verify() saw the user-verification flag set.
+	 *
+	 * @return bool
+	 */
+	public function user_verified(): bool {
+		return $this->user_verified;
+	}
 
 	/**
 	 * Build request options.
@@ -114,12 +132,18 @@ final class AssertionManager {
 		// The expected user handle must match the stored record's; passing the
 		// record's own handle satisfies CheckUserHandle for both discoverable and
 		// non-discoverable credentials.
-		return $validator->check(
+		$record = $validator->check(
 			$stored,
 			$response,
 			$options,
 			$this->rp->id(),
 			$stored->userHandle
 		);
+
+		// Record whether the authenticator actually performed user verification, so
+		// a caller can tell a two-factor (verified) login from a possession-only one.
+		$this->user_verified = $response->authenticatorData->isUserVerified();
+
+		return $record;
 	}
 }

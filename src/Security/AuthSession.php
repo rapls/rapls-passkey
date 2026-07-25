@@ -35,13 +35,16 @@ final class AuthSession {
 	/**
 	 * Complete a login for the given user, or refuse it.
 	 *
-	 * @param WP_User $user          The authenticated user.
-	 * @param string  $context       Login context (login|qr-channel|magic-link|recovery-code|signup).
-	 * @param bool    $remember      Whether to issue a persistent session.
-	 * @param bool    $second_factor Whether a second-factor challenge has already been answered.
+	 * @param WP_User   $user          The authenticated user.
+	 * @param string    $context       Login context (login|qr-channel|magic-link|recovery-code|signup).
+	 * @param bool      $remember      Whether to issue a persistent session.
+	 * @param bool      $second_factor Whether a second-factor challenge has already been answered.
+	 * @param bool|null $user_verified For a passkey login, whether the assertion had
+	 *                                 user verification (biometric/PIN); null when
+	 *                                 not applicable (e.g. magic link, recovery code).
 	 * @return WP_Error|null A WP_Error to abort (do not log the user in), or null on success.
 	 */
-	public static function login( WP_User $user, string $context, bool $remember = false, bool $second_factor = false ): ?WP_Error {
+	public static function login( WP_User $user, string $context, bool $remember = false, bool $second_factor = false, ?bool $user_verified = null ): ?WP_Error {
 		$blocked = LoginGate::check( $user, $context );
 		if ( $blocked instanceof WP_Error ) {
 			return $blocked;
@@ -104,10 +107,12 @@ final class AuthSession {
 		/**
 		 * Fires after an alternative-method login completes (cookie set).
 		 *
-		 * @param WP_User $user    The user who logged in.
-		 * @param string  $context Login context.
+		 * @param WP_User   $user          The user who logged in.
+		 * @param string    $context       Login context.
+		 * @param bool|null $user_verified Whether a passkey login performed user
+		 *                                 verification (null when not applicable).
 		 */
-		do_action( 'rapls_passkey/after_login', $user, $context );
+		do_action( 'rapls_passkey/after_login', $user, $context, $user_verified );
 
 		return null;
 	}

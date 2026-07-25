@@ -72,22 +72,30 @@ $user = new WP_User( 21 );
 // No captured token => no-op.
 FakeSessionManager::$store = array( 'tok' => array( 'login' => 1 ) );
 $tf = new TwoFactor();
-$tf->mark_session( $user, 'login' );
+$tf->mark_session( $user, 'login', true );
 check( 'no-op without a captured token', ! isset( FakeSessionManager::$store['tok']['two-factor-login'] ) );
 
 // Capture token + mark.
 FakeSessionManager::$store = array( 'tok' => array( 'login' => 1 ) );
 $tf = new TwoFactor();
 $tf->capture_token( 'cookie', 0, 0, 21, 'logged_in', 'tok' );
-$tf->mark_session( $user, 'login' );
+$tf->mark_session( $user, 'login', true );
 check( 'marks session two-factor-login', ! empty( FakeSessionManager::$store['tok']['two-factor-login'] ) );
 check( 'records the passkey provider', FakeSessionManager::$store['tok']['two-factor-provider'] === 'RaplsPasskey_WebAuthn' );
+
+// F-05: a direct passkey login WITHOUT user verification is possession-only and
+// must NOT satisfy the site's 2FA.
+FakeSessionManager::$store = array( 'tok' => array( 'login' => 1 ) );
+$tfnouv = new TwoFactor();
+$tfnouv->capture_token( 'cookie', 0, 0, 21, 'logged_in', 'tok' );
+$tfnouv->mark_session( $user, 'login', false );
+check( 'does NOT mark 2FA for a passkey login without user verification', ! isset( FakeSessionManager::$store['tok']['two-factor-login'] ) );
 
 // Unknown token => no crash, nothing added.
 FakeSessionManager::$store = array();
 $tf2 = new TwoFactor();
 $tf2->capture_token( 'cookie', 0, 0, 21, 'logged_in', 'missing' );
-$tf2->mark_session( $user, 'login' );
+$tf2->mark_session( $user, 'login', true );
 check( 'no session created for an unknown token', FakeSessionManager::$store === array() );
 
 // Filter veto.
@@ -95,7 +103,7 @@ FakeSessionManager::$store = array( 'tok' => array( 'login' => 1 ) );
 $GLOBALS['__filter_2fa'] = false;
 $tf3 = new TwoFactor();
 $tf3->capture_token( 'cookie', 0, 0, 21, 'logged_in', 'tok' );
-$tf3->mark_session( $user, 'login' );
+$tf3->mark_session( $user, 'login', true );
 check( 'filter can veto session marking', ! isset( FakeSessionManager::$store['tok']['two-factor-login'] ) );
 
 echo "\n  {$pass} passed, {$failc} failed\n";

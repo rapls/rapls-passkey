@@ -30,8 +30,14 @@ define( 'RAPLS_PASSKEY_BASENAME', plugin_basename( __FILE__ ) );
  * web-auth/webauthn-lib (the WebAuthn verification core). Optional during early
  * development: the lightweight autoloader below covers the plugin's own classes,
  * and Plugin::boot() degrades with an admin notice when the library is absent.
+ *
+ * In a namespace-prefixed distribution build (bin/build-dist.sh) PHP-Scoper emits
+ * `vendor/scoper-autoload.php`, which loads the scoped classes and registers the
+ * function aliases for excluded symbols; prefer it when present.
  */
-if ( file_exists( RAPLS_PASSKEY_DIR . 'vendor/autoload.php' ) ) {
+if ( file_exists( RAPLS_PASSKEY_DIR . 'vendor/scoper-autoload.php' ) ) {
+	require RAPLS_PASSKEY_DIR . 'vendor/scoper-autoload.php';
+} elseif ( file_exists( RAPLS_PASSKEY_DIR . 'vendor/autoload.php' ) ) {
 	require RAPLS_PASSKEY_DIR . 'vendor/autoload.php';
 }
 

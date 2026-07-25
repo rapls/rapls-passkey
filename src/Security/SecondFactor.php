@@ -10,6 +10,7 @@ namespace RaplsPasskey\Security;
 use RaplsPasskey\Integrations\SecondFactor\Provider;
 use RaplsPasskey\Integrations\SecondFactor\TwoFactorCore;
 use RaplsPasskey\Integrations\SecondFactor\WordfenceLs;
+use RaplsPasskey\Support\RateLimit;
 use RaplsPasskey\Support\Settings;
 use WP_User;
 
@@ -232,7 +233,6 @@ final class SecondFactor {
 				'context'  => $context,
 				'remember' => (bool) $remember,
 				'redirect' => self::requested_redirect(),
-				'attempts' => 0,
 			),
 			self::TTL
 		);
@@ -292,13 +292,15 @@ final class SecondFactor {
 			return false;
 		}
 
-		$pending['attempts'] = (int) ( $pending['attempts'] ?? 0 ) + 1;
-		if ( $pending['attempts'] >= self::MAX_ATTEMPTS ) {
+		// Count the wrong attempt atomically (concurrent tries after the first
+		// factor cannot lose a count and slip past MAX_ATTEMPTS via a
+		// read-modify-write). Keyed by the pending-login token.
+		$attempts = RateLimit::incr( '2fa_attempts|' . self::hash( $token ), self::TTL );
+		if ( $attempts >= self::MAX_ATTEMPTS ) {
 			self::forget();
 			return false;
 		}
 
-		set_transient( $key, $pending, self::TTL );
 		return true;
 	}
 
@@ -309,6 +311,7 @@ final class SecondFactor {
 		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
 		if ( 1 === preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
 			delete_transient( self::TRANSIENT . self::hash( $token ) );
+			RateLimit::clear( '2fa_attempts|' . self::hash( $token ) );
 		}
 
 		unset( $_COOKIE[ self::COOKIE ] );

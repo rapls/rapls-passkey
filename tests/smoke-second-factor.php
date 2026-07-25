@@ -61,6 +61,41 @@ function user_can( $user, $cap ) { return false; }
 function wp_set_current_user( $uid ) {}
 function wp_set_auth_cookie( $uid, $remember = false ) { $GLOBALS['__auth'] = array( 'uid' => $uid, 'remember' => $remember ); }
 function do_action( $hook, ...$a ) {}
+function wp_rand( $min = 0, $max = 1 ) { return 1; } // never trigger RateLimit gc in tests
+
+// $wpdb double for the atomic RateLimit counter (option_name unique; value
+// "count:window_end"; INSERT ... ON DUPLICATE KEY UPDATE resets or increments).
+class WPDB_SF {
+	public $options = 'wp_options';
+	public $store   = array();
+	public function esc_like( $s ) { return $s; }
+	public function prepare( $q, ...$a ) {
+		foreach ( $a as $x ) {
+			$rep = is_int( $x ) ? (string) $x : "'" . str_replace( "'", "''", (string) $x ) . "'";
+			$q   = preg_replace( '/%[dsf]/', $rep, $q, 1 );
+		}
+		return $q;
+	}
+	public function query( $q ) {
+		if ( false !== strpos( $q, 'ON DUPLICATE KEY UPDATE' ) ) {
+			preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m );
+			preg_match( '/AS UNSIGNED\) < (\d+),/', $q, $n );
+			$name = $m[1]; $init = $m[2]; $now = (int) $n[1];
+			if ( ! isset( $this->store[ $name ] ) ) { $this->store[ $name ] = $init; }
+			else {
+				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
+				$this->store[ $name ] = ( (int) $e < $now ) ? $init : ( ( (int) $c + 1 ) . ':' . $e );
+			}
+			return 1;
+		}
+		return 0;
+	}
+	public function get_var( $q ) {
+		return ( preg_match( "/option_name = '([^']*)'/", $q, $m ) ) ? ( $this->store[ $m[1] ] ?? null ) : null;
+	}
+	public function delete( $t, $w ) { unset( $this->store[ $w['option_name'] ?? '' ] ); return 1; }
+}
+$GLOBALS['wpdb'] = new WPDB_SF();
 
 spl_autoload_register( function ( $class ) {
 	$prefix = 'RaplsPasskey\\';

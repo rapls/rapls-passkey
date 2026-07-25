@@ -318,6 +318,16 @@ final class Endpoints {
 			return $veto;
 		}
 
+		// Serialize concurrent registrations for the SAME user with a short,
+		// self-expiring lock, so the limit re-check + insert + overflow rollback run
+		// without a race (belt-and-braces with the deterministic rank check below,
+		// and a strict guarantee even if a rollback delete were to fail). A crashed
+		// request cannot deadlock — the lock is stolen once it goes stale.
+		if ( ! $this->acquire_reg_lock( $owner_id ) ) {
+			return new WP_Error( 'rapls_passkey_busy', __( 'Another passkey registration is already in progress for this account. Please try again in a moment.', 'rapls-passkey' ), array( 'status' => 409 ) );
+		}
+
+		try {
 		// Re-check the per-user limit right before storing, to close the race
 		// between the options request and this verify (two near-simultaneous
 		// registrations could both have passed the initial check).
@@ -392,6 +402,52 @@ final class Endpoints {
 				),
 			)
 		);
+		} finally {
+			$this->release_reg_lock( $owner_id );
+		}
+	}
+
+	/**
+	 * Take a short, self-expiring per-user registration lock (an atomic wp_options
+	 * insert; a stale lock from a crashed request is stolen). Returns true only to
+	 * the single winner.
+	 *
+	 * @param int $user_id User the registration is for.
+	 * @return bool
+	 */
+	private function acquire_reg_lock( int $user_id ): bool {
+		global $wpdb;
+		$name = 'rapls_pk_reg_lock_' . $user_id;
+		$now  = time();
+		$mine = $now . ':' . bin2hex( random_bytes( 6 ) ); // unique per acquirer
+		$suppress = $wpdb->suppress_errors( true );
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
+				 ON DUPLICATE KEY UPDATE option_value = IF(
+					CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) <= %d,
+					VALUES(option_value),
+					option_value
+				 )",
+				$name,
+				$mine,
+				$now - 15
+			)
+		);
+		$wpdb->suppress_errors( $suppress );
+		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
+		);
+		return $val === $mine;
+	}
+
+	/**
+	 * Release the per-user registration lock.
+	 *
+	 * @param int $user_id User the registration is for.
+	 */
+	private function release_reg_lock( int $user_id ): void {
+		delete_option( 'rapls_pk_reg_lock_' . $user_id );
 	}
 
 	// --- Authentication ------------------------------------------------------

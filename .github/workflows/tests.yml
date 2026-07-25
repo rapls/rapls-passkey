@@ -26,6 +26,10 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mbstring, sodium, gmp, mysqli
           coverage: none
+      # A few smoke files exercise the real WebAuthn ceremony code, so the
+      # bundled libraries have to be installed first.
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run the smoke suite
         run: bash bin/run-tests.sh
 
@@ -54,12 +58,13 @@ jobs:
           MARIADB_DATABASE: rapls_test
         ports:
           - 3306:3306
+        # `options` are passed to `docker create`, so only docker flags belong
+        # here. The default max_connections (151) comfortably covers 100 workers.
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
-          --max-connections=300
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2

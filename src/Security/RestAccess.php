@@ -71,7 +71,7 @@ final class RestAccess {
 	 * @return mixed
 	 */
 	public function allow_authentication( $result ) {
-		if ( is_wp_error( $result ) && $this->current_route_is_ours() ) {
+		if ( is_wp_error( $result ) && $this->current_route_is_ours() && $this->is_clearable( $result ) ) {
 			return true;
 		}
 		return $result;

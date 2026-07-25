@@ -39,6 +39,13 @@
 			return {};
 		} );
 		if ( ! res.ok ) {
+			// A passkey login that did not perform user verification (or another
+			// weaker path) must still clear the site's 2FA: the server parks it and
+			// returns the challenge URL. Navigate there instead of erroring.
+			if ( data && data.code === 'rapls_passkey_2fa_required' && data.data && data.data.redirect ) {
+				window.location.href = data.data.redirect;
+				return new Promise( function () {} ); // navigating away; never resolves
+			}
 			throw new Error( ( data && data.message ) || cfg.i18n.failed );
 		}
 		return data;

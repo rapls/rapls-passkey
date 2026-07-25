@@ -118,7 +118,7 @@ final class SecondFactor {
 	 * @param string  $context Login context.
 	 * @return string One of GATE_PASS, GATE_CHALLENGE, GATE_BLOCK.
 	 */
-	public static function evaluate( WP_User $user, string $context ): string {
+	public static function evaluate( WP_User $user, string $context, ?bool $user_verified = null ): string {
 		// Break-glass: the emergency constant disables enforcement everywhere.
 		if ( defined( 'RAPLS_PASSKEY_BYPASS' ) && RAPLS_PASSKEY_BYPASS ) {
 			return self::GATE_PASS;
@@ -126,7 +126,7 @@ final class SecondFactor {
 		if ( ! Settings::alt_login_second_factor() ) {
 			return self::GATE_PASS;
 		}
-		if ( ! self::weak_context( $context ) ) {
+		if ( ! self::weak_context( $context, $user_verified ) ) {
 			return self::GATE_PASS;
 		}
 
@@ -173,20 +173,24 @@ final class SecondFactor {
 	 * @param WP_User $user    The user signing in.
 	 * @param string  $context Login context (login|qr-channel|magic-link|recovery-code|signup).
 	 */
-	public static function required( WP_User $user, string $context ): bool {
-		return self::GATE_CHALLENGE === self::evaluate( $user, $context );
+	public static function required( WP_User $user, string $context, ?bool $user_verified = null ): bool {
+		return self::GATE_CHALLENGE === self::evaluate( $user, $context, $user_verified );
 	}
 
 	/**
-	 * Is this login weaker than a passkey?
+	 * Is this login weaker than a passkey (so it must still pass the site's 2FA)?
 	 *
-	 * Passkey, QR cross-device (the phone signs a WebAuthn assertion) and sign-up
-	 * (a passkey is created and verified) are all backed by an authenticator, so
-	 * they *are* the second factor. Magic link and recovery code are not.
+	 * Magic link and recovery code are never backed by an authenticator. A passkey
+	 * ceremony (login / QR / sign-up) IS the second factor — but ONLY if it
+	 * performed user verification (biometric/PIN): a passkey verified without UV is
+	 * possession-only (one factor), so for MFA it counts as weak and must still meet
+	 * the site's 2FA. `$user_verified === false` marks that case; null means
+	 * "not applicable / do not downgrade".
 	 *
-	 * @param string $context Login context.
+	 * @param string    $context       Login context.
+	 * @param bool|null $user_verified Whether a passkey login performed UV.
 	 */
-	public static function weak_context( string $context ): bool {
+	public static function weak_context( string $context, ?bool $user_verified = null ): bool {
 		/**
 		 * Login contexts that are not backed by a WebAuthn ceremony.
 		 *
@@ -194,7 +198,17 @@ final class SecondFactor {
 		 */
 		$weak = (array) apply_filters( 'rapls_passkey/second_factor_contexts', array( 'magic-link', 'recovery-code' ) );
 
-		return in_array( $context, $weak, true );
+		if ( in_array( $context, $weak, true ) ) {
+			return true;
+		}
+
+		// A passkey login/QR/sign-up that did NOT perform user verification is a
+		// single factor; treat it as weak so the site's 2FA still applies.
+		if ( false === $user_verified && in_array( $context, array( 'login', 'qr-channel', 'signup' ), true ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

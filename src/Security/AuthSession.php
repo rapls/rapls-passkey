@@ -50,11 +50,12 @@ final class AuthSession {
 			return $blocked;
 		}
 
-		// A login weaker than a passkey (magic link, recovery code) must still meet
-		// the site's 2FA plugin. Park it and send the caller to the challenge; the
-		// error carries the URL, so a caller that ignores it fails closed.
+		// A login weaker than a passkey (magic link, recovery code — and a passkey
+		// login that did NOT perform user verification) must still meet the site's
+		// 2FA plugin. Park it and send the caller to the challenge BEFORE the cookie
+		// is set; the error carries the URL, so a caller that ignores it fails closed.
 		if ( ! $second_factor ) {
-			$gate = SecondFactor::evaluate( $user, $context );
+			$gate = SecondFactor::evaluate( $user, $context, $user_verified );
 			if ( SecondFactor::GATE_CHALLENGE === $gate ) {
 				return new WP_Error(
 					'rapls_passkey_2fa_required',

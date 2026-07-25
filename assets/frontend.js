@@ -58,6 +58,12 @@
 			return {};
 		} );
 		if ( ! res.ok ) {
+			// A passkey login that skipped user verification must still clear the
+			// site's 2FA: the server returns the challenge URL — navigate there.
+			if ( data && data.code === 'rapls_passkey_2fa_required' && data.data && data.data.redirect ) {
+				window.location.href = data.data.redirect;
+				return new Promise( function () {} );
+			}
 			throw new Error( ( data && data.message ) || '' );
 		}
 		return data;

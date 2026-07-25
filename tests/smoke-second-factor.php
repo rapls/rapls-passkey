@@ -119,6 +119,8 @@ check( 'recovery code is weak', SecondFactor::weak_context( 'recovery-code' ) ==
 check( 'passkey login is not weak', SecondFactor::weak_context( 'login' ) === false );
 check( 'QR cross-device is not weak (the phone signs an assertion)', SecondFactor::weak_context( 'qr-channel' ) === false );
 check( 'sign-up is not weak (a passkey is created and verified)', SecondFactor::weak_context( 'signup' ) === false );
+check( 'passkey login WITHOUT user verification is weak (F-05)', SecondFactor::weak_context( 'login', false ) === true );
+check( 'passkey login WITH user verification is not weak', SecondFactor::weak_context( 'login', true ) === false );
 
 // --- No 2FA plugin installed: nothing changes. ----------------------------
 
@@ -140,6 +142,8 @@ check( 'no provider for a user without 2FA', SecondFactor::provider_for( $bob ) 
 check( 'magic link owes a challenge', SecondFactor::required( $alice, 'magic-link' ) === true );
 check( 'recovery code owes a challenge', SecondFactor::required( $alice, 'recovery-code' ) === true );
 check( 'passkey login is never challenged', SecondFactor::required( $alice, 'login' ) === false );
+check( 'a UV=false passkey login IS challenged (F-05)', SecondFactor::required( $alice, 'login', false ) === true );
+check( 'a UV=true passkey login is not challenged', SecondFactor::required( $alice, 'login', true ) === false );
 check( 'QR login is never challenged', SecondFactor::required( $alice, 'qr-channel' ) === false );
 check( 'a user with no second factor is never challenged', SecondFactor::required( $bob, 'magic-link' ) === false );
 

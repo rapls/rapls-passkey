@@ -81,7 +81,14 @@ $wp = array();
 foreach ( array( 'exclude-wordpress-functions.json', 'exclude-wordpress-classes.json', 'exclude-wordpress-interfaces.json' ) as $j ) {
 	foreach ( $load( $j ) as $sym ) { $wp[ strtolower( (string) $sym ) ] = true; }
 }
-foreach ( array( 'wp_cli', 'wordfencels', 'two_factor_core', 'woocommerce' ) as $sym ) { $wp[ $sym ] = true; }
+foreach ( array( 'wp_cli', 'wordfencels', 'two_factor_core', 'woocommerce', 'wc' ) as $sym ) { $wp[ $sym ] = true; }
+
+// A first-namespace-segment (or global function) that belongs to the host, not a
+// bundled library — WP core, WP-CLI, WooCommerce (WC / wc_* / WC_*), Wordfence.
+$is_host_symbol = static function ( string $seg ) use ( $wp ): bool {
+	$l = strtolower( $seg );
+	return isset( $wp[ $l ] ) || 1 === preg_match( '/^(wc_|wc$|woocommerce|wp_|wordfence)/', $l );
+};
 
 $bad = array();
 $it  = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/src', FilesystemIterator::SKIP_DOTS ) );
@@ -90,7 +97,7 @@ foreach ( $it as $f ) {
 	$c = (string) file_get_contents( $f->getPathname() );
 	if ( preg_match_all( '/RaplsPasskey(?:Pro)?\\\\Vendor\\\\([A-Za-z_][A-Za-z0-9_]*)/', $c, $m ) ) {
 		foreach ( array_unique( $m[1] ) as $seg ) {
-			if ( isset( $wp[ strtolower( $seg ) ] ) ) {
+			if ( $is_host_symbol( $seg ) ) {
 				$bad[] = str_replace( $root . '/', '', $f->getPathname() ) . " -> Vendor\\{$seg}";
 			}
 		}
@@ -98,6 +105,23 @@ foreach ( $it as $f ) {
 }
 check( 'no WordPress/external symbol mis-prefixed in src/', 0 === count( $bad ) );
 foreach ( array_slice( array_unique( $bad ), 0, 8 ) as $b ) { echo "          {$b}\n"; }
+
+// 2b) PHP-Scoper must not emit a GLOBAL function alias that forwards to a prefixed
+//     host function (e.g. `function WC() { return \…\Vendor\WC(...); }`). Such an
+//     alias breaks host detection and can fatal other plugins. Scan the generated
+//     scoper-autoload.php for any global function whose name is a host symbol.
+$alias_bad = array();
+$sa        = $root . '/vendor/scoper-autoload.php';
+if ( is_file( $sa ) ) {
+	$c = (string) file_get_contents( $sa );
+	if ( preg_match_all( '/\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/', $c, $m ) ) {
+		foreach ( array_unique( $m[1] ) as $fn ) {
+			if ( $is_host_symbol( $fn ) ) { $alias_bad[] = $fn; }
+		}
+	}
+}
+check( 'scoper-autoload.php emits no global alias for a host function', 0 === count( $alias_bad ) );
+foreach ( array_slice( $alias_bad, 0, 8 ) as $a ) { echo "          global function {$a}() forwards to a prefixed symbol\n"; }
 
 // 3) Non-PHP assets carried into the ZIP.
 if ( $is_pro ) {

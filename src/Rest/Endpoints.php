@@ -339,17 +339,32 @@ final class Endpoints {
 		}
 
 		// The pre-insert limit checks are not atomic, so two simultaneous
-		// registrations could both pass them and both insert. Re-count AFTER the
-		// insert; if this row pushed the user over the cap, roll it back so the
-		// limit is never actually exceeded.
+		// registrations could both pass them and both insert. Re-check AFTER the
+		// insert using a DETERMINISTIC rule: count the user's OTHER credentials that
+		// are older than this row (lower id). This row is the overflow only when the
+		// cap is already met by older rows — so of two rows that raced in, the later
+		// one (higher id) rolls itself back and the earlier one stays. That leaves
+		// exactly the cap, never fewer (both rolling back) nor more.
 		$max = Settings::max_passkeys();
-		if ( $max > 0 && count( $this->repository->find_by_user( $owner_id ) ) > $max ) {
-			$this->repository->delete_by_id( $id );
-			return $this->limit_error( $owner_id ) ?? new WP_Error(
-				'rapls_passkey_limit_reached',
-				__( 'You have reached the passkey limit. Please try again.', 'rapls-passkey' ),
-				array( 'status' => 409 )
-			);
+		if ( $max > 0 ) {
+			$older = 0;
+			foreach ( $this->repository->find_by_user( $owner_id ) as $rec ) {
+				if ( (int) $rec->id < $id ) {
+					++$older;
+				}
+			}
+			if ( $older >= $max ) {
+				if ( ! $this->repository->delete_by_id( $id ) ) {
+					// The overflow row could not be removed; record it rather than
+					// silently leave the user one over the cap.
+					AuditLog::record( AuditLog::REGISTERED, $owner_id, 'rollback-failed id=' . $id );
+				}
+				return $this->limit_error( $owner_id ) ?? new WP_Error(
+					'rapls_passkey_limit_reached',
+					__( 'You have reached the passkey limit. Please try again.', 'rapls-passkey' ),
+					array( 'status' => 409 )
+				);
+			}
 		}
 
 		AuditLog::record(
@@ -820,13 +835,9 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return true;
 		}
-		$key = $this->rate_key( 'login_options' );
-		$n   = (int) get_transient( $key );
-		if ( $n >= $max ) {
-			return false;
-		}
-		set_transient( $key, $n + 1, Settings::login_rate_window() );
-		return true;
+		// Atomic increment-then-check: concurrent username-bearing lookups cannot
+		// both slip under the cap via a read-modify-write race.
+		return $this->rate_incr( 'login_options' ) <= $max;
 	}
 
 	/**
@@ -842,7 +853,7 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return false;
 		}
-		return (int) get_transient( $this->rate_key( $bucket ) ) >= $max;
+		return $this->rate_count( $bucket ) >= $max;
 	}
 
 	/**
@@ -856,9 +867,7 @@ final class Endpoints {
 		if ( Settings::login_rate_max() <= 0 ) {
 			return;
 		}
-		$key = $this->rate_key( $bucket );
-		$n   = (int) get_transient( $key );
-		set_transient( $key, $n + 1, Settings::login_rate_window() );
+		$this->rate_incr( $bucket );
 	}
 
 	/**
@@ -868,11 +877,13 @@ final class Endpoints {
 	 * @param string $bucket Action bucket.
 	 */
 	private function rate_clear( string $bucket ): void {
-		delete_transient( $this->rate_key( $bucket ) );
+		global $wpdb;
+		$wpdb->delete( $wpdb->options, array( 'option_name' => $this->rate_key( $bucket ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 
 	/**
-	 * Transient key for a per-IP rate-limit bucket.
+	 * Option name for a per-IP rate-limit bucket. The counter is a raw option
+	 * (not a transient) so it can be incremented atomically; see rate_incr().
 	 *
 	 * @param string $bucket Action bucket.
 	 * @return string
@@ -880,5 +891,80 @@ final class Endpoints {
 	private function rate_key( string $bucket ): string {
 		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
 		return 'rapls_passkey_rl_' . md5( $bucket . '|' . $ip );
+	}
+
+	/**
+	 * Atomically increment a per-IP fixed-window counter and return the new count.
+	 *
+	 * The value is stored as "count:window_end". A single INSERT ... ON DUPLICATE
+	 * KEY UPDATE either starts a fresh window (when the stored one has passed) or
+	 * increments in place — so two concurrent requests cannot both read the same
+	 * value and each write count+1 (the read-modify-write race the transient path
+	 * had). The option_name is unique-indexed, which makes the upsert atomic.
+	 *
+	 * @param string $bucket Action bucket.
+	 * @return int The counter value after this increment (within the current window).
+	 */
+	private function rate_incr( string $bucket ): int {
+		global $wpdb;
+		$key    = $this->rate_key( $bucket );
+		$window = max( 1, (int) Settings::login_rate_window() );
+		$now    = time();
+		$init   = '1:' . ( $now + $window );
+
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
+				 ON DUPLICATE KEY UPDATE option_value = IF(
+					CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) < %d,
+					%s,
+					CONCAT(CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) + 1, ':', SUBSTRING_INDEX(option_value, ':', -1))
+				 )",
+				$key,
+				$init,
+				$now,
+				$init
+			)
+		);
+		$this->rate_gc();
+		return $this->rate_count( $bucket );
+	}
+
+	/**
+	 * Read the current per-IP counter for a bucket (0 when the window has passed).
+	 * Reads the row directly so it reflects a concurrent rate_incr() commit.
+	 *
+	 * @param string $bucket Action bucket.
+	 * @return int
+	 */
+	private function rate_count( string $bucket ): int {
+		global $wpdb;
+		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $this->rate_key( $bucket ) )
+		);
+		if ( ! is_string( $val ) || false === strpos( $val, ':' ) ) {
+			return 0;
+		}
+		list( $count, $end ) = explode( ':', $val, 2 );
+		return ( (int) $end > time() ) ? (int) $count : 0;
+	}
+
+	/**
+	 * Occasionally sweep rate-limit rows whose window has passed (raw options do
+	 * not auto-expire the way transients do).
+	 */
+	private function rate_gc(): void {
+		if ( 0 !== wp_rand( 0, 49 ) ) {
+			return;
+		}
+		global $wpdb;
+		$like = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) < %d",
+				$like,
+				time()
+			)
+		);
 	}
 }

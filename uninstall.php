@@ -34,6 +34,12 @@ function rapls_passkey_uninstall_site(): void {
 	$like    = $wpdb->esc_like( '_transient_rapls_passkey_' ) . '%';
 	$timeout = $wpdb->esc_like( '_transient_timeout_rapls_passkey_' ) . '%';
 	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", $like, $timeout ) ); // phpcs:ignore WordPress.DB
+
+	// Per-user WebAuthn-handle creation locks and per-IP rate-limit counters (both
+	// raw options rather than transients).
+	$handle_lock = $wpdb->esc_like( 'rapls_pk_handle_lock_' ) . '%';
+	$rate_rows   = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", $handle_lock, $rate_rows ) ); // phpcs:ignore WordPress.DB
 }
 
 // Remove per-user meta this plugin stored, for every user (global, not per-site).

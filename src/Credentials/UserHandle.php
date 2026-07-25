@@ -24,6 +24,9 @@ final class UserHandle {
 	/** User meta key holding the base64url handle. */
 	public const META = 'rapls_passkey_user_handle';
 
+	/** wp_options prefix for the atomic first-creation lock (also holds the handle). */
+	public const LOCK_PREFIX = 'rapls_pk_handle_lock_';
+
 	/**
 	 * Get (creating on first use) the base64url handle for a user.
 	 *
@@ -36,15 +39,44 @@ final class UserHandle {
 			return $handle;
 		}
 
-		// First use. add_user_meta( …, true ) inserts only when no row exists yet,
-		// so two concurrent first registrations cannot mint two different handles
-		// for the same account (which would give one user two WebAuthn user.ids):
-		// the loser's insert fails and it re-reads the winner's value.
+		// First use. wp_usermeta has no unique constraint, so add_user_meta(unique)
+		// is a SELECT-then-INSERT that two concurrent first registrations can both
+		// pass — minting two different handles for one account. Serialise creation
+		// with an ATOMIC insert into wp_options (option_name is unique-indexed): the
+		// single winner mints the handle, and the row also carries it so a loser
+		// recovers the winner's value without a read race.
+		global $wpdb;
+		$lock      = self::LOCK_PREFIX . $user_id;
 		$candidate = Base64UrlSafe::encodeUnpadded( random_bytes( 32 ) );
-		if ( add_user_meta( $user_id, self::META, $candidate, true ) ) {
+
+		$suppress = $wpdb->suppress_errors( true );
+		$won      = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+				$lock,
+				$candidate
+			)
+		);
+		$wpdb->suppress_errors( $suppress );
+
+		if ( 1 === (int) $won ) {
+			update_user_meta( $user_id, self::META, $candidate );
 			return $candidate;
 		}
 
+		// A concurrent request won; the authoritative handle is in the lock row.
+		$winner = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $lock )
+		);
+		if ( is_string( $winner ) && '' !== $winner ) {
+			wp_cache_delete( $user_id, 'user_meta' );
+			if ( '' === (string) get_user_meta( $user_id, self::META, true ) ) {
+				update_user_meta( $user_id, self::META, $winner );
+			}
+			return $winner;
+		}
+
+		// Extreme fallback: re-read meta.
 		wp_cache_delete( $user_id, 'user_meta' );
 		$handle = get_user_meta( $user_id, self::META, true );
 		return is_string( $handle ) && '' !== $handle ? $handle : $candidate;

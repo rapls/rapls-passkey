@@ -109,28 +109,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * A user's WebAuthn user handle is now created atomically on first use, so two simultaneous first registrations can no longer mint two different handles for the same account.
 * reCAPTCHA can now be set to fail closed when Google cannot be reached (it still fails open by default so an outage does not lock everyone out). Filter: rapls_passkey/recaptcha_fail_open.
 
-= 0.13.8 =
-* The relying-party ID is now validated against the full Mozilla Public Suffix List (bundled in data/public_suffix_list.dat), so a public suffix the previous short denylist missed — github.io, appspot.com, co.id, com.ar and the like — is correctly rejected as an RP ID. Wildcard and exception rules are honoured. If the list file is unavailable the matcher falls back to the previous heuristic, so validation never hard-fails. Filter: rapls_passkey_rp_id_public_suffixes (adds further suffixes).
-
-= 0.13.7 =
-* Hardening from a follow-up review (concurrency and multi-factor assurance):
-* The signature counter is now advanced with an optimistic compare-and-set, and the login is refused if it does not commit — so a replayed assertion cannot slip past the counter check in a race, and a database write failure no longer signs anyone in on stale state. Counter-less authenticators (which legitimately report 0) are unaffected.
-* Login options accept a raise-only "uv=required" request so a caller (such as Pro's step-up) can require user verification for a multi-factor login; it can only strengthen, never weaken, the site's setting. Filter: rapls_passkey/allow_uv_elevation.
-
-= 0.13.6 =
-* From a follow-up static-analysis review:
-* The WebAuthn verifier now accepts both the Site Address (home) and WordPress Address (site) origins, matching the REST same-origin gate, so a split-URL install whose login screen runs on a different origin verifies correctly.
-* Registration options now isolate a corrupt stored credential per row (like login options already did), so one unreadable record can no longer stop a user from enrolling a replacement passkey.
-* The REST login allowlist now only clears the known "REST is limited to logged-in users" authentication errors on its routes, so an unrelated block (WAF, IP gate, maintenance) another plugin returns is preserved. Filter: rapls_passkey/rest_clearable_error_codes.
-* Moved the older change history into changelog.txt to keep readme.txt within the WordPress.org size guideline.
-
-= 0.13.5 =
-* From a follow-up static-analysis review:
-* Same-origin checks on the login/registration routes now compare the full origin (scheme, host and port), so http vs https or a different port is no longer treated as the same site.
-* The relying-party ID can no longer be set to a public suffix (e.g. "com" or "co.jp"); such a value is rejected and the site host is used instead. Filter: rapls_passkey_rp_id_public_suffixes.
-* The REST allowlist that keeps passkey login reachable under "logged-in only" security plugins now matches its routes on path-segment boundaries, so an unrelated route that merely contains the string is not affected.
-* Alternative (magic-link / recovery-code) logins now fail closed when an active 2FA plugin cannot report a user's second-factor status: rather than letting the weaker login through, it is refused and the user is asked to use their passkey or password. A passkey login is unaffected.
-* An internal exception reason is never returned to an anonymous REST client, even with WP_DEBUG on; it is written to the server log only.
-* Tested up to WordPress 7.0.2.
-
-For the change history of earlier releases, see changelog.txt.
+For the change history of 0.13.8 and earlier releases, see changelog.txt.

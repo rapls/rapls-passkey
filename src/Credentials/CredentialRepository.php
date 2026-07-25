@@ -28,22 +28,104 @@ final class CredentialRepository {
 	 * @return int Inserted row id (0 on failure).
 	 */
 	public function insert( int $user_id, string $credential_id, string $record_json, int $sign_count, ?string $label ): int {
+		// No cap to honour here: take the first slot number that is free, retrying
+		// if a concurrent registration claims it first.
+		for ( $attempt = 0; $attempt < 10; $attempt++ ) {
+			$used = $this->used_slots( $user_id );
+			if ( null === $used ) {
+				return 0; // Database error.
+			}
+			$slot = 1;
+			while ( in_array( $slot, $used, true ) ) {
+				++$slot;
+			}
+			$id = $this->insert_in_slot( $user_id, $slot, $credential_id, $record_json, $sign_count, $label );
+			if ( -1 !== $id ) {
+				return $id; // Inserted (>0) or a real error (0).
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * The slot numbers a user's passkeys currently occupy.
+	 *
+	 * @param int $user_id User id.
+	 * @return int[]|null Slot numbers, or null on a database error.
+	 */
+	public function used_slots( int $user_id ): ?array {
+		global $wpdb;
+		$table = Schema::credentials_table();
+		$rows  = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "SELECT slot_no FROM {$table} WHERE user_id = %d AND slot_no IS NOT NULL", $user_id )
+		);
+		if ( ! is_array( $rows ) ) {
+			return null;
+		}
+		if ( '' !== (string) $wpdb->last_error ) {
+			return null;
+		}
+		return array_map( 'intval', $rows );
+	}
+
+	/**
+	 * Insert a credential claiming one specific slot number.
+	 *
+	 * This is the primitive that makes the per-user cap exact. The UNIQUE
+	 * (user_id, slot_no) index means only ONE of any number of concurrent
+	 * registrations can take a given slot — no application lock is involved, so the
+	 * guarantee survives a dropped-and-reopened connection, a read/write-splitting
+	 * db.php, and any storage engine. The caller only ever offers slots within the
+	 * configured cap, so the cap cannot be exceeded however many requests race.
+	 *
+	 * @param int         $user_id       Owning user id.
+	 * @param int         $slot          Slot number to claim (1-based).
+	 * @param string      $credential_id Base64url credential id.
+	 * @param string      $record_json   Serialised CredentialRecord JSON.
+	 * @param int         $sign_count    Initial signature counter.
+	 * @param string|null $label         Optional user label.
+	 * @return int Inserted row id (>0), -1 when the slot is already taken (try the
+	 *             next one), or 0 on any other failure.
+	 */
+	public function insert_in_slot( int $user_id, int $slot, string $credential_id, string $record_json, int $sign_count, ?string $label ): int {
 		global $wpdb;
 		$now = gmdate( 'Y-m-d H:i:s' );
 		$ok  = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			Schema::credentials_table(),
 			array(
 				'user_id'         => $user_id,
+				'slot_no'         => $slot,
 				'credential_id'   => $credential_id,
 				'credential_data' => $record_json,
 				'sign_count'      => $sign_count,
 				'label'           => $label,
 				'created_at'      => $now,
 			),
-			array( '%d', '%s', '%s', '%d', '%s', '%s' )
+			array( '%d', '%d', '%s', '%s', '%d', '%s', '%s' )
 		);
+		if ( $ok ) {
+			return (int) $wpdb->insert_id;
+		}
 
-		return $ok ? (int) $wpdb->insert_id : 0;
+		// The insert failed. Read back to find out WHY, rather than parsing the
+		// driver's error text: if our own credential is now stored, the write
+		// actually landed (a reconnect can replay the statement, and the unique
+		// credential_id index then rejects the duplicate) — treat that as success,
+		// which makes the whole registration idempotent under a reconnect.
+		$mine = $this->find_by_credential_id( $credential_id );
+		if ( null !== $mine && (int) $mine->user_id === $user_id ) {
+			return (int) $mine->id;
+		}
+
+		$table = Schema::credentials_table();
+		$taken = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "SELECT id FROM {$table} WHERE user_id = %d AND slot_no = %d", $user_id, $slot )
+		);
+		if ( null !== $taken ) {
+			return -1; // Someone else holds this slot — the caller tries the next.
+		}
+
+		return 0; // A genuine failure (not a slot collision).
 	}
 
 	/**

@@ -10,9 +10,9 @@ namespace RaplsPasskey\Rest;
 use ParagonIE\ConstantTime\Base64UrlSafe;
 use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
+use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Credentials\UserHandle;
 use RaplsPasskey\WebAuthn\AssertionManager;
-use RaplsPasskey\Support\DbLock;
 use RaplsPasskey\Support\RateLimit;
 use RaplsPasskey\Support\Settings;
 use RaplsPasskey\Support\Str;
@@ -320,47 +320,18 @@ final class Endpoints {
 			return $veto;
 		}
 
-		// Enforce the per-user limit while holding a MySQL advisory named lock, so the
-		// count-then-insert below is exact under concurrency regardless of the
-		// server's transaction isolation level OR storage engine. A bare
-		// `INSERT ... SELECT COUNT(*)` is a non-locking consistent read under READ
-		// COMMITTED (two concurrent registrations could both see the same under-limit
-		// count), and a transaction + `SELECT ... FOR UPDATE` needs InnoDB and would
-		// touch the shared $wpdb transaction state. A named lock serialises every
-		// registration for this user with none of that: engine-independent, no
-		// transaction side effects, an explicit granted/not-granted result (so it does
-		// not depend on the connection's affected-rows flag), and auto-released if the
-		// connection drops. See Support\DbLock.
-		$lock = 'reg|' . $owner_id;
-		if ( ! DbLock::acquire( $lock ) ) {
-			// Lock not granted (timeout, or a DB error returning 0/NULL): fail closed
-			// rather than registering without the serialisation guarantee.
-			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 503, 'reg-lock-unavailable' );
-		}
-		try {
-			// With the user serialised, this count-then-insert is atomic w.r.t. any
-			// other registration for the same user, so the cap holds exactly.
-			// limit_error() itself fails closed on a DB error (it cannot read the
-			// count), so a database failure blocks registration instead of allowing it.
-			$limit = $this->limit_error( $owner_id );
-			if ( null !== $limit ) {
-				return $limit;
-			}
-
-			$id = $this->repository->insert(
-				$owner_id,
-				$credential_id,
-				$this->codec->record_to_json( $record ),
-				$record->counter,
-				$label
-			);
-			if ( 0 === $id ) {
-				return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
-			}
-		} catch ( \Throwable $e ) {
-			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 500, 'reg: ' . $e->getMessage() );
-		} finally {
-			DbLock::release( $lock );
+		// Store the credential, enforcing the per-user cap with a DATABASE CONSTRAINT
+		// rather than an application lock: each passkey claims a numbered slot under
+		// a UNIQUE (user_id, slot_no) index, and when a cap is configured only slots
+		// 1..cap are ever offered. Two concurrent registrations cannot both take the
+		// same slot, so the cap is exact no matter how many requests race — and
+		// unlike a session-scoped lock (GET_LOCK) or a transaction row lock, the
+		// guarantee does not evaporate when WordPress transparently reconnects and
+		// replays a statement, when a db.php drop-in routes queries to another
+		// server, or when the table is not InnoDB.
+		$id = $this->store_credential( $owner_id, $credential_id, $record, $label );
+		if ( $id instanceof WP_Error ) {
+			return $id;
 		}
 
 		AuditLog::record(
@@ -445,6 +416,19 @@ final class Endpoints {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function login_verify( WP_REST_Request $request ) {
+		// Consume one attempt from the per-IP budget BEFORE doing any verification
+		// work. Reading the counter in the gate and incrementing only after a failed
+		// assertion is a check-then-act: with the counter one below the limit, any
+		// number of simultaneous requests all read "under the limit" and all proceed
+		// to verify. Incrementing first makes admission atomic — exactly one request
+		// can receive the last remaining count — and it also caps the signature
+		// verification work an attacker can start in parallel. A successful login
+		// clears the counter, so genuine users never accumulate.
+		$admit = $this->rate_admit( 'login' );
+		if ( null !== $admit ) {
+			return $admit;
+		}
+
 		$state           = (string) $request->get_param( 'state' );
 		$credential_json = $this->credential_json( $request );
 
@@ -748,6 +732,92 @@ final class Endpoints {
 		if ( $count < $max ) {
 			return null;
 		}
+		return $this->limit_reached( $max );
+	}
+
+	/**
+	 * Store a verified credential in a numbered slot, enforcing the per-user cap
+	 * through the UNIQUE (user_id, slot_no) index.
+	 *
+	 * The loop is the whole mechanism: read which slots the user occupies, offer the
+	 * lowest free one within the cap, and try to claim it. A concurrent registration
+	 * that claimed it first makes the insert fail on the unique index (-1), and we
+	 * simply try the next free slot. When a cap is set, only slots 1..cap are ever
+	 * offered, so no amount of concurrency can push the user past it. Nothing here
+	 * depends on holding a connection, a session, or a transaction.
+	 *
+	 * @param int         $user_id       Owning user id.
+	 * @param string      $credential_id Base64url credential id.
+	 * @param object      $record        Verified credential record.
+	 * @param string|null $label         Optional label.
+	 * @return int|WP_Error Stored row id, or an error.
+	 */
+	private function store_credential( int $user_id, string $credential_id, $record, ?string $label ) {
+		$max = Settings::max_passkeys();
+
+		// The cap is the index's job. If the index is not there (an upgrade that
+		// could not create it), a configured cap cannot be guaranteed — refuse
+		// rather than register unprotected.
+		if ( $max > 0 && ! Schema::cap_enforceable() ) {
+			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 503, 'slot-index-missing' );
+		}
+
+		$record_json = $this->codec->record_to_json( $record );
+
+		for ( $attempt = 0; $attempt < 12; $attempt++ ) {
+			$used = $this->repository->used_slots( $user_id );
+			if ( null === $used ) {
+				// Cannot tell which slots are free — fail closed.
+				return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 503, 'slot-read-failed' );
+			}
+
+			$slot = self::first_free_slot( $used, $max );
+			if ( 0 === $slot ) {
+				return $this->limit_reached( $max );
+			}
+
+			$id = $this->repository->insert_in_slot( $user_id, $slot, $credential_id, $record_json, $record->counter, $label );
+			if ( $id > 0 ) {
+				return $id;
+			}
+			if ( 0 === $id ) {
+				return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
+			}
+			// -1: another registration took that slot first — try the next free one.
+		}
+
+		// Every attempt lost a race. With a cap that means the cap is now full.
+		if ( $max > 0 ) {
+			return $this->limit_reached( $max );
+		}
+		return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 503, 'slot-contention' );
+	}
+
+	/**
+	 * The lowest slot number not in $used, or 0 when a cap is set and every slot
+	 * 1..$max is taken.
+	 *
+	 * @param int[] $used Occupied slot numbers.
+	 * @param int   $max  Cap (0 = unlimited).
+	 * @return int
+	 */
+	private static function first_free_slot( array $used, int $max ): int {
+		$ceiling = $max > 0 ? $max : count( $used ) + 1;
+		for ( $slot = 1; $slot <= $ceiling; $slot++ ) {
+			if ( ! in_array( $slot, $used, true ) ) {
+				return $slot;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * The "you already have the maximum number of passkeys" error.
+	 *
+	 * @param int $max Configured maximum.
+	 * @return WP_Error
+	 */
+	private function limit_reached( int $max ): WP_Error {
 		return new WP_Error(
 			'rapls_passkey_limit_reached',
 			sprintf(
@@ -795,15 +865,14 @@ final class Endpoints {
 	}
 
 	/**
-	 * A failed assertion: count it toward the per-IP attempt limit, then return
-	 * the generic login-failure error. Only genuine verification failures land
-	 * here, so the limit reflects real attempts (not /login/options calls).
+	 * A failed assertion. The attempt was already counted when the request was
+	 * admitted (see {@see rate_admit}), so this only shapes the response — counting
+	 * again here would charge one attempt twice.
 	 *
 	 * @param string $reason Internal reason (logged; exposed only with WP_DEBUG).
 	 * @return WP_Error
 	 */
 	private function login_fail( string $reason ): WP_Error {
-		$this->rate_bump( 'login' );
 		return $this->fail( 'rapls_passkey_login_failed', __( 'Passkey authentication failed.', 'rapls-passkey' ), 400, $reason );
 	}
 
@@ -865,17 +934,28 @@ final class Endpoints {
 	}
 
 	/**
-	 * Increment the per-IP attempt counter for a bucket (called only on a failed
-	 * attempt). The window refreshes on each failure, so the lockout lasts up to
-	 * the configured window from the last failed attempt.
+	 * Atomically admit one attempt from the per-IP budget, or refuse with 429.
+	 *
+	 * This is the check-and-act done as a single atomic increment: the counter is
+	 * consumed FIRST and the resulting value decides admission, so of N simultaneous
+	 * requests arriving with one attempt left, exactly one is admitted. (Reading the
+	 * count and only incrementing after a failure lets all N through, because they
+	 * all read the same under-limit value.) On a database error incr() returns
+	 * OVERFLOW, which is above every limit, so admission fails closed.
 	 *
 	 * @param string $bucket Action bucket.
+	 * @return WP_Error|null 429 error when the attempt is refused, null to proceed.
 	 */
-	private function rate_bump( string $bucket ): void {
-		if ( Settings::login_rate_max() <= 0 ) {
-			return;
+	private function rate_admit( string $bucket ): ?WP_Error {
+		$max = Settings::login_rate_max();
+		if ( $max <= 0 ) {
+			return null;
 		}
-		RateLimit::incr( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window() );
+		$count = RateLimit::incr( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window() );
+		if ( $count > $max ) {
+			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
+		}
+		return null;
 	}
 
 	/**

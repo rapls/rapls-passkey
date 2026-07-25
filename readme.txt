@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.22
+Stable tag: 0.13.23
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,14 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.23 =
+* Sixth re-review fixes. The per-user passkey limit and the sign-up quota are now enforced by DATABASE CONSTRAINTS instead of an application lock:
+* Each passkey occupies a numbered slot under a new UNIQUE (user_id, slot_no) index, and only slots within the configured limit are ever offered — so two simultaneous registrations can never both take the last one. Unlike the previous named lock, this holds even when WordPress transparently reconnects and replays a statement, when a db.php drop-in (HyperDB and similar) routes queries to a different server, and on any storage engine. A replayed registration after a reconnect now stores exactly one passkey instead of two.
+* The sign-up quota reserves a numbered row and confirms ownership by reading it back, so it no longer depends on a database session, an advisory lock, or affected-row counts. A reservation is handed back by its own token, so a hand-back can never disturb another request's slot or mis-count the quota.
+* Login attempt limits are now consumed BEFORE the passkey assertion (or recovery code) is checked, not after it fails. Previously a batch of simultaneous attempts could all read the same under-limit count and all proceed; now exactly one can take the last attempt, which also caps the verification work a flood of requests can start.
+* Verified against a real MySQL server with 100 simultaneous processes: limit 1 stores 1 passkey, limit 3 stores 3, and with one attempt left exactly one of 20 concurrent logins is admitted. The test ships in the plugin's repository (tests/db/concurrency.php) and runs in CI against MySQL 8.0/8.4 and MariaDB 10.11/11.4.
+* With the passkey limit set to 0 (unlimited, the default) registration no longer performs any limit bookkeeping at all.
+
 = 0.13.22 =
 * Fifth re-review fixes (concurrency correctness, isolation- and engine-independence):
 * The passkey per-user limit and the atomic quota reservation are now serialised with a MySQL advisory named lock (GET_LOCK) instead of a transaction + row lock. Named locks work regardless of the table's storage engine (they hold even on MyISAM, where SELECT ... FOR UPDATE does not), do not touch the shared connection's transaction state (so they cannot implicitly commit another plugin's open transaction), signal success with an explicit result rather than an affected-row count (so a quota can no longer be miscounted when the connection uses MYSQLI_CLIENT_FOUND_ROWS), and release automatically if the connection drops. A lock that cannot be taken fails closed.
@@ -99,13 +107,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * The shared rate/attempt counter now FAILS CLOSED on a database error (a read or write failure blocks the guarded action instead of silently allowing it), and gained an atomic "reserve one slot under a cap" primitive for callers that need a strict quota.
 * The REST re-open for the anonymous passkey-login routes now clears ONLY a genuine 401 "authentication required" restriction; a 403 from a WAF, IP gate, maintenance mode or capability check is preserved even on the plugin's own routes.
 
-= 0.13.19 =
-* Second re-review fixes (concurrency, 2FA and distribution build):
-* Distribution build: WooCommerce's global WC() (and the wc_*/WC_* family) is excluded from prefixing, so the build no longer rewrites a function_exists('WC') check or emits a global WC() alias that forwards to a non-existent prefixed function (which could mis-detect WooCommerce or fatal another plugin). The final-artifact check now also fails on any mis-prefixed WooCommerce symbol or any generated host-function alias.
-* A passkey login that did NOT perform user verification is treated as a weaker login: with the site's 2FA active it is now sent to the 2FA challenge BEFORE the auth cookie is issued (previously the 2FA "verified" mark was merely withheld afterwards).
-* The post-first-factor 2FA attempt counter now uses an atomic fixed-window count (shared with the login rate limiter), passkey registration takes a short per-user lock so the per-user limit holds strictly under concurrency, and the REST auth-error allowlist clears only the plugin's own authentication errors.
-
-= 0.13.18 =
-* Re-review resubmission. No code change from 0.13.17: the end-to-end matrix (clean-WordPress activation, passkey register/login, user-verification-gated 2FA, single-use / per-user limit / rate limit, coexistence with another plugin that bundles web-auth, and the two-factor integration) was run on a real install and passed. The procedure is recorded in docs/E2E-TESTING.md.
-
-For the change history of 0.13.17 and earlier releases, see changelog.txt.
+For the change history of 0.13.19 and earlier releases, see changelog.txt.

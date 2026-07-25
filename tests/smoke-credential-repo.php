@@ -24,6 +24,25 @@ class WPDB_Mem {
 	private $auto = 0;
 
 	public function insert( $table, $data, $formats ) {
+		$this->last_error = '';
+		if ( $this->fail_next ) {
+			$this->fail_next  = false;
+			$this->last_error = 'simulated DB error';
+			return false;
+		}
+		// The real table carries UNIQUE (user_id, slot_no) and UNIQUE (credential_id).
+		// Those constraints — not any lock — are what bound the per-user cap, so the
+		// double must reject a duplicate exactly as MySQL would.
+		foreach ( $this->rows as $row ) {
+			$slot_clash = isset( $data['slot_no'] ) && isset( $row['slot_no'] )
+				&& (int) $row['user_id'] === (int) $data['user_id']
+				&& (int) $row['slot_no'] === (int) $data['slot_no'];
+			$cred_clash = (string) $row['credential_id'] === (string) $data['credential_id'];
+			if ( $slot_clash || $cred_clash ) {
+				$this->last_error = 'Duplicate entry';
+				return false;
+			}
+		}
 		$data['id'] = ++$this->auto;
 		$this->rows[ $data['id'] ] = $data;
 		$this->insert_id = $data['id'];
@@ -148,6 +167,17 @@ class WPDB_Mem {
 			$this->last_error = 'simulated DB error';
 			return null; // get_var() returns null on a DB error
 		}
+		// insert_in_slot(): "is this slot already taken?" read-back.
+		if ( is_array( $query ) && isset( $query['q'] ) && false !== strpos( $query['q'], 'slot_no = %d' ) ) {
+			$uid  = (int) ( $query['args'][0] ?? 0 );
+			$slot = (int) ( $query['args'][1] ?? 0 );
+			foreach ( $this->rows as $r ) {
+				if ( (int) $r['user_id'] === $uid && (int) ( $r['slot_no'] ?? 0 ) === $slot ) {
+					return (string) $r['id'];
+				}
+			}
+			return null;
+		}
 		// count_by_user(): prepared array carrying a WHERE user_id filter.
 		if ( is_array( $query ) && isset( $query['q'] ) && false !== strpos( $query['q'], 'WHERE user_id =' ) ) {
 			$uid = (int) ( $query['args'][0] ?? 0 );
@@ -161,6 +191,23 @@ class WPDB_Mem {
 		}
 		// count_all() with no search passes a plain string.
 		return count( $this->rows );
+	}
+	// used_slots(): SELECT slot_no ... WHERE user_id = %d AND slot_no IS NOT NULL
+	public function get_col( $prepared ) {
+		$this->last_error = '';
+		if ( $this->fail_next ) {
+			$this->fail_next  = false;
+			$this->last_error = 'simulated DB error';
+			return array(); // wpdb returns an empty array on a failed query
+		}
+		$uid  = (int) ( $prepared['args'][0] ?? 0 );
+		$out  = array();
+		foreach ( $this->rows as $r ) {
+			if ( (int) $r['user_id'] === $uid && isset( $r['slot_no'] ) && null !== $r['slot_no'] ) {
+				$out[] = (string) $r['slot_no'];
+			}
+		}
+		return $out;
 	}
 	public function esc_like( $s ) { return $s; }
 	private function cols( $row ) {
@@ -223,6 +270,31 @@ check( 'count_by_user counts a user\'s rows', $repo->count_by_user( 7 ) === 2 );
 check( 'count_by_user returns 0 for a user with none', $repo->count_by_user( 12345 ) === 0 );
 $GLOBALS['wpdb']->fail_next = true;
 check( 'count_by_user returns -1 on a DB error (fail closed)', $repo->count_by_user( 7 ) === -1 );
+
+// --- Slot claiming: the DB constraint that makes the cap exact (V14-01) --------
+// Every credential occupies a numbered slot under UNIQUE (user_id, slot_no).
+check( 'insert() assigns sequential slots', $repo->used_slots( 7 ) === array( 1, 2 ) );
+check( 'slots are per user', $repo->used_slots( 9 ) === array( 1 ) );
+
+// A second claim on an occupied slot is refused BY THE DATABASE (-1), which is how
+// two concurrent registrations cannot both take the last slot under a cap.
+check( 'claiming a taken slot returns -1', $repo->insert_in_slot( 7, 1, 'credDUP', '{}', 0, null ) === -1 );
+check( 'and nothing was stored', $repo->find_by_credential_id( 'credDUP' ) === null );
+
+// A free slot is claimable.
+$slot3 = $repo->insert_in_slot( 7, 3, 'credDDD', '{"r":4}', 0, 'Key' );
+check( 'claiming a free slot succeeds', $slot3 > 0 && $repo->used_slots( 7 ) === array( 1, 2, 3 ) );
+
+// Re-inserting the SAME credential (what a transparent reconnect replay looks like)
+// reports the existing row rather than failing — registration stays idempotent.
+check( 'replaying the same credential returns the existing row', $repo->insert_in_slot( 7, 4, 'credDDD', '{"r":4}', 0, 'Key' ) === $slot3 );
+check( 'the replay created no second row', count( $repo->find_by_user( 7 ) ) === 3 );
+
+// used_slots() distinguishes a DB error (null) from "no slots" (empty array).
+check( 'used_slots returns an empty array for a user with none', $repo->used_slots( 4242 ) === array() );
+$GLOBALS['wpdb']->fail_next = true;
+check( 'used_slots returns null on a DB error (fail closed)', $repo->used_slots( 7 ) === null );
+$repo->delete_by_id( $slot3 ); // restore for the checks below
 
 // --- rename (owner-scoped) ---
 check( 'rename succeeds for the owner', $repo->rename( $id1, 7, 'Work laptop' ) === true );

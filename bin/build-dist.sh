@@ -77,8 +77,25 @@ rsync -a --prune-empty-dirs \
 # entrypoint & uninstall — which carry no scoped `use` and require scoper-autoload).
 rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "$ROOT/." "$STAGE/"
 
+# A manifest tying the artifact to the exact source it was built from, so a
+# reviewer holding only the ZIP can match it against a commit in the repository.
+VERSION="$(sed -n 's/^ \* Version: *\(.*\)$/\1/p' "$ROOT/$SLUG.php" | head -1 | tr -d ' \r')"
+COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+DIRTY="$(test -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" && echo true || echo false)"
+cat > "$STAGE/build-manifest.json" <<JSON
+{
+    "plugin": "$SLUG",
+    "version": "$VERSION",
+    "source_commit": "$COMMIT",
+    "source_dirty": $DIRTY,
+    "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "php": "$("$PHP_BIN" -r 'echo PHP_VERSION;')"
+}
+JSON
+
 rm -f "$ZIP"
 ( cd "$TMP" && zip -rqX "$ZIP" "$SLUG" )
 
 echo "Built (scoped): $ZIP"
+echo "  source commit: $COMMIT (dirty: $DIRTY)"
 echo "Now verify:  $PHP_BIN bin/verify-dist.php \"$ZIP\""

@@ -18,21 +18,56 @@ define( 'ABSPATH', __DIR__ . '/' );
 class WPDB_Stub {
 	public $prefix = 'wp_';
 	public $dropped = array();
+	public $last_error = '';
+	/** Set to the index name once the migration's ALTER TABLE has "created" it. */
+	public $slot_index = null;
 	public function get_charset_collate() {
 		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 	}
 	public function query( $sql ) {
 		$this->dropped[] = $sql;
+		if ( false !== strpos( $sql, 'ADD UNIQUE KEY user_slot' ) ) {
+			$this->slot_index = 'user_slot';
+		}
 		return true;
+	}
+	public function prepare( $query, ...$args ) {
+		foreach ( $args as $a ) {
+			$rep   = is_int( $a ) ? (string) $a : "'" . (string) $a . "'";
+			$query = preg_replace( '/%[dsf]/', $rep, $query, 1 );
+		}
+		return $query;
+	}
+	// The slot back-fill reads rows needing a number; nothing pre-exists here.
+	public function get_results( $sql, $output = null ) {
+		return array();
+	}
+	public function get_var( $sql ) {
+		// SHOW INDEX ... WHERE Key_name = 'user_slot'
+		if ( false !== strpos( $sql, 'SHOW INDEX' ) ) {
+			return $this->slot_index;
+		}
+		return null;
 	}
 }
 $GLOBALS['wpdb'] = new WPDB_Stub();
+if ( ! defined( 'ARRAY_A' ) ) { define( 'ARRAY_A', 'ARRAY_A' ); }
 
 // Capture the SQL dbDelta receives instead of touching a real database.
 $GLOBALS['__dbdelta_sql'] = array();
 function dbDelta( $sql ) {
 	$GLOBALS['__dbdelta_sql'][] = $sql;
 	return array();
+}
+
+$GLOBALS['__options'] = array();
+$GLOBALS['__deleted_options'] = array();
+function update_option( $k, $v, $autoload = null ) { $GLOBALS['__options'][ $k ] = $v; return true; }
+function get_option( $k, $default = false ) { return $GLOBALS['__options'][ $k ] ?? $default; }
+function delete_option( $k ) {
+	$GLOBALS['__deleted_options'][] = $k;
+	unset( $GLOBALS['__options'][ $k ] );
+	return true;
 }
 
 // upgrade.php (which defines dbDelta in WP) is required by install(); provide
@@ -74,14 +109,23 @@ foreach ( array( 'event', 'detail', 'ip', 'created_at' ) as $col ) {
 	check( "audit column {$col} is defined", strpos( $auditSql, $col ) !== false );
 }
 
+// The per-user cap is enforced by a UNIQUE (user_id, slot_no) index, so the
+// migration must create it and record that it exists — the registration path
+// refuses to enforce a cap it cannot rely on (V14-01).
+check( 'slot_no column is defined', strpos( $sql, 'slot_no' ) !== false );
+check( 'migration adds the UNIQUE (user_id, slot_no) index', (bool) array_filter(
+	$GLOBALS['wpdb']->dropped,
+	static fn( $q ) => false !== strpos( $q, 'ADD UNIQUE KEY user_slot (user_id, slot_no)' )
+) );
+check( 'the slot index is recorded as present', Schema::cap_enforceable() === true );
+
 // Drop must short-circuit on $wpdb and remove the table.
 $GLOBALS['__deleted_options'] = array();
-function delete_option( $name ) {
-	$GLOBALS['__deleted_options'][] = $name;
-	return true;
-}
 Schema::drop();
-check( 'drop() issues DROP TABLE IF EXISTS', strpos( $GLOBALS['wpdb']->dropped[0] ?? '', 'DROP TABLE IF EXISTS wp_rapls_passkey_credentials' ) !== false );
+check( 'drop() issues DROP TABLE IF EXISTS', (bool) array_filter(
+	$GLOBALS['wpdb']->dropped,
+	static fn( $q ) => false !== strpos( $q, 'DROP TABLE IF EXISTS wp_rapls_passkey_credentials' )
+) );
 
 // --- cleanup the temporary upgrade.php stub ------------------------------
 @unlink( __DIR__ . '/wp-admin/includes/upgrade.php' );

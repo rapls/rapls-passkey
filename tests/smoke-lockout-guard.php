@@ -30,6 +30,17 @@ class WPDB_Guard {
 	public function prepare( $query, ...$args ) {
 		return array( 'q' => $query, 'args' => $args );
 	}
+	// used_slots(): each credential occupies a numbered slot (UNIQUE per user).
+	public function get_col( $prepared ) {
+		$uid = (int) ( $prepared['args'][0] ?? 0 );
+		$out = array();
+		foreach ( $this->rows as $row ) {
+			if ( (int) $row['user_id'] === $uid && isset( $row['slot_no'] ) ) {
+				$out[] = (string) $row['slot_no'];
+			}
+		}
+		return $out;
+	}
 	public function get_results( $prepared, $output = OBJECT ) {
 		$uid = (int) $prepared['args'][0];
 		$out = array();

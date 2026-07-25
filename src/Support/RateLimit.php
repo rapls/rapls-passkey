@@ -25,6 +25,9 @@ final class RateLimit {
 	/** wp_options name prefix (kept in sync with the free plugin's uninstall sweep). */
 	private const PREFIX = 'rapls_passkey_rl_';
 
+	/** wp_options name prefix for quota reservation slots (see reserve()). */
+	private const RESERVE_PREFIX = 'rapls_passkey_rs_';
+
 	/**
 	 * Sentinel count returned when the counter cannot be read or written. It is
 	 * larger than any sane limit, so every caller's `>= max` / `> max` / `<= max`
@@ -74,118 +77,139 @@ final class RateLimit {
 	}
 
 	/**
-	 * Atomically reserve one slot from a $cap-sized quota within a $window-second
-	 * fixed window: increment ONLY while the count is still below $cap, in a single
-	 * INSERT ... ON DUPLICATE KEY UPDATE. This is the "check-and-act" done as one
-	 * atomic statement, so concurrent requests near the cap cannot all read the same
-	 * under-limit value and each proceed. Pair with release() to hand a slot back if
-	 * the work the reservation was for later fails.
+	 * Reserve one slot from a $cap-sized quota within a fixed $window-second window,
+	 * by claiming a NUMBERED RESERVATION ROW whose uniqueness the database enforces.
+	 * Concurrent requests can therefore never take the same slot, and only slots
+	 * 1..$cap exist, so the quota is exact however many requests race. Pair with
+	 * release() to hand the slot back if the work it was taken for fails.
 	 *
 	 * @param string $key    Logical key.
 	 * @param int    $window Window length in seconds.
 	 * @param int    $cap    Maximum reservations allowed within the window.
-	 * @return int The reserved window's end (unix time) on success — pass it to
-	 *             release() so a hand-back is scoped to THIS window — or 0 if the cap
-	 *             is reached or on a DB error (fail closed).
+	 * @return string An opaque token identifying this reservation (pass it to
+	 *                release()), or '' when the cap is reached or on a database
+	 *                error (fail closed).
 	 */
-	public static function reserve( string $key, int $window, int $cap ): int {
+	public static function reserve( string $key, int $window, int $cap ): string {
 		global $wpdb;
 		if ( $cap <= 0 ) {
-			return 0;
+			return '';
 		}
 		$window = max( 1, $window );
+		// A FIXED, clock-aligned window, so every concurrent request computes the same
+		// window end without reading anything first.
+		$end = ( intdiv( time(), $window ) + 1 ) * $window;
 
-		// Serialise reservations for this key with a MySQL advisory named lock, so the
-		// read-check-write below is atomic WITHOUT relying on affected-row counts.
-		// Whether an `ON DUPLICATE KEY UPDATE` that rewrites a row to the same value
-		// reports 0 or 1 affected rows depends on the MYSQLI_CLIENT_FOUND_ROWS
-		// connection flag (which a site or a db.php drop-in can enable), so a design
-		// that reads success from rows_affected can over-count past the cap. Holding a
-		// lock and reading the actual stored count sidesteps the flag entirely, and is
-		// also storage-engine and isolation-level independent. See Support\DbLock.
-		if ( ! DbLock::acquire( 'rl|' . $key ) ) {
-			return 0; // Could not serialise (timeout / DB error) → fail closed.
-		}
-		try {
-			$name = self::PREFIX . md5( $key );
-			$now  = time();
+		$base  = self::RESERVE_PREFIX . md5( $key ) . '_' . $end . '_';
+		$nonce = self::nonce();
 
-			// Read the current window/count directly (safe: we hold the lock).
-			$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Claim a numbered slot. The reservation is a row whose option_name embeds the
+		// slot number, so the UNIQUE index on option_name lets exactly one request own
+		// slot N — the cap is enforced by the DATABASE, not by counting. Success is
+		// decided by READING THE ROW BACK and comparing our own token: it never reads
+		// an affected-row count (which depends on the connection's
+		// MYSQLI_CLIENT_FOUND_ROWS flag) and never needs a session-scoped lock (which
+		// a transparent reconnect or a read/write-splitting db.php would silently
+		// lose). It is also idempotent: if a reconnect replays our INSERT, the
+		// duplicate is rejected but the read-back still shows our token, so we
+		// correctly conclude we hold the slot.
+		for ( $slot = 1; $slot <= $cap; $slot++ ) {
+			$name  = $base . $slot;
+			$value = $end . ':' . $nonce;
+
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare( "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, $value )
+			);
+
+			$stored = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
 			);
-			if ( null === $val && '' !== (string) $wpdb->last_error ) {
-				return 0; // DB read error → fail closed.
+			if ( null === $stored && '' !== (string) $wpdb->last_error ) {
+				return ''; // Cannot confirm ownership → no reservation (fail closed).
 			}
-
-			$count = 0;
-			$end   = 0;
-			if ( is_string( $val ) && false !== strpos( $val, ':' ) ) {
-				list( $c, $e ) = explode( ':', $val, 2 );
-				$count         = (int) $c;
-				$end           = (int) $e;
+			if ( (string) $stored === $value ) {
+				self::gc();
+				// The token identifies THIS reservation: slot + the nonce that proves
+				// the row is ours, so release() can only ever remove our own row.
+				return $end . '|' . $slot . '|' . $nonce;
 			}
-			// An absent row or a window that has already passed starts a fresh window.
-			if ( $end <= $now ) {
-				$end   = $now + $window;
-				$count = 0;
-			}
-			if ( $count >= $cap ) {
-				return 0; // Cap reached for this window.
-			}
-
-			$new = ( $count + 1 ) . ':' . $end;
-			$ok  = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$wpdb->prepare(
-					"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
-					 ON DUPLICATE KEY UPDATE option_value = %s",
-					$name,
-					$new,
-					$new
-				)
-			);
-			if ( false === $ok ) {
-				return 0; // Write failed → no reservation (fail closed).
-			}
-			self::gc();
-			// Return the window end so release() can be scoped to exactly this window
-			// (a stale request from an earlier, since-reset window must not decrement a
-			// newer window's count).
-			return $end;
-		} finally {
-			DbLock::release( 'rl|' . $key );
+			// Somebody else owns this slot — try the next one.
 		}
+
+		self::gc();
+		return ''; // Every slot in the window is taken: the cap is reached.
 	}
 
 	/**
-	 * Hand one reserved slot back to a specific window (e.g. the sign-up the
-	 * reservation was taken for failed). Decrements ONLY when the row still belongs
-	 * to $window_end — the value returned by the matching reserve() — so a late
-	 * failure from an earlier window cannot subtract from a newer window's count.
-	 * Never drops below zero.
+	 * Hand a reservation back (e.g. the sign-up it was taken for failed).
 	 *
-	 * @param string $key        Logical key.
-	 * @param int    $window_end The window end returned by reserve() (0 = no-op).
+	 * A token-scoped, idempotent DELETE of exactly the row this reservation created:
+	 * it cannot disturb another request's slot, cannot double-release, and needs no
+	 * serialisation with concurrent reserve() calls (unlike decrementing a shared
+	 * counter, where a release could be lost or applied to a value another request
+	 * had already read).
+	 *
+	 * @param string $key   Logical key (the one passed to reserve()).
+	 * @param string $token The token returned by reserve() ('' = no-op).
 	 */
-	public static function release( string $key, int $window_end ): void {
-		if ( $window_end <= 0 ) {
+	public static function release( string $key, string $token ): void {
+		if ( '' === $token ) {
 			return;
 		}
+		$parts = explode( '|', $token );
+		if ( 3 !== count( $parts ) ) {
+			return;
+		}
+		list( $end, $slot, $nonce ) = $parts;
+
 		global $wpdb;
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->prepare(
-				"UPDATE {$wpdb->options}
-				 SET option_value = CONCAT(
-					GREATEST( CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) - 1, 0 ),
-					':',
-					SUBSTRING_INDEX(option_value, ':', -1)
-				 )
-				 WHERE option_name = %s
-				   AND CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) = %d",
-				self::PREFIX . md5( $key ),
-				$window_end
+				"DELETE FROM {$wpdb->options} WHERE option_name = %s AND option_value = %s",
+				self::RESERVE_PREFIX . md5( $key ) . '_' . (int) $end . '_' . (int) $slot,
+				( (int) $end ) . ':' . $nonce
 			)
 		);
+	}
+
+	/**
+	 * How many slots are currently reserved for $key in the window $window seconds
+	 * long. Used for reporting and tests; admission itself never relies on a count.
+	 *
+	 * @param string $key    Logical key.
+	 * @param int    $window Window length in seconds.
+	 * @return int Reserved slots, or OVERFLOW on a database error (fail closed).
+	 */
+	public static function reserved_count( string $key, int $window ): int {
+		global $wpdb;
+		$window = max( 1, $window );
+		$end    = ( intdiv( time(), $window ) + 1 ) * $window;
+		$like   = $wpdb->esc_like( self::RESERVE_PREFIX . md5( $key ) . '_' . $end . '_' ) . '%';
+
+		$count = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s", $like )
+		);
+		if ( null === $count && '' !== (string) $wpdb->last_error ) {
+			return self::OVERFLOW;
+		}
+		return (int) $count;
+	}
+
+	/**
+	 * A random token identifying one reservation. Ownership of a slot is decided by
+	 * comparing this value, so it MUST be unique per call — a repeated token would
+	 * make a second request believe it owns a slot the first one holds.
+	 *
+	 * @return string
+	 */
+	private static function nonce(): string {
+		try {
+			return bin2hex( random_bytes( 12 ) );
+		} catch ( \Throwable $e ) {
+			// No CSPRNG (should not happen on a supported PHP): uniqid() is still
+			// unique per process/time, which is all this needs.
+			return str_replace( '.', '', uniqid( '', true ) );
+		}
 	}
 
 	/**
@@ -232,11 +256,19 @@ final class RateLimit {
 			return;
 		}
 		global $wpdb;
-		$like = $wpdb->esc_like( self::PREFIX ) . '%';
+		// Counters: "count:window_end" — the window end is the LAST segment.
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) < %d",
-				$like,
+				$wpdb->esc_like( self::PREFIX ) . '%',
+				time()
+			)
+		);
+		// Reservation slots: "window_end:nonce" — the window end is the FIRST segment.
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) < %d",
+				$wpdb->esc_like( self::RESERVE_PREFIX ) . '%',
 				time()
 			)
 		);

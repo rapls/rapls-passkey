@@ -27,7 +27,17 @@ final class Schema {
 	/**
 	 * Current schema version. Bump when a table definition changes.
 	 */
-	private const VERSION = '4';
+	private const VERSION = '5';
+
+	/**
+	 * Option flag recording that the UNIQUE (user_id, slot_no) index exists. The
+	 * per-user passkey cap is enforced BY that index, so when it is absent the cap
+	 * cannot be guaranteed and registration fails closed (see Rest\Endpoints).
+	 */
+	public const SLOT_INDEX_OPTION = 'rapls_passkey_slot_index';
+
+	/** Name of the unique index that enforces the per-user cap. */
+	private const SLOT_INDEX = 'user_slot';
 
 	/**
 	 * Fully-qualified credentials table name.
@@ -89,10 +99,21 @@ final class Schema {
 		 * (public key, transports, aaguid, trust path, counter, …) as JSON — the
 		 * source of truth round-tripped through web-auth's serializer. sign_count
 		 * is denormalised for display and updated after every assertion.
+		 *
+		 * slot_no numbers each user's passkeys 1, 2, 3, … and carries a UNIQUE
+		 * (user_id, slot_no) index (added separately below, after back-filling).
+		 * That index — not an application lock — is what makes the per-user cap
+		 * exact: a registration claims a specific slot number, so two concurrent
+		 * registrations for the same user cannot both take slot N, and with the cap
+		 * set to N only slots 1..N are ever offered. Being a database constraint it
+		 * holds across a dropped-and-reopened connection, a read/write-splitting
+		 * db.php drop-in, and any storage engine, none of which a session-scoped
+		 * lock survives.
 		 */
 		$sql = "CREATE TABLE {$credentials} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			user_id bigint(20) unsigned NOT NULL,
+			slot_no bigint(20) unsigned DEFAULT NULL,
 			credential_id varchar(512) NOT NULL,
 			credential_data longtext NOT NULL,
 			sign_count bigint(20) unsigned NOT NULL DEFAULT 0,
@@ -106,6 +127,12 @@ final class Schema {
 		) {$charset_collate};";
 
 		dbDelta( $sql );
+
+		// The unique slot index is added AFTER dbDelta, not as part of the CREATE
+		// TABLE: on an existing install every row starts with slot_no NULL, and the
+		// index can only be created once those rows carry distinct numbers.
+		self::backfill_slots();
+		self::ensure_slot_index();
 
 		/*
 		 * Audit log: one row per security-relevant event (registration, login,
@@ -128,6 +155,82 @@ final class Schema {
 	}
 
 	/**
+	 * Give every pre-existing row a slot number (1, 2, 3, … per user, oldest
+	 * first), so the UNIQUE (user_id, slot_no) index can be created and so the old
+	 * rows occupy slots against the cap. Rows written by this version already carry
+	 * a number, so this only ever touches the upgrade backlog and is a no-op
+	 * afterwards.
+	 */
+	private static function backfill_slots(): void {
+		global $wpdb;
+		$table = self::credentials_table();
+
+		// Batched so a site with a large table does not build one huge statement.
+		do {
+			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				"SELECT id, user_id FROM {$table} WHERE slot_no IS NULL ORDER BY user_id ASC, id ASC LIMIT 500",
+				ARRAY_A
+			);
+			if ( ! $rows ) {
+				return;
+			}
+			foreach ( $rows as $row ) {
+				$user_id = (int) $row['user_id'];
+				// The next free number for this user: one past their highest slot.
+				$next = 1 + (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+					$wpdb->prepare( "SELECT COALESCE(MAX(slot_no), 0) FROM {$table} WHERE user_id = %d", $user_id )
+				);
+				$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+					$wpdb->prepare( "UPDATE {$table} SET slot_no = %d WHERE id = %d AND slot_no IS NULL", $next, (int) $row['id'] )
+				);
+			}
+		} while ( count( $rows ) === 500 );
+	}
+
+	/**
+	 * Create the UNIQUE (user_id, slot_no) index if it is not already there, and
+	 * record whether it exists. The per-user cap is enforced by this index, so
+	 * Rest\Endpoints refuses to register (rather than registering unprotected) when
+	 * a cap is configured and the flag says the index is missing.
+	 */
+	private static function ensure_slot_index(): void {
+		global $wpdb;
+		$table = self::credentials_table();
+
+		if ( ! self::slot_index_exists() ) {
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				"ALTER TABLE {$table} ADD UNIQUE KEY " . self::SLOT_INDEX . ' (user_id, slot_no)'
+			);
+		}
+
+		update_option( self::SLOT_INDEX_OPTION, self::slot_index_exists() ? '1' : '0', false );
+	}
+
+	/**
+	 * Whether the unique slot index is present on the credentials table.
+	 *
+	 * @return bool
+	 */
+	private static function slot_index_exists(): bool {
+		global $wpdb;
+		$table = self::credentials_table();
+		$found = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", self::SLOT_INDEX )
+		);
+		return null !== $found;
+	}
+
+	/**
+	 * Whether the database can enforce the per-user cap (the unique slot index is
+	 * in place). Cheap: reads the flag recorded by the migration.
+	 *
+	 * @return bool
+	 */
+	public static function cap_enforceable(): bool {
+		return '1' === (string) get_option( self::SLOT_INDEX_OPTION, '0' );
+	}
+
+	/**
 	 * Drop the table and the version marker. Used by uninstall.
 	 */
 	public static function drop(): void {
@@ -138,5 +241,6 @@ final class Schema {
 			$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
 		delete_option( self::VERSION_OPTION );
+		delete_option( self::SLOT_INDEX_OPTION );
 	}
 }

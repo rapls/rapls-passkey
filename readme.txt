@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.21
+Stable tag: 0.13.22
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.22 =
+* Fifth re-review fixes (concurrency correctness, isolation- and engine-independence):
+* The passkey per-user limit and the atomic quota reservation are now serialised with a MySQL advisory named lock (GET_LOCK) instead of a transaction + row lock. Named locks work regardless of the table's storage engine (they hold even on MyISAM, where SELECT ... FOR UPDATE does not), do not touch the shared connection's transaction state (so they cannot implicitly commit another plugin's open transaction), signal success with an explicit result rather than an affected-row count (so a quota can no longer be miscounted when the connection uses MYSQLI_CLIENT_FOUND_ROWS), and release automatically if the connection drops. A lock that cannot be taken fails closed.
+* Every SQL step in the registration path is now checked, and the per-user count fails closed on a database error (a failed count no longer reads as "under the limit").
+* The passkey-login REST routes and the Pro recovery-code login now use the shared fail-closed rate counter as well, so a database error blocks instead of silently allowing, on every login path.
+
 = 0.13.21 =
 * Fourth re-review fixes (concurrency correctness):
 * The passkey per-user limit is now enforced under a real database row lock (a short transaction on a per-user row), so it holds exactly regardless of the server's transaction isolation level — not just the default. The lock releases automatically on commit/rollback, so a crashed request cannot leave it stuck.
@@ -102,11 +108,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 = 0.13.18 =
 * Re-review resubmission. No code change from 0.13.17: the end-to-end matrix (clean-WordPress activation, passkey register/login, user-verification-gated 2FA, single-use / per-user limit / rate limit, coexistence with another plugin that bundles web-auth, and the two-factor integration) was run on a real install and passed. The procedure is recorded in docs/E2E-TESTING.md.
 
-= 0.13.17 =
-* Re-review fixes: make the namespace-prefixed distribution build actually boot, plus concurrency and configuration hardening.
-* The prefixed bundled libraries now load correctly — the build generates the class map BEFORE scoping (and no longer regenerates it afterwards, which had dropped the prefixed classes), so the plugin no longer mistakes WebAuthn for "missing". WordPress-core and third-party-plugin symbols are no longer prefixed by mistake. A final-artifact check (bin/verify-dist.php) guards against a regression, and the bundled third-party licence notices are kept in the ZIP.
-* A direct passkey login satisfies the site's 2FA only when the authenticator performed user verification (biometric/PIN); possession alone no longer counts as the second factor.
-* The WebAuthn user handle is minted under an atomic database lock, the per-user passkey-limit rollback is deterministic under concurrent registrations, and the per-IP login rate counter is an atomic fixed-window count — closing read-modify-write races.
-* reCAPTCHA fail-open vs fail-closed on a Google outage is now an explicit setting (Settings -> Rapls Passkey), not just a filter.
-
-For the change history of 0.13.16 and earlier releases, see changelog.txt.
+For the change history of 0.13.17 and earlier releases, see changelog.txt.

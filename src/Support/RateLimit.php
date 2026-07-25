@@ -93,54 +93,68 @@ final class RateLimit {
 		if ( $cap <= 0 ) {
 			return 0;
 		}
-		$name   = self::PREFIX . md5( $key );
 		$window = max( 1, $window );
-		$now    = time();
-		$init   = '1:' . ( $now + $window );
 
-		$ok = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare(
-				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
-				 ON DUPLICATE KEY UPDATE option_value = IF(
-					CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) < %d,
-					%s,
-					IF(
-						CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) < %d,
-						CONCAT(CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) + 1, ':', SUBSTRING_INDEX(option_value, ':', -1)),
-						option_value
-					)
-				 )",
-				$name,
-				$init,
-				$now,
-				$init,
-				$cap
-			)
-		);
-		// DB error → no reservation (fail closed).
-		if ( false === $ok ) {
-			return 0;
+		// Serialise reservations for this key with a MySQL advisory named lock, so the
+		// read-check-write below is atomic WITHOUT relying on affected-row counts.
+		// Whether an `ON DUPLICATE KEY UPDATE` that rewrites a row to the same value
+		// reports 0 or 1 affected rows depends on the MYSQLI_CLIENT_FOUND_ROWS
+		// connection flag (which a site or a db.php drop-in can enable), so a design
+		// that reads success from rows_affected can over-count past the cap. Holding a
+		// lock and reading the actual stored count sidesteps the flag entirely, and is
+		// also storage-engine and isolation-level independent. See Support\DbLock.
+		if ( ! DbLock::acquire( 'rl|' . $key ) ) {
+			return 0; // Could not serialise (timeout / DB error) → fail closed.
 		}
-		// Capture the reservation's row count BEFORE gc(): gc() runs a separate DELETE
-		// that would otherwise overwrite $wpdb->rows_affected. rows_affected: 1 =
-		// inserted (first this window), 2 = window reset or incremented, 0 = unchanged
-		// because the cap is already reached (WordPress connects mysqli WITHOUT
-		// CLIENT_FOUND_ROWS, so an UPDATE that changes nothing reports 0 rows).
-		$reserved = (int) $wpdb->rows_affected > 0;
-		self::gc();
-		if ( ! $reserved ) {
-			return 0;
+		try {
+			$name = self::PREFIX . md5( $key );
+			$now  = time();
+
+			// Read the current window/count directly (safe: we hold the lock).
+			$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
+			);
+			if ( null === $val && '' !== (string) $wpdb->last_error ) {
+				return 0; // DB read error → fail closed.
+			}
+
+			$count = 0;
+			$end   = 0;
+			if ( is_string( $val ) && false !== strpos( $val, ':' ) ) {
+				list( $c, $e ) = explode( ':', $val, 2 );
+				$count         = (int) $c;
+				$end           = (int) $e;
+			}
+			// An absent row or a window that has already passed starts a fresh window.
+			if ( $end <= $now ) {
+				$end   = $now + $window;
+				$count = 0;
+			}
+			if ( $count >= $cap ) {
+				return 0; // Cap reached for this window.
+			}
+
+			$new = ( $count + 1 ) . ':' . $end;
+			$ok  = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare(
+					"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
+					 ON DUPLICATE KEY UPDATE option_value = %s",
+					$name,
+					$new,
+					$new
+				)
+			);
+			if ( false === $ok ) {
+				return 0; // Write failed → no reservation (fail closed).
+			}
+			self::gc();
+			// Return the window end so release() can be scoped to exactly this window
+			// (a stale request from an earlier, since-reset window must not decrement a
+			// newer window's count).
+			return $end;
+		} finally {
+			DbLock::release( 'rl|' . $key );
 		}
-		// Read back the window end so release() can be scoped to exactly this window
-		// (a stale request from an earlier, since-reset window must not decrement a
-		// newer window's count).
-		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
-		);
-		if ( ! is_string( $val ) || false === strpos( $val, ':' ) ) {
-			return 0;
-		}
-		return (int) substr( $val, strpos( $val, ':' ) + 1 );
 	}
 
 	/**

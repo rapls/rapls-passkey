@@ -18,6 +18,8 @@ class WPDB_Mem {
 	public $users = 'wp_users';
 	public $insert_id = 0;
 	public $rows_affected = 0;
+	public $last_error = '';
+	public $fail_next = false; // simulate a single DB error on the next get_var
 	public $rows = array();
 	private $auto = 0;
 
@@ -140,6 +142,23 @@ class WPDB_Mem {
 		return array_map( array( $this, 'cols' ), array_slice( array_values( $newest ), $offset, $limit ) );
 	}
 	public function get_var( $query ) {
+		$this->last_error = '';
+		if ( $this->fail_next ) {
+			$this->fail_next  = false;
+			$this->last_error = 'simulated DB error';
+			return null; // get_var() returns null on a DB error
+		}
+		// count_by_user(): prepared array carrying a WHERE user_id filter.
+		if ( is_array( $query ) && isset( $query['q'] ) && false !== strpos( $query['q'], 'WHERE user_id =' ) ) {
+			$uid = (int) ( $query['args'][0] ?? 0 );
+			$n   = 0;
+			foreach ( $this->rows as $r ) {
+				if ( (int) $r['user_id'] === $uid ) {
+					$n++;
+				}
+			}
+			return (string) $n;
+		}
 		// count_all() with no search passes a plain string.
 		return count( $this->rows );
 	}
@@ -197,6 +216,13 @@ check( 'find_by_credential_id null when missing', $repo->find_by_credential_id( 
 
 $mine = $repo->find_by_user( 7 );
 check( 'find_by_user returns only that user, newest first', count( $mine ) === 2 && $mine[0]->credential_id === 'credBBB' );
+
+// count_by_user() distinguishes an empty set (0) from a DB error (-1) so the
+// registration cap can fail closed (V13-01).
+check( 'count_by_user counts a user\'s rows', $repo->count_by_user( 7 ) === 2 );
+check( 'count_by_user returns 0 for a user with none', $repo->count_by_user( 12345 ) === 0 );
+$GLOBALS['wpdb']->fail_next = true;
+check( 'count_by_user returns -1 on a DB error (fail closed)', $repo->count_by_user( 7 ) === -1 );
 
 // --- rename (owner-scoped) ---
 check( 'rename succeeds for the owner', $repo->rename( $id1, 7, 'Work laptop' ) === true );

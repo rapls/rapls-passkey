@@ -12,6 +12,8 @@ use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\UserHandle;
 use RaplsPasskey\WebAuthn\AssertionManager;
+use RaplsPasskey\Support\DbLock;
+use RaplsPasskey\Support\RateLimit;
 use RaplsPasskey\Support\Settings;
 use RaplsPasskey\Support\Str;
 use RaplsPasskey\WebAuthn\Codec;
@@ -318,32 +320,30 @@ final class Endpoints {
 			return $veto;
 		}
 
-		// Enforce the per-user limit under a real database ROW LOCK so it is exact
-		// regardless of the server's transaction isolation level. A bare
+		// Enforce the per-user limit while holding a MySQL advisory named lock, so the
+		// count-then-insert below is exact under concurrency regardless of the
+		// server's transaction isolation level OR storage engine. A bare
 		// `INSERT ... SELECT COUNT(*)` is a non-locking consistent read under READ
 		// COMMITTED (two concurrent registrations could both see the same under-limit
-		// count); locking a per-user row that ALWAYS exists serialises every
-		// registration for this user instead, and the lock releases automatically on
-		// COMMIT/ROLLBACK or a dropped connection (no stale-lock steal, no deadlock).
-		global $wpdb;
-		$lock_row = 'rapls_pk_reg_lock_' . $owner_id;
-		// Make sure the lockable per-user row exists (idempotent; outside the txn).
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, '1', 'no')", $lock_row )
-		);
-
-		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// count), and a transaction + `SELECT ... FOR UPDATE` needs InnoDB and would
+		// touch the shared $wpdb transaction state. A named lock serialises every
+		// registration for this user with none of that: engine-independent, no
+		// transaction side effects, an explicit granted/not-granted result (so it does
+		// not depend on the connection's affected-rows flag), and auto-released if the
+		// connection drops. See Support\DbLock.
+		$lock = 'reg|' . $owner_id;
+		if ( ! DbLock::acquire( $lock ) ) {
+			// Lock not granted (timeout, or a DB error returning 0/NULL): fail closed
+			// rather than registering without the serialisation guarantee.
+			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 503, 'reg-lock-unavailable' );
+		}
 		try {
-			// Take the row lock. All registrations for this user serialise here.
-			$wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s FOR UPDATE", $lock_row )
-			);
-
 			// With the user serialised, this count-then-insert is atomic w.r.t. any
 			// other registration for the same user, so the cap holds exactly.
+			// limit_error() itself fails closed on a DB error (it cannot read the
+			// count), so a database failure blocks registration instead of allowing it.
 			$limit = $this->limit_error( $owner_id );
 			if ( null !== $limit ) {
-				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				return $limit;
 			}
 
@@ -355,14 +355,12 @@ final class Endpoints {
 				$label
 			);
 			if ( 0 === $id ) {
-				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				return new WP_Error( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), array( 'status' => 500 ) );
 			}
-
-			$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		} catch ( \Throwable $e ) {
-			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 500, 'reg-tx: ' . $e->getMessage() );
+			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 500, 'reg: ' . $e->getMessage() );
+		} finally {
+			DbLock::release( $lock );
 		}
 
 		AuditLog::record(
@@ -739,7 +737,15 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return null;
 		}
-		if ( count( $this->repository->find_by_user( $user_id ) ) < $max ) {
+		// count_by_user() returns -1 on a database error (as opposed to find_by_user(),
+		// which maps a failed query to an empty array that reads as "under the limit").
+		// Fail closed: if the count cannot be trusted, do not let a registration slip
+		// past the cap.
+		$count = $this->repository->count_by_user( $user_id );
+		if ( $count < 0 ) {
+			return $this->fail( 'rapls_passkey_store_failed', __( 'Failed to save the passkey.', 'rapls-passkey' ), 503, 'limit-count-db-error' );
+		}
+		if ( $count < $max ) {
 			return null;
 		}
 		return new WP_Error(
@@ -833,9 +839,11 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return true;
 		}
-		// Atomic increment-then-check: concurrent username-bearing lookups cannot
-		// both slip under the cap via a read-modify-write race.
-		return $this->rate_incr( 'login_options' ) <= $max;
+		// Atomic increment-then-check via the shared fail-closed counter: concurrent
+		// username-bearing lookups cannot both slip under the cap via a
+		// read-modify-write race, and a DB error returns OVERFLOW (> cap), so the
+		// enumeration guard fails closed (returns empty options, as if unknown).
+		return RateLimit::incr( $this->rate_logical_key( 'login_options' ), (int) Settings::login_rate_window() ) <= $max;
 	}
 
 	/**
@@ -851,7 +859,9 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return false;
 		}
-		return $this->rate_count( $bucket ) >= $max;
+		// count() returns OVERFLOW on a DB read error, so a database failure blocks
+		// the request (429) instead of being read as "0 attempts so far".
+		return RateLimit::count( $this->rate_logical_key( $bucket ) ) >= $max;
 	}
 
 	/**
@@ -865,7 +875,7 @@ final class Endpoints {
 		if ( Settings::login_rate_max() <= 0 ) {
 			return;
 		}
-		$this->rate_incr( $bucket );
+		RateLimit::incr( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window() );
 	}
 
 	/**
@@ -875,94 +885,21 @@ final class Endpoints {
 	 * @param string $bucket Action bucket.
 	 */
 	private function rate_clear( string $bucket ): void {
-		global $wpdb;
-		$wpdb->delete( $wpdb->options, array( 'option_name' => $this->rate_key( $bucket ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		RateLimit::clear( $this->rate_logical_key( $bucket ) );
 	}
 
 	/**
-	 * Option name for a per-IP rate-limit bucket. The counter is a raw option
-	 * (not a transient) so it can be incremented atomically; see rate_incr().
+	 * Logical key for a per-IP rate-limit bucket, passed to the shared, fail-closed
+	 * {@see RateLimit} counter. RateLimit hashes this into the option name
+	 * `rapls_passkey_rl_<md5(key)>`, matching the option names this plugin used for
+	 * its previous inline counter (same "<bucket>|<ip>" key), so existing counters
+	 * carry over seamlessly.
 	 *
 	 * @param string $bucket Action bucket.
 	 * @return string
 	 */
-	private function rate_key( string $bucket ): string {
+	private function rate_logical_key( string $bucket ): string {
 		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
-		return 'rapls_passkey_rl_' . md5( $bucket . '|' . $ip );
-	}
-
-	/**
-	 * Atomically increment a per-IP fixed-window counter and return the new count.
-	 *
-	 * The value is stored as "count:window_end". A single INSERT ... ON DUPLICATE
-	 * KEY UPDATE either starts a fresh window (when the stored one has passed) or
-	 * increments in place — so two concurrent requests cannot both read the same
-	 * value and each write count+1 (the read-modify-write race the transient path
-	 * had). The option_name is unique-indexed, which makes the upsert atomic.
-	 *
-	 * @param string $bucket Action bucket.
-	 * @return int The counter value after this increment (within the current window).
-	 */
-	private function rate_incr( string $bucket ): int {
-		global $wpdb;
-		$key    = $this->rate_key( $bucket );
-		$window = max( 1, (int) Settings::login_rate_window() );
-		$now    = time();
-		$init   = '1:' . ( $now + $window );
-
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare(
-				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
-				 ON DUPLICATE KEY UPDATE option_value = IF(
-					CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) < %d,
-					%s,
-					CONCAT(CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) + 1, ':', SUBSTRING_INDEX(option_value, ':', -1))
-				 )",
-				$key,
-				$init,
-				$now,
-				$init
-			)
-		);
-		$this->rate_gc();
-		return $this->rate_count( $bucket );
-	}
-
-	/**
-	 * Read the current per-IP counter for a bucket (0 when the window has passed).
-	 * Reads the row directly so it reflects a concurrent rate_incr() commit.
-	 *
-	 * @param string $bucket Action bucket.
-	 * @return int
-	 */
-	private function rate_count( string $bucket ): int {
-		global $wpdb;
-		$val = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $this->rate_key( $bucket ) )
-		);
-		if ( ! is_string( $val ) || false === strpos( $val, ':' ) ) {
-			return 0;
-		}
-		list( $count, $end ) = explode( ':', $val, 2 );
-		return ( (int) $end > time() ) ? (int) $count : 0;
-	}
-
-	/**
-	 * Occasionally sweep rate-limit rows whose window has passed (raw options do
-	 * not auto-expire the way transients do).
-	 */
-	private function rate_gc(): void {
-		if ( 0 !== wp_rand( 0, 49 ) ) {
-			return;
-		}
-		global $wpdb;
-		$like = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare(
-				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) < %d",
-				$like,
-				time()
-			)
-		);
+		return $bucket . '|' . $ip;
 	}
 }

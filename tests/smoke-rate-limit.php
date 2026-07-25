@@ -28,6 +28,7 @@ function wp_rand( $min = 0, $max = 1 ) { return $GLOBALS['__wp_rand'] ?? 1; } //
  */
 class FakeWpdb {
 	public $options       = 'wp_options';
+	public $prefix        = 'wp_';
 	public $store         = array();
 	public $rows_affected = 0;
 	public $last_error    = '';
@@ -48,24 +49,14 @@ class FakeWpdb {
 			$this->last_error = 'simulated DB error';
 			return false; // wpdb::query() returns false on a DB error
 		}
-		// reserve(): ON DUPLICATE with a cap check on the COUNT part (":1") — must be
-		// matched BEFORE the plain incr branch, which shares "ON DUPLICATE KEY UPDATE".
-		if ( false !== strpos( $q, 'ON DUPLICATE KEY UPDATE' ) && preg_match( "/', 1\\) AS UNSIGNED\\) < (\\d+)/", $q, $cap ) ) {
-			preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m );
-			preg_match( "/', -1\\) AS UNSIGNED\\) < (\\d+)/", $q, $n );
-			$name = $m[1]; $init = $m[2]; $now = (int) $n[1]; $capn = (int) $cap[1];
-			if ( ! isset( $this->store[ $name ] ) ) {
-				$this->store[ $name ] = $init; $this->rows_affected = 1; // inserted
-			} else {
-				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
-				if ( (int) $e < $now ) {
-					$this->store[ $name ] = $init; $this->rows_affected = 2; // window reset
-				} elseif ( (int) $c < $capn ) {
-					$this->store[ $name ] = ( (int) $c + 1 ) . ':' . $e; $this->rows_affected = 2; // reserved
-				} else {
-					$this->rows_affected = 0; // cap reached — unchanged
-				}
-			}
+		// reserve() write: a plain "ON DUPLICATE KEY UPDATE option_value = '<new>'"
+		// (a literal the caller computed while holding the advisory lock), with the
+		// same literal in the INSERT VALUES. Must be matched BEFORE the incr branch,
+		// which shares "ON DUPLICATE KEY UPDATE" but assigns an IF() expression.
+		if ( preg_match( "/ON DUPLICATE KEY UPDATE option_value = '([^']*)'/", $q, $u )
+			&& preg_match( "/VALUES \\('([^']*)',/", $q, $m ) ) {
+			$this->store[ $m[1] ] = $u[1];
+			$this->rows_affected  = 1;
 			return 1;
 		}
 		if ( false !== strpos( $q, 'ON DUPLICATE KEY UPDATE' ) ) {
@@ -109,6 +100,10 @@ class FakeWpdb {
 			$this->last_error = 'simulated DB error';
 			return null; // get_var() returns null on a DB error
 		}
+		// Advisory named lock: GET_LOCK/RELEASE_LOCK both report success in the fake.
+		if ( false !== strpos( $q, 'GET_LOCK' ) || false !== strpos( $q, 'RELEASE_LOCK' ) ) {
+			return '1';
+		}
 		if ( preg_match( "/option_name = '([^']*)'/", $q, $m ) ) {
 			return $this->store[ $m[1] ] ?? null;
 		}
@@ -123,6 +118,7 @@ class FakeWpdb {
 $GLOBALS['wpdb'] = new FakeWpdb();
 
 require dirname( __DIR__ ) . '/src/Support/Settings.php';
+require_once dirname( __DIR__ ) . '/src/Support/DbLock.php';
 require_once dirname( __DIR__ ) . '/src/Support/RateLimit.php';
 require dirname( __DIR__ ) . '/src/Rest/Endpoints.php';
 
@@ -135,7 +131,7 @@ $ref = new ReflectionClass( Endpoints::class );
 $limited = $ref->getMethod( 'rate_limited' ); $limited->setAccessible( true );
 $bump    = $ref->getMethod( 'rate_bump' );    $bump->setAccessible( true );
 $clear   = $ref->getMethod( 'rate_clear' );   $clear->setAccessible( true );
-$key     = $ref->getMethod( 'rate_key' );     $key->setAccessible( true );
+$key     = $ref->getMethod( 'rate_logical_key' ); $key->setAccessible( true );
 $is_limited = fn() => $limited->invoke( $ep, 'login' );
 $do_bump    = fn() => $bump->invoke( $ep, 'login' );
 $do_clear   = fn() => $clear->invoke( $ep, 'login' );

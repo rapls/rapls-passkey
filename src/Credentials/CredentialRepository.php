@@ -81,6 +81,30 @@ final class CredentialRepository {
 	}
 
 	/**
+	 * How many credentials a user holds, distinguishing a genuine database error
+	 * (returns -1) from an empty set (returns 0). Unlike find_by_user(), which maps
+	 * a failed query to an empty array — indistinguishable from "no credentials" —
+	 * so a caller enforcing a registration cap can fail closed on a DB error rather
+	 * than treating the failure as "under the limit".
+	 *
+	 * @param int $user_id User id.
+	 * @return int Count, or -1 on a database error.
+	 */
+	public function count_by_user( int $user_id ): int {
+		global $wpdb;
+		$table = Schema::credentials_table();
+		$count = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE user_id = %d", $user_id )
+		);
+		// A successful COUNT(*) always yields a numeric string ("0" at minimum);
+		// get_var() returns null only on a query error, which last_error confirms.
+		if ( null === $count && '' !== (string) $wpdb->last_error ) {
+			return -1;
+		}
+		return (int) $count;
+	}
+
+	/**
 	 * Persist the record and signature counter after a successful assertion, as an
 	 * optimistic (compare-and-set) update so a concurrent replay cannot slip past
 	 * the counter check between our read and write.

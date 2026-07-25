@@ -48,23 +48,6 @@ jobs:
             image: mariadb:10.11
           - name: mariadb-11.4
             image: mariadb:11.4
-    services:
-      db:
-        image: ${{ matrix.db.image }}
-        env:
-          MYSQL_ROOT_PASSWORD: rootpw
-          MYSQL_DATABASE: rapls_test
-          MARIADB_ROOT_PASSWORD: rootpw
-          MARIADB_DATABASE: rapls_test
-        ports:
-          - 3306:3306
-        # `options` are passed to `docker create`, so only docker flags belong
-        # here. The default max_connections (151) comfortably covers 100 workers.
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpw"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -73,12 +56,33 @@ jobs:
           extensions: mysqli
           coverage: none
 
+      # Started with `docker run` rather than as a `services:` container so we can
+      # pass SERVER flags: --max-connections for the 100 workers, and
+      # --innodb-use-native-aio=0 because MariaDB's io_uring probe is blocked on
+      # the runners (it aborts container start).
+      - name: Start ${{ matrix.db.image }}
+        run: |
+          docker run -d --name db -p 3306:3306 \
+            -e MYSQL_ROOT_PASSWORD=rootpw -e MYSQL_DATABASE=rapls_test \
+            -e MARIADB_ROOT_PASSWORD=rootpw -e MARIADB_DATABASE=rapls_test \
+            ${{ matrix.db.image }} \
+            --max-connections=300 --innodb-use-native-aio=0
+          for i in $(seq 1 60); do
+            if docker exec db mysqladmin ping -h127.0.0.1 -uroot -prootpw --silent 2>/dev/null; then
+              echo "database is up after ${i} attempt(s)"; exit 0
+            fi
+            sleep 2
+          done
+          echo "database did not become ready"; docker logs db; exit 1
+
       - name: Server identity
         run: |
-          php -r '$c=new mysqli("127.0.0.1","root","rootpw","rapls_test",3306);
+          php -r '$c = new mysqli("127.0.0.1", "root", "rootpw", "rapls_test", 3306);
             printf("server=%s\n", $c->server_info);
-            printf("version_comment=%s\n", $c->query("SELECT @@version_comment")->fetch_row()[0]);
-            printf("uuid=%s\n", $c->query("SELECT @@server_uuid")->fetch_row()[0] ?? "n/a");'
+            foreach (["@@version_comment", "@@server_uuid", "@@max_connections"] as $v) {
+              $r = @$c->query("SELECT {$v}");           // server_uuid is MySQL-only
+              printf("%s=%s\n", $v, $r ? $r->fetch_row()[0] : "n/a");
+            }'
 
       # 100 simultaneous workers, each on its own connection, released together by a
       # barrier. Asserts: cap=1 -> at most 1 row; cap=3 -> at most 3; quota cap=5 ->

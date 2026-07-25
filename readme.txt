@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.18
+Stable tag: 0.13.19
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,12 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.19 =
+* Second re-review fixes (concurrency, 2FA and distribution build):
+* Distribution build: WooCommerce's global WC() (and the wc_*/WC_* family) is excluded from prefixing, so the build no longer rewrites a function_exists('WC') check or emits a global WC() alias that forwards to a non-existent prefixed function (which could mis-detect WooCommerce or fatal another plugin). The final-artifact check now also fails on any mis-prefixed WooCommerce symbol or any generated host-function alias.
+* A passkey login that did NOT perform user verification is treated as a weaker login: with the site's 2FA active it is now sent to the 2FA challenge BEFORE the auth cookie is issued (previously the 2FA "verified" mark was merely withheld afterwards).
+* The post-first-factor 2FA attempt counter now uses an atomic fixed-window count (shared with the login rate limiter), passkey registration takes a short per-user lock so the per-user limit holds strictly under concurrency, and the REST auth-error allowlist clears only the plugin's own authentication errors.
 
 = 0.13.18 =
 * Re-review resubmission. No code change from 0.13.17: the end-to-end matrix (clean-WordPress activation, passkey register/login, user-verification-gated 2FA, single-use / per-user limit / rate limit, coexistence with another plugin that bundles web-auth, and the two-factor integration) was run on a real install and passed. The procedure is recorded in docs/E2E-TESTING.md.

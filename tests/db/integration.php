@@ -351,14 +351,18 @@ $wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no
 $probe = new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' );
 $probe->setAccessible( true );
 
+$probe_rows     = static function () use ( $wpdb, $table ) {
+	return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+};
+$rows_before    = $probe_rows();
 $queries_before = $wpdb->write_count;
 $with_index     = $probe->invoke( null );
 $probe_writes   = $wpdb->write_count - $queries_before;
-$left_over      = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+$left_over      = $probe_rows() - $rows_before;   // this probe's own net effect
 report(
 	'the writer probe runs (2 inserts + cleanup), the duplicate is refused, nothing is left behind (P3-02)',
 	true === $with_index && $probe_writes >= 3 && 0 === $left_over,
-	array( 'probe_result' => $with_index, 'statements_issued' => $probe_writes, 'rows_left' => $left_over ),
+	array( 'probe_result' => $with_index, 'statements_issued' => $probe_writes, 'rows_left_by_this_probe' => $left_over ),
 	$results,
 	$failed
 );
@@ -367,13 +371,14 @@ report(
 // which is what proves the probe is really testing the writer and not just
 // returning true whenever the SQL runs.
 $wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+$rows_before2  = $probe_rows();
 $without_index = $probe->invoke( null );
-$left_over2    = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+$left_over2    = $probe_rows() - $rows_before2;
 $wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
 report(
 	'without the constraint the writer accepts the duplicate and the probe reports false (P3-02)',
 	false === $without_index && 0 === $left_over2,
-	array( 'probe_result' => $without_index, 'rows_left' => $left_over2 ),
+	array( 'probe_result' => $without_index, 'rows_left_by_this_probe' => $left_over2 ),
 	$results,
 	$failed
 );

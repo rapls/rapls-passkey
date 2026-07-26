@@ -333,10 +333,14 @@ final class Schema {
 		}
 		$second = $insert( 'b' );
 
-		// Remove the probe rows whatever happened.
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$wpdb->prepare( "DELETE FROM {$table} WHERE user_id = 0 AND slot_no = %d", $slot )
-		);
+		// Remove the probe rows whatever happened. Retried once: under heavy
+		// concurrency the first attempt can lose a lock wait, and a stray probe row
+		// (harmless — user_id 0 is nobody) would otherwise sit there until the next
+		// migration sweeps it.
+		$cleanup = "DELETE FROM {$table} WHERE user_id = 0 AND slot_no = %d";
+		if ( false === $wpdb->query( $wpdb->prepare( $cleanup, $slot ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->query( $wpdb->prepare( $cleanup, $slot ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		}
 
 		// The duplicate must have been refused. Anything else means the writer is
 		// not enforcing UNIQUE (user_id, slot_no).

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.28
+Stable tag: 0.13.29
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,13 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.29 =
+* Further findings from the security audit, all about not trusting a value the plugin has just read back:
+* Signing in with a username no longer tells anyone whether that account exists or holds a passkey. Sign-in now uses the browser's own passkey picker, and the answer to a username is identical whatever you type. A site that must support older security keys (which store nothing themselves and so have to be named by the server) can switch the old behaviour back on; the response is then padded to a fixed shape, and the trade-off is documented.
+* A passkey suspended or deleted while someone is signing in with it no longer completes that sign-in, even on installations that send reads to a replica database.
+* Each user's WebAuthn identifier is now derived rather than generated and stored. Concurrent first registrations, retries and lagging replicas all arrive at the same value, so an account's passkeys can no longer end up split across two identifiers.
+* Recovery codes: a site whose database is lagging could report that generation failed after the previous codes had already been replaced — and then tell the user their old codes still worked. The result now comes from the write itself, and the message no longer makes that claim.
+
 = 0.13.28 =
 * Findings from a full-codebase security audit:
 * SECURITY (multisite): a user marked as spam on a network — or whose primary site is — could still sign in with a passkey, a QR approval, a magic link or a recovery code. Those methods set the login cookie directly and so never reached WordPress's own spam check, which a password login passes through. All of them now apply it, before any site filter.
@@ -101,11 +108,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * Claiming an attempt or a quota slot no longer reads anything at all. The insert either wrote the row — which, with a unique row name, means this request holds the slot — or it did not. Previously the plugin confirmed ownership with a follow-up read, and a read can be answered by a replica that is behind the writer, which could make a single request write a row for every slot and use up that key's whole allowance for the window. Each failed insert is now followed by a removal of that request's own row, so a request that ends up refused provably leaves nothing behind.
 * The test that checks the passkey limit's constraint on the write server now calls that check directly, with and without the constraint in place, and asserts it reports true only when the database really refuses a duplicate — previously the scenario could pass without the check having run.
 
-= 0.13.25 =
-* Eighth re-review fixes (the passkey limit's safety check, and one availability fix):
-* Before applying a passkey limit the plugin now proves the constraint on the server that takes the writes — it writes two rows claiming one slot and requires the second to be refused — instead of only asking whether an index with the right name exists. A read can be answered by a replica whose schema differs from the writer's, so an index that only the replica still has can no longer make the limit look enforced.
-* The index check also verifies its shape: it must be UNIQUE and over exactly (user_id, slot_no) in that order. A same-named index that is not unique, or covers other columns, enforces nothing and is no longer mistaken for the real constraint.
-* When a limit cannot be confirmed, registration refuses (503) rather than proceeding unprotected.
-* Availability fix: if the row a request has just written is not yet visible (a replica lagging behind), the request now stops instead of trying the next attempt slot. Previously one request could write a row for every slot and use up that IP's whole login / recovery / sign-up budget for the window.
-
-For the change history of 0.13.24 and earlier releases, see changelog.txt.
+For the change history of 0.13.25 and earlier releases, see changelog.txt.

@@ -36,6 +36,9 @@ final class Endpoints {
 	/** REST namespace. */
 	private const NS = 'rapls-passkey/v1';
 
+	/** How many entries a username-bearing allow-list always contains. */
+	private const ALLOW_LIST_SIZE = 4;
+
 	/**
 	 * @param RegistrationManager  $registration Registration ceremony.
 	 * @param AssertionManager     $assertion    Authentication ceremony.
@@ -385,12 +388,12 @@ final class Endpoints {
 		$records  = array();
 		$decoys   = array();
 
-		if ( '' !== $username && $this->login_options_enumeration_ok() ) {
+		if ( '' !== $username && self::allow_list_enabled() ) {
+			// By login name only. Accepting an email address as well would let anyone
+			// confirm that a name and an address belong to the same account, because
+			// both would return that account's credential ids.
 			$user = get_user_by( 'login', $username );
-			if ( ! $user && is_email( $username ) ) {
-				$user = get_user_by( 'email', $username );
-			}
-			if ( $user ) {
+			if ( $user && $this->login_options_enumeration_ok() ) {
 				// Suspended passkeys are not offered: the browser must not put a
 				// credential in the picker that the server would then reject.
 				foreach ( $this->repository->find_active_by_user( (int) $user->ID ) as $credential ) {
@@ -405,14 +408,10 @@ final class Endpoints {
 					}
 				}
 			}
-		}
 
-		// Nothing real to offer for a username that was asked about: answer with the
-		// same shape a real account would produce. This covers an unknown name, a
-		// known account with no usable passkey, and a request that hit the
-		// enumeration cap — otherwise being rate-limited would itself be the tell.
-		if ( '' !== $username && array() === $records ) {
-			$decoys = $this->decoy_credential_ids( $username );
+			// Pad to a FIXED number of entries, so the size of the answer says nothing
+			// about the account. Real entries come first; the rest are fabricated.
+			$decoys = $this->decoy_credential_ids( $username, max( 0, self::ALLOW_LIST_SIZE - count( $records ) ) );
 		}
 
 		// A caller (e.g. Pro's step-up confirmation) may RAISE the requirement to
@@ -429,25 +428,57 @@ final class Endpoints {
 	}
 
 	/**
-	 * Plausible credential ids for a username with no usable passkey behind it.
+	 * Whether a username may be answered with an allow-list at all.
+	 *
+	 * OFF by default, which makes the anonymous options response identical for
+	 * every input and so says nothing about any account. Sign-in then relies on
+	 * discoverable credentials — the browser's own passkey picker — which is how
+	 * passkeys are meant to work and needs no username at all.
+	 *
+	 * A site that must support non-resident authenticators (older security keys
+	 * that store nothing themselves, and so can only be used when the server names
+	 * the credential) can turn it on. The response is then padded and stripped as
+	 * far as it can be, but a site enabling this accepts that a determined caller
+	 * can still learn something: real credential ids vary in length, and a
+	 * fabricated one cannot match every property of a real one.
+	 *
+	 * @return bool
+	 */
+	private static function allow_list_enabled(): bool {
+		/**
+		 * Answer username-bearing /login/options with an allow-list.
+		 *
+		 * @param bool $enabled False by default (discoverable credentials only).
+		 */
+		return (bool) apply_filters( 'rapls_passkey/username_allow_list', false );
+	}
+
+	/**
+	 * Plausible credential ids to pad an allow-list with.
 	 *
 	 * Derived with HMAC from the name and the site's auth salt: the same name
 	 * always yields the same ids on this site (so asking twice cannot expose them
 	 * as fabricated), a different site yields different ids for the same name (so
 	 * they cannot be correlated), and nobody without the salt can tell them from
-	 * real credential ids. The count varies 1–2, matching what ordinary accounts
-	 * look like.
+	 * real credential ids. Lengths are drawn from the sizes real authenticators
+	 * produce rather than being fixed.
 	 *
 	 * @param string $username The name that was asked about.
+	 * @param int    $count    How many to produce.
 	 * @return string[] Raw credential-id bytes.
 	 */
-	private function decoy_credential_ids( string $username ): array {
-		$seed  = hash_hmac( 'sha256', strtolower( $username ), wp_salt( 'auth' ), true );
-		$count = 1 + ( ord( $seed[0] ) % 2 );
+	private function decoy_credential_ids( string $username, int $count ): array {
+		if ( $count <= 0 ) {
+			return array();
+		}
+		$seed    = hash_hmac( 'sha256', strtolower( $username ), wp_salt( 'auth' ), true );
+		$lengths = array( 16, 20, 32, 64 );
 
 		$ids = array();
 		for ( $i = 0; $i < $count; $i++ ) {
-			$ids[] = hash_hmac( 'sha256', 'rapls-decoy-' . $i, $seed, true );
+			$material = hash_hmac( 'sha512', 'rapls-decoy-' . $i, $seed, true );
+			$length   = $lengths[ ord( $material[0] ) % count( $lengths ) ];
+			$ids[]    = substr( str_repeat( $material, 2 ), 0, $length );
 		}
 		return $ids;
 	}

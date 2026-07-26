@@ -68,10 +68,13 @@ final class AssertionManager {
 	public function create_options( array $allowed_records, ?string $user_verification = null, array $decoy_ids = array() ): array {
 		$allow = array();
 		foreach ( $allowed_records as $record ) {
+			// Transports are deliberately omitted. They are only a hint to the browser
+			// picker, but they are also something a real credential has and a
+			// fabricated one cannot — so including them would let an anonymous caller
+			// tell a real allow-list from a padded one at a glance.
 			$allow[] = PublicKeyCredentialDescriptor::create(
 				PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
-				$record->publicKeyCredentialId,
-				$record->transports
+				$record->publicKeyCredentialId
 			);
 		}
 		// Descriptors for credentials that do not exist, so a response for an unknown

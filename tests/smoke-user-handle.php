@@ -70,7 +70,6 @@ class FakeWpdb {
 }
 $GLOBALS['wpdb'] = new FakeWpdb();
 
-require dirname( __DIR__ ) . '/vendor/autoload.php';
 require dirname( __DIR__ ) . '/src/Credentials/UserHandle.php';
 
 use RaplsPasskey\Credentials\UserHandle;

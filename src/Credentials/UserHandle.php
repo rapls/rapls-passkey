@@ -7,8 +7,6 @@
 
 namespace RaplsPasskey\Credentials;
 
-use ParagonIE\ConstantTime\Base64UrlSafe;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -138,9 +136,42 @@ final class UserHandle {
 	 * @return string Base64url handle.
 	 */
 	private static function derive( int $user_id ): string {
-		return Base64UrlSafe::encodeUnpadded(
+		return self::b64url_encode(
 			hash_hmac( 'sha256', 'rapls-passkey-user-handle|' . $user_id, wp_salt( 'auth' ), true )
 		);
+	}
+
+	/**
+	 * Base64url, unpadded — the encoding WebAuthn uses for binary identifiers.
+	 *
+	 * Done here rather than through the bundled library so this class, which every
+	 * ceremony goes through, carries no dependency beyond WordPress itself.
+	 *
+	 * @param string $bytes Raw bytes.
+	 * @return string
+	 */
+	private static function b64url_encode( string $bytes ): string {
+		return rtrim( strtr( base64_encode( $bytes ), '+/', '-_' ), '=' );
+	}
+
+	/**
+	 * Inverse of {@see b64url_encode()}. Returns '' for anything that is not a
+	 * well-formed base64url string.
+	 *
+	 * @param string $value Base64url string, padded or not.
+	 * @return string Raw bytes, or '' when the input is not valid.
+	 */
+	private static function b64url_decode( string $value ): string {
+		if ( '' === $value || 1 !== preg_match( '#^[A-Za-z0-9\-_]+=*$#', $value ) ) {
+			return '';
+		}
+		$padded  = strtr( $value, '-_', '+/' );
+		$remain  = strlen( $padded ) % 4;
+		if ( 0 !== $remain ) {
+			$padded .= str_repeat( '=', 4 - $remain );
+		}
+		$decoded = base64_decode( $padded, true );
+		return false === $decoded ? '' : $decoded;
 	}
 
 	/**
@@ -190,10 +221,6 @@ final class UserHandle {
 		if ( null === $handle ) {
 			return '';
 		}
-		try {
-			return Base64UrlSafe::decode( $handle );
-		} catch ( \Throwable $e ) {
-			return '';
-		}
+		return self::b64url_decode( $handle );
 	}
 }

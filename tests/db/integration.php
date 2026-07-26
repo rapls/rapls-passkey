@@ -146,7 +146,6 @@ function wp_cache_delete( $k, $g = '' ) { return true; }
 function wp_salt( $scheme = 'auth' ) { return 'integration-test-salt'; }
 
 require_once __DIR__ . '/wpdb-lite.php';
-require_once dirname( __DIR__, 2 ) . '/vendor/autoload.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/UserHandle.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/Schema.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/Credential.php';

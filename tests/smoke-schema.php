@@ -134,7 +134,6 @@ if ( ! file_exists( __DIR__ . '/wp-admin/includes/upgrade.php' ) ) {
 	file_put_contents( __DIR__ . '/wp-admin/includes/upgrade.php', "<?php\n" );
 }
 
-require dirname( __DIR__ ) . '/vendor/autoload.php';
 require dirname( __DIR__ ) . '/src/Credentials/UserHandle.php';
 require dirname( __DIR__ ) . '/src/Credentials/Schema.php';
 

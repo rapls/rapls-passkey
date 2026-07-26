@@ -164,8 +164,8 @@ final class RateLimit {
 	 *
 	 * The claim is a plain INSERT of a row whose name embeds the slot number. The
 	 * UNIQUE index on option_name means at most one request can hold slot N.
-	 * Success is decided by reading the row back and matching our own random
-	 * token — never by an affected-row count, and never by comparing a total.
+	 * Success is decided by whether the INSERT itself was accepted. Nothing is
+	 * read back: not the row, not an affected-row count, not a total.
 	 *
 	 * @param string $prefix Option-name prefix (attempt or reservation).
 	 * @param string $key    Logical key.

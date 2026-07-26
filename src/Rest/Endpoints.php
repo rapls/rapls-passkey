@@ -160,11 +160,14 @@ final class Endpoints {
 	/**
 	 * Shared login gate: same-origin (optionally strict) plus a per-IP rate limit.
 	 *
-	 * The rate limit is checked here read-only. It is only *incremented* on a
-	 * failed assertion (see {@see login_verify}) — never on /login/options, which
+	 * The rate limit is only consulted here, advisorily. A slot is only *claimed* on
+	 * a failed assertion (see {@see login_verify}) — never on /login/options, which
 	 * the browser legitimately calls several times per page (autofill / conditional
-	 * UI). Counting option requests would otherwise exhaust a small limit before
-	 * the user even submits a passkey. A successful login clears the counter.
+	 * UI). Charging option requests would otherwise exhaust a small budget before
+	 * the user even submits a passkey. A successful login releases the slots.
+	 *
+	 * The reading here can be stale and is not what enforces anything: refusal is
+	 * decided where the slot is claimed, by the unique index on the row.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @param bool            $strict  Reject when Origin and Referer are both absent.
@@ -1013,12 +1016,12 @@ final class Endpoints {
 	/**
 	 * Atomically admit one attempt from the per-IP budget, or refuse with 429.
 	 *
-	 * This is the check-and-act done as a single atomic increment: the counter is
-	 * consumed FIRST and the resulting value decides admission, so of N simultaneous
-	 * requests arriving with one attempt left, exactly one is admitted. (Reading the
-	 * count and only incrementing after a failure lets all N through, because they
-	 * all read the same under-limit value.) On a database error incr() returns
-	 * OVERFLOW, which is above every limit, so admission fails closed.
+	 * The budget is $max numbered slots, and admission means having claimed one of
+	 * them: the slot is taken FIRST and the claim itself decides, so of N
+	 * simultaneous requests arriving with one attempt left, exactly one is admitted.
+	 * (Reading a count and only writing after a failure lets all N through, because
+	 * they all read the same under-limit value.) A claim that cannot be made — every
+	 * slot taken, or a database error — refuses, so this fails closed.
 	 *
 	 * @param string $bucket Action bucket.
 	 * @return WP_Error|null 429 error when the attempt is refused, null to proceed.

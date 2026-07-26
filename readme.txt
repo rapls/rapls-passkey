@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.29
+Stable tag: 0.13.30
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,9 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.30 =
+* Fixed: a site updated without anyone opening the admin screens — a background update, or WP-CLI — could be left with the previous table layout, and a passkey sign-in would then be refused until an administrator visited the dashboard. The table is now brought up to date by the sign-in itself.
 
 = 0.13.29 =
 * Further findings from the security audit, all about not trusting a value the plugin has just read back:

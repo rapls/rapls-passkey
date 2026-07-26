@@ -97,6 +97,13 @@ final class Plugin {
 
 		// Keep the schema current after plugin updates (no manual reactivation).
 		add_action( 'admin_init', array( Schema::class, 'maybe_upgrade' ) );
+		// A site can be updated without anyone opening wp-admin — a background
+		// update, or WP-CLI — and the very next thing to happen may be a passkey
+		// login, which needs the current columns. Every request to OUR OWN REST
+		// namespace therefore checks too, before the route runs. The check is a
+		// single option read and only for our routes, so ordinary REST traffic is
+		// untouched.
+		add_filter( 'rest_pre_dispatch', array( $this, 'upgrade_before_ceremony' ), 5, 3 );
 
 		// These work independently of the WebAuthn library (recovery tooling,
 		// admin settings, and password-form reCAPTCHA), so wire them before the
@@ -195,6 +202,25 @@ final class Plugin {
 			( new CredentialsPage( $repository ) )->register();
 			( new DashboardWidget( $repository ) )->register();
 		}
+	}
+
+	/**
+	 * Bring the schema up to date before one of our own REST routes runs.
+	 *
+	 * Passes the dispatch result through untouched — this only ensures the table
+	 * a ceremony is about to write to has the columns that ceremony needs, on a
+	 * site updated without an admin page load.
+	 *
+	 * @param mixed            $result  Pre-dispatch result (untouched).
+	 * @param mixed            $server  REST server (unused).
+	 * @param \WP_REST_Request $request The request.
+	 * @return mixed The result, unchanged.
+	 */
+	public function upgrade_before_ceremony( $result, $server = null, $request = null ) {
+		if ( $request instanceof \WP_REST_Request && 0 === strpos( ltrim( (string) $request->get_route(), '/' ), 'rapls-passkey/' ) ) {
+			Schema::maybe_upgrade();
+		}
+		return $result;
 	}
 
 	/**

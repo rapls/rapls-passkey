@@ -41,7 +41,20 @@ function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $compon
 function get_bloginfo( $key ) { return 'Example Site'; }
 function wp_specialchars_decode( $text, $quotes = null ) { return html_entity_decode( (string) $text, ENT_QUOTES ); }
 function is_admin() { return true; }
-function get_option( $k, $d = false ) { return $d; }
+$GLOBALS['__upgraded'] = 0;
+function get_option( $k, $d = false ) {
+	if ( 'rapls_passkey_schema_version' === $k ) {
+		// The schema check ran. Answer "already current" so it does no work here;
+		// the migration itself is covered by the real-database tests.
+		$GLOBALS['__upgraded']++;
+		return '6';
+	}
+	return $d;
+}
+class WP_REST_Request {
+	public function __construct( private string $route = '' ) {}
+	public function get_route() { return $this->route; }
+}
 $GLOBALS['__rp_id_filter'] = null;
 function add_filter_stub_rp_id( $id ) { $GLOBALS['__rp_id_filter'] = $id; }
 function apply_filters( $tag, $value ) {
@@ -105,6 +118,17 @@ check( 'a filter registered after boot() still reaches the relying party (R20-03
 check( 'boot() hooks login_form (login button)', in_array( 'login_form', $hooked, true ) );
 check( 'boot() hooks login_enqueue_scripts', in_array( 'login_enqueue_scripts', $hooked, true ) );
 check( 'boot() hooks show_user_profile (admin)', in_array( 'show_user_profile', $hooked, true ) );
+
+// A site updated without an admin page load (background update, WP-CLI) must
+// still migrate before a ceremony writes to the table, so our own REST routes
+// carry the same check admin_init does — and nobody else's do.
+check( 'boot() hooks rest_pre_dispatch (schema upgrade for our own routes)', in_array( 'rest_pre_dispatch', $hooked, true ) );
+$GLOBALS['__upgraded'] = 0;   // count from here
+$r_ours = new WP_REST_Request( '/rapls-passkey/v1/login/options' );
+$r_other = new WP_REST_Request( '/wp/v2/posts' );
+check( 'a request to our namespace triggers the upgrade check', null === $plugin->upgrade_before_ceremony( null, null, $r_ours ) && 1 === $GLOBALS['__upgraded'] );
+check( 'a request to another namespace does not', null === $plugin->upgrade_before_ceremony( null, null, $r_other ) && 1 === $GLOBALS['__upgraded'] );
+check( 'the dispatch result is passed through untouched', 'x' === $plugin->upgrade_before_ceremony( 'x', null, $r_ours ) );
 
 $count_after_first = count( $GLOBALS['__hooks'] );
 $plugin->boot();

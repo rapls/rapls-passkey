@@ -21,6 +21,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * verify email, …). This gate gives those integrations one place to veto a
  * sign-in regardless of the method used, and should be consulted right before
  * the auth cookie is set.
+ *
+ * It also re-applies the two checks core itself puts in that chain on multisite —
+ * spam user and spam primary site — which would otherwise be skipped entirely by
+ * these login paths.
  */
 final class LoginGate {
 
@@ -32,6 +36,25 @@ final class LoginGate {
 	 * @return WP_Error|null A WP_Error to deny, or null to allow.
 	 */
 	public static function check( WP_User $user, string $context = '' ): ?WP_Error {
+		// WordPress's own multisite check comes FIRST, before any of our filters.
+		// A normal password login reaches it through the `authenticate` chain; these
+		// logins set the cookie directly, so without this a user (or a user whose
+		// primary site) marked as spam on a network could still sign in with a
+		// passkey, a QR approval, a magic link or a recovery code. Core's rule wins
+		// over anything a site filter might allow.
+		if ( function_exists( 'wp_authenticate_spam_check' ) ) {
+			$spam = wp_authenticate_spam_check( $user );
+			if ( $spam instanceof WP_Error ) {
+				return $spam;
+			}
+		}
+		if ( function_exists( 'wp_authenticate_blog_check' ) ) {
+			$blog = wp_authenticate_blog_check( $user );
+			if ( $blog instanceof WP_Error ) {
+				return $blog;
+			}
+		}
+
 		/**
 		 * Filter whether a user may complete a passkey / alternative-method login.
 		 *

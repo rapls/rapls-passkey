@@ -61,7 +61,15 @@ namespace {
 			return $rows[0] ?? null;
 		}
 
-		public function delete( $table, $where, $formats ) {
+		/** Option rows deleted by the eraser (the per-user handle lock). */
+		public $options_deleted = array();
+
+		public function delete( $table, $where, $formats = null ) {
+			// The eraser also removes the user's handle lock row from wp_options.
+			if ( isset( $where['option_name'] ) ) {
+				$this->options_deleted[] = (string) $where['option_name'];
+				return 1;
+			}
 			$key = false !== strpos( $table, 'audit' ) ? 'audit' : 'credentials';
 			$before = count( $this->$key );
 			$uid = (int) ( $where['user_id'] ?? -999 );
@@ -155,6 +163,14 @@ namespace {
 	$res = $pd->erase( 'alice@example.test' );
 	check( 'erase reports items removed', true === $res['items_removed'] );
 	check( 'erase is done', true === $res['done'] );
+
+	// R20-10: the handle also lives in a per-user wp_options row (the row that stops
+	// a concurrent first registration minting a second handle). Erasing only the
+	// meta would leave a stored identifier for a user who asked to be forgotten.
+	check(
+		'erase also removes the per-user handle lock row (R20-10)',
+		in_array( 'rapls_pk_handle_lock_5', $GLOBALS['wpdb']->options_deleted, true )
+	);
 	check( 'user 5 credentials gone', array() === ( new CredentialRepository() )->find_by_user( 5 ) );
 	check( 'user 9 credentials untouched', count( ( new CredentialRepository() )->find_by_user( 9 ) ) === 1 );
 	check( 'user 5 audit gone', array() === \RaplsPasskey\Audit\AuditLog::for_user( 5 ) );

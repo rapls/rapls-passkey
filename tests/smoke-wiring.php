@@ -20,9 +20,14 @@ define( 'RAPLS_PASSKEY_BASENAME', 'rapls-passkey/rapls-passkey.php' );
 
 // --- Minimal WP stubs used during boot() ---------------------------------
 $GLOBALS['__hooks'] = array();
+$GLOBALS['__init_cbs'] = array();
 
 function add_action( $hook, $cb, $priority = 10, $args = 1 ) {
 	$GLOBALS['__hooks'][] = array( 'action', $hook );
+	// Keep the `init` callbacks so a test can run them, the way WordPress would.
+	if ( 'init' === $hook ) {
+		$GLOBALS['__init_cbs'][] = $cb;
+	}
 	return true;
 }
 function add_filter( $hook, $cb, $priority = 10, $args = 1 ) {
@@ -30,13 +35,24 @@ function add_filter( $hook, $cb, $priority = 10, $args = 1 ) {
 	return true;
 }
 function add_shortcode( $tag, $cb ) { $GLOBALS['__hooks'][] = array( 'shortcode', $tag ); return true; }
+function load_plugin_textdomain( $d, $x = false, $p = '' ) { return true; }
 function home_url( $path = '' ) { return 'https://example.test'; }
 function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $component ); }
 function get_bloginfo( $key ) { return 'Example Site'; }
 function wp_specialchars_decode( $text, $quotes = null ) { return html_entity_decode( (string) $text, ENT_QUOTES ); }
 function is_admin() { return true; }
 function get_option( $k, $d = false ) { return $d; }
-function apply_filters( $tag, $value ) { return $value; }
+$GLOBALS['__rp_id_filter'] = null;
+function add_filter_stub_rp_id( $id ) { $GLOBALS['__rp_id_filter'] = $id; }
+function apply_filters( $tag, $value ) {
+	// Model the one thing that matters here: a filter registered AFTER boot() must
+	// still be in force when the relying party is finally built.
+	if ( 'rapls_passkey_rp_id' === $tag && null !== $GLOBALS['__rp_id_filter'] ) {
+		$GLOBALS['__rp_id_at_build'] = $GLOBALS['__rp_id_filter'];
+		return $GLOBALS['__rp_id_filter'];
+	}
+	return $value;
+}
 
 require dirname( __DIR__ ) . '/vendor/autoload.php';
 
@@ -70,7 +86,22 @@ $plugin->boot();
 $hooked = array_map( function ( $h ) { return $h[1]; }, $GLOBALS['__hooks'] );
 check( 'boot() hooks init (textdomain)', in_array( 'init', $hooked, true ) );
 check( 'boot() hooks admin_init (schema upgrade)', in_array( 'admin_init', $hooked, true ) );
-check( 'boot() hooks rest_api_init (endpoints)', in_array( 'rest_api_init', $hooked, true ) );
+// R20-03: the ceremonies must NOT be built during boot(). Their relying-party ID
+// and allowed origins come from filters that other plugins (Pro's shared network
+// RP ID, Related Origin Requests) register during plugins_loaded — some of them
+// after this plugin. So boot() only schedules the work for `init`, by which time
+// every plugin has had its say.
+check( 'boot() defers the ceremonies to init, not rest_api_init directly', in_array( 'init', $hooked, true ) && ! in_array( 'rest_api_init', $hooked, true ) );
+
+// Running the init callbacks is what registers the REST routes.
+$GLOBALS['__rp_id_at_build'] = null;
+add_filter_stub_rp_id( 'shared.example' );
+foreach ( $GLOBALS['__init_cbs'] as $cb ) {
+	$cb();
+}
+$hooked_after_init = array_map( function ( $h ) { return $h[1]; }, $GLOBALS['__hooks'] );
+check( 'the init callback hooks rest_api_init (endpoints)', in_array( 'rest_api_init', $hooked_after_init, true ) );
+check( 'a filter registered after boot() still reaches the relying party (R20-03)', 'shared.example' === $GLOBALS['__rp_id_at_build'] );
 check( 'boot() hooks login_form (login button)', in_array( 'login_form', $hooked, true ) );
 check( 'boot() hooks login_enqueue_scripts', in_array( 'login_enqueue_scripts', $hooked, true ) );
 check( 'boot() hooks show_user_profile (admin)', in_array( 'show_user_profile', $hooked, true ) );

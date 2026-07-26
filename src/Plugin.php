@@ -126,21 +126,39 @@ final class Plugin {
 	}
 
 	/**
+	 * Build the relying party and the ceremony endpoints, once every plugin has
+	 * registered its filters. Public because it runs as an `init` callback.
+	 */
+	public function wire_ceremonies(): void {
+		$rp         = RelyingParty::from_site();
+		$codec      = new Codec();
+		$challenges = new ChallengeStore();
+		$ceremonies = new Ceremonies( $rp );
+
+		$registration = new RegistrationManager( $rp, $codec, $challenges, $ceremonies );
+		$assertion    = new AssertionManager( $rp, $codec, $challenges, $ceremonies );
+
+		( new Endpoints( $registration, $assertion, new CredentialRepository(), $codec ) )->register();
+	}
+
+	/**
 	 * Construct and register the registration/authentication subsystems.
 	 *
 	 * Runs only when the WebAuthn library is present (guarded by boot()).
 	 */
 	private function wire_passkey_subsystems(): void {
-		$rp         = RelyingParty::from_site();
-		$codec      = new Codec();
-		$challenges = new ChallengeStore();
-		$ceremonies = new Ceremonies( $rp );
 		$repository = new CredentialRepository();
 
-		$registration = new RegistrationManager( $rp, $codec, $challenges, $ceremonies );
-		$assertion    = new AssertionManager( $rp, $codec, $challenges, $ceremonies );
+		// The relying party is resolved on `init`, not here. Its ID and the allowed
+		// origins come from filters (`rapls_passkey_rp_id`, the related-origins
+		// list) that other plugins — Pro's shared RP ID and Related Origin Requests
+		// among them — register during `plugins_loaded`, some of them after this
+		// one. Building it here would freeze the site host before those filters
+		// existed, so a network-wide shared RP ID silently never applied. By `init`
+		// every plugin has had its say, and the REST routes registered below are
+		// hooked long before `rest_api_init` fires.
+		add_action( 'init', array( $this, 'wire_ceremonies' ), 0 );
 
-		( new Endpoints( $registration, $assertion, $repository, $codec ) )->register();
 		( new RestAccess( 'rapls-passkey/v1' ) )->register();
 		( new LoginForm() )->register();
 

@@ -65,13 +65,23 @@ final class AssertionManager {
 	 *        the site's compatibility-first setting for ordinary login.
 	 * @return array{state:string,publicKey:array<string,mixed>}
 	 */
-	public function create_options( array $allowed_records, ?string $user_verification = null ): array {
+	public function create_options( array $allowed_records, ?string $user_verification = null, array $decoy_ids = array() ): array {
 		$allow = array();
 		foreach ( $allowed_records as $record ) {
 			$allow[] = PublicKeyCredentialDescriptor::create(
 				PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
 				$record->publicKeyCredentialId,
 				$record->transports
+			);
+		}
+		// Descriptors for credentials that do not exist, so a response for an unknown
+		// account is shaped like one for a real account. They are raw ids only: no
+		// assertion can ever be produced for them, and the verify step matches the
+		// signature against stored credentials, never against this list.
+		foreach ( $decoy_ids as $decoy_id ) {
+			$allow[] = PublicKeyCredentialDescriptor::create(
+				PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
+				$decoy_id
 			);
 		}
 

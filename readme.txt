@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.27
+Stable tag: 0.13.28
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,18 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.28 =
+* Findings from a full-codebase security audit:
+* SECURITY (multisite): a user marked as spam on a network — or whose primary site is — could still sign in with a passkey, a QR approval, a magic link or a recovery code. Those methods set the login cookie directly and so never reached WordPress's own spam check, which a password login passes through. All of them now apply it, before any site filter.
+* A passkey login no longer proceeds if the credential was suspended or removed while the sign-in was in progress; the check now happens at the moment the login is committed rather than only when it started.
+* Asking for sign-in options with a username no longer reveals whether that account exists or holds a passkey: a name with nothing behind it now receives plausible decoy entries derived from the name and a site secret, so the answer looks the same either way.
+* A shared relying-party ID and Related Origins configured for a network are now actually applied to registration and sign-in. They were read before the settings that provide them had loaded, so a network-wide shared ID silently had no effect.
+* Recovery codes are no longer displayed unless the site could store them. Previously a storage failure produced codes that looked usable but none of which would have been accepted — the opposite of a way back in.
+* Adaptive step-up no longer fails open: if the record that holds a session for passkey confirmation cannot be written, that session is ended instead of continuing unchallenged. A database error while checking for held sessions now holds rather than releases.
+* Passwordless sign-up confirms the account adopted the identifier its passkey was created against, and undoes the sign-up if not, rather than leaving an account whose credential cannot resolve.
+* Enforcement's grace period no longer restarts on every request when its start time cannot be saved (which would have postponed the deadline indefinitely).
+* Uninstall and the personal-data eraser now remove the current attempt-limit rows, the per-user handle lock and per-session step-up records, which earlier versions left behind.
+
 = 0.13.27 =
 * Tenth re-review fix: the check that proves the passkey limit's constraint on the database now also requires that it could remove its own temporary rows. If those deletions keep failing — a database that accepts writes but cannot complete them — the limit is reported as unenforceable and registration refuses, instead of reporting success while leaving rows behind.
 
@@ -96,12 +108,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * When a limit cannot be confirmed, registration refuses (503) rather than proceeding unprotected.
 * Availability fix: if the row a request has just written is not yet visible (a replica lagging behind), the request now stops instead of trying the next attempt slot. Previously one request could write a row for every slot and use up that IP's whole login / recovery / sign-up budget for the window.
 
-= 0.13.24 =
-* Seventh re-review fixes. Every attempt limit is now enforced the same way the passkey limit is — by a database constraint rather than by comparing a number the plugin has read:
-* Login, two-factor, recovery-code, magic-link, QR-code and sign-up limits each claim a numbered attempt row whose uniqueness the database guarantees. Because nothing is decided from a value that was read, the limits hold even where a read/write-splitting database drop-in can serve a stale count from a replica — a configuration in which a counter-based limit can be bypassed entirely.
-* Time windows are now clock-aligned and half-open, so every request places itself in the same window. Previously the exact second a window ended was read inconsistently, which let a burst of requests arriving on that boundary through.
-* The per-user passkey limit now verifies its unique index on the database at the moment of registration instead of trusting a flag stored during the upgrade. If the index is ever lost (a restore, a manual change), registration refuses with an error rather than silently letting the limit be exceeded.
-* A failed upgrade no longer records itself as complete: if the slot numbering or the index cannot be created, the schema version is left behind so the next admin request retries it.
-* Verified against a real MySQL server, running the plugin's own code: upgrading from the previous schema, limit 1 storing exactly 1 passkey and limit 3 exactly 3 under 20 simultaneous processes, registration refusing when the index is dropped, refusing on a database error, and a replayed registration storing one passkey rather than two. The test ships in the repository (tests/db/integration.php) and runs in CI against MySQL 8.0/8.4 and MariaDB 10.11/11.4.
-
-For the change history of 0.13.23 and earlier releases, see changelog.txt.
+For the change history of 0.13.24 and earlier releases, see changelog.txt.

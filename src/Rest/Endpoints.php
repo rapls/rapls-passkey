@@ -364,8 +364,18 @@ final class Endpoints {
 	// --- Authentication ------------------------------------------------------
 
 	/**
-	 * Issue request options. When a username is supplied its credentials are
-	 * allow-listed; unknown users still receive options (no enumeration).
+	 * Issue request options.
+	 *
+	 * When a username is supplied, that account's credentials are allow-listed so
+	 * a non-discoverable authenticator (a security key with no resident key) can
+	 * still be used. That allow-list is exactly what would otherwise answer "does
+	 * this account exist, and does it hold a passkey?" to anyone who asks — a real
+	 * account returned descriptors and an unknown one returned none. So a username
+	 * with nothing behind it now gets DECOY descriptors instead: derived from the
+	 * name and a site secret, so they are stable per site (repeat probes agree),
+	 * unlinkable across sites, and indistinguishable from real ones. No assertion
+	 * can be produced for them, and verification matches the signature against
+	 * stored credentials, never against this list.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
@@ -373,6 +383,7 @@ final class Endpoints {
 	public function login_options( WP_REST_Request $request ): WP_REST_Response {
 		$username = sanitize_text_field( (string) $request->get_param( 'username' ) );
 		$records  = array();
+		$decoys   = array();
 
 		if ( '' !== $username && $this->login_options_enumeration_ok() ) {
 			$user = get_user_by( 'login', $username );
@@ -396,6 +407,14 @@ final class Endpoints {
 			}
 		}
 
+		// Nothing real to offer for a username that was asked about: answer with the
+		// same shape a real account would produce. This covers an unknown name, a
+		// known account with no usable passkey, and a request that hit the
+		// enumeration cap — otherwise being rate-limited would itself be the tell.
+		if ( '' !== $username && array() === $records ) {
+			$decoys = $this->decoy_credential_ids( $username );
+		}
+
 		// A caller (e.g. Pro's step-up confirmation) may RAISE the requirement to
 		// user-verification=required so the login counts as MFA; it can only
 		// strengthen it, never weaken the site's setting. A site can turn this
@@ -406,7 +425,31 @@ final class Endpoints {
 			$uv = 'required';
 		}
 
-		return rest_ensure_response( $this->assertion->create_options( $records, $uv ) );
+		return rest_ensure_response( $this->assertion->create_options( $records, $uv, $decoys ) );
+	}
+
+	/**
+	 * Plausible credential ids for a username with no usable passkey behind it.
+	 *
+	 * Derived with HMAC from the name and the site's auth salt: the same name
+	 * always yields the same ids on this site (so asking twice cannot expose them
+	 * as fabricated), a different site yields different ids for the same name (so
+	 * they cannot be correlated), and nobody without the salt can tell them from
+	 * real credential ids. The count varies 1–2, matching what ordinary accounts
+	 * look like.
+	 *
+	 * @param string $username The name that was asked about.
+	 * @return string[] Raw credential-id bytes.
+	 */
+	private function decoy_credential_ids( string $username ): array {
+		$seed  = hash_hmac( 'sha256', strtolower( $username ), wp_salt( 'auth' ), true );
+		$count = 1 + ( ord( $seed[0] ) % 2 );
+
+		$ids = array();
+		for ( $i = 0; $i < $count; $i++ ) {
+			$ids[] = hash_hmac( 'sha256', 'rapls-decoy-' . $i, $seed, true );
+		}
+		return $ids;
 	}
 
 	/**
@@ -975,11 +1018,10 @@ final class Endpoints {
 	}
 
 	/**
-	 * Logical key for a per-IP rate-limit bucket, passed to the shared, fail-closed
-	 * {@see RateLimit} counter. RateLimit hashes this into the option name
-	 * `rapls_passkey_rl_<md5(key)>`, matching the option names this plugin used for
-	 * its previous inline counter (same "<bucket>|<ip>" key), so existing counters
-	 * carry over seamlessly.
+	 * Logical key for a per-IP rate-limit bucket, passed to the shared {@see
+	 * RateLimit}. It turns the key into the option names holding that bucket's
+	 * attempt slots for the current window
+	 * (`rapls_passkey_ra_<md5(key)>_<window-end>_<slot>`).
 	 *
 	 * @param string $bucket Action bucket.
 	 * @return string

@@ -199,6 +199,16 @@ final class PersonalData {
 		if ( delete_user_meta( $uid, UserHandle::META ) ) {
 			$removed = true;
 		}
+		// The handle also lives in a per-user row in wp_options, which is how a
+		// concurrent first registration is stopped from minting a second one.
+		// Deleting only the meta would leave that copy — a stored identifier for a
+		// user who asked to be forgotten, and one that would be handed back if the
+		// account were ever recreated with the same id.
+		global $wpdb;
+		$deleted_lock = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::LOCK_PREFIX . $uid ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( $deleted_lock ) {
+			$removed = true;
+		}
 
 		return $removed;
 	}

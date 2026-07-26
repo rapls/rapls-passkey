@@ -208,10 +208,16 @@ final class CredentialRepository {
 		$table = Schema::credentials_table();
 		$now   = gmdate( 'Y-m-d H:i:s' );
 
+		// `active = 1` is part of every condition below. This UPDATE is the commit
+		// point of a login, and a ceremony takes long enough (network round trip
+		// plus signature verification) for an administrator to suspend or delete the
+		// credential in between. Re-checking it here means a revocation that lands
+		// during the ceremony is honoured instead of being overtaken by a login that
+		// started a moment earlier.
 		if ( $sign_count > 0 ) {
 			$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 				$wpdb->prepare(
-					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d AND sign_count < %d",
+					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d AND active = 1 AND sign_count < %d",
 					$record_json,
 					$sign_count,
 					$now,
@@ -227,16 +233,27 @@ final class CredentialRepository {
 
 		$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$wpdb->prepare(
-				"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d",
+				"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d AND active = 1",
 				$record_json,
 				$sign_count,
 				$now,
 				$id
 			)
 		);
-		// A matched-but-unchanged row can report 0 affected; that is fine for a
-		// counter-less authenticator, so only a hard DB error (false) is a failure.
-		return false === $affected ? -1 : 1;
+		if ( false === $affected ) {
+			return -1;
+		}
+		// A counter-less authenticator has no freshness signal, so 0 changed rows is
+		// normally just "nothing to change". But it also covers "the row is gone or
+		// no longer active", which must NOT sign anyone in — so confirm the row is
+		// still there and usable before treating this as a commit.
+		if ( 0 === (int) $affected ) {
+			$still = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d AND active = 1", $id )
+			);
+			return null === $still ? 0 : 1;
+		}
+		return 1;
 	}
 
 	/**

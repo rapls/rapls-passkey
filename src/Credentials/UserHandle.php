@@ -83,6 +83,53 @@ final class UserHandle {
 	}
 
 	/**
+	 * Give a user the handle a ceremony has ALREADY used, and confirm it stuck.
+	 *
+	 * Passwordless sign-up mints the handle before the account exists, so the
+	 * account has to adopt that exact value afterwards. Both places {@see get()}
+	 * looks are written — the meta and the creation-lock row — so a later call can
+	 * never mint a second, different handle for the same account and split that
+	 * user's credentials across two WebAuthn identities. The write is read back:
+	 * an unconfirmed handle returns false so the caller can undo the sign-up
+	 * rather than store a credential that will not resolve.
+	 *
+	 * @param int    $user_id WordPress user id.
+	 * @param string $handle  Base64url handle the ceremony used.
+	 * @return bool True when the user demonstrably owns that handle.
+	 */
+	public static function adopt( int $user_id, string $handle ): bool {
+		if ( $user_id <= 0 || '' === $handle ) {
+			return false;
+		}
+
+		global $wpdb;
+		$lock = self::LOCK_PREFIX . $user_id;
+
+		// Claim the creation lock for this handle. If a row already exists it must
+		// hold the same value, or this account has another handle already.
+		$suppress = $wpdb->suppress_errors( true );
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+				$lock,
+				$handle
+			)
+		);
+		$wpdb->suppress_errors( $suppress );
+
+		$claimed = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $lock )
+		);
+		if ( (string) $claimed !== $handle ) {
+			return false;
+		}
+
+		update_user_meta( $user_id, self::META, $handle );
+		wp_cache_delete( $user_id, 'user_meta' );
+		return $handle === (string) get_user_meta( $user_id, self::META, true );
+	}
+
+	/**
 	 * Raw (binary) handle bytes for use as the library `user.id`.
 	 *
 	 * @param int $user_id WordPress user id.

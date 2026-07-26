@@ -205,8 +205,9 @@ final class PersonalData {
 		// user who asked to be forgotten, and one that would be handed back if the
 		// account were ever recreated with the same id.
 		global $wpdb;
-		$deleted_lock = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::LOCK_PREFIX . $uid ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		if ( $deleted_lock ) {
+		$deleted_lock  = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::LOCK_PREFIX . $uid ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted_claim = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::CLAIM_PREFIX . $uid ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( $deleted_lock || $deleted_claim ) {
 			$removed = true;
 		}
 

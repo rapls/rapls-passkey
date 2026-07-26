@@ -33,6 +33,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class AuthSession {
 
 	/**
+	 * The context of the login currently being completed, for the duration of the
+	 * `wp_login` action, and '' at any other time.
+	 *
+	 * @var string
+	 */
+	private static string $active_context = '';
+
+	/**
+	 * What kind of login is completing right now, as seen from inside `wp_login`.
+	 *
+	 * WordPress's `wp_login` carries no context, so a listener there cannot tell a
+	 * passkey login from a password one. That matters for anything that HOLDS a
+	 * password login pending a passkey: without this it would hold the passkey
+	 * confirmation too, and the user could never finish. Returns '' outside a
+	 * login completed through this class (i.e. an ordinary password login).
+	 *
+	 * @return string One of login|qr-channel|magic-link|recovery-code|signup, or ''.
+	 */
+	public static function active_context(): string {
+		return self::$active_context;
+	}
+
+	/**
 	 * Complete a login for the given user, or refuse it.
 	 *
 	 * @param WP_User   $user          The authenticated user.
@@ -103,7 +126,22 @@ final class AuthSession {
 
 		wp_set_current_user( $user->ID );
 		wp_set_auth_cookie( $user->ID, $remember );
+
+		// Publish the context BEFORE wp_login, and keep it published for the whole
+		// action. Listeners on wp_login (ours and other plugins') otherwise see a
+		// passkey login as indistinguishable from a password login.
+		self::$active_context = $context;
+
+		/**
+		 * Fires immediately before `wp_login`, with the context this login has.
+		 *
+		 * @param WP_User $user    The user logging in.
+		 * @param string  $context Login context.
+		 */
+		do_action( 'rapls_passkey/before_login', $user, $context );
+
 		do_action( 'wp_login', $user->user_login, $user );
+		self::$active_context = '';
 
 		/**
 		 * Fires after an alternative-method login completes (cookie set).

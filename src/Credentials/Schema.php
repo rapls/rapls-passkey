@@ -27,7 +27,7 @@ final class Schema {
 	/**
 	 * Current schema version. Bump when a table definition changes.
 	 */
-	private const VERSION = '6';
+	private const VERSION = '7';
 
 	/**
 	 * Option flag recording that the UNIQUE (user_id, slot_no) index exists. The
@@ -40,11 +40,26 @@ final class Schema {
 	private const SLOT_INDEX = 'user_slot';
 
 	/**
+	 * Prefix for the row that claims one migration attempt per back-off window on
+	 * non-admin requests. See {@see maybe_upgrade_throttled()}.
+	 */
+	public const UPGRADE_LOCK_OPTION = 'rapls_passkey_migrate_';
+
+	/**
 	 * Per-request memo for {@see cap_enforceable()}. Null until asked.
 	 *
 	 * @var bool|null
 	 */
 	private static $cap_enforceable = null;
+
+	/**
+	 * The schema version this build expects.
+	 *
+	 * @return string
+	 */
+	public static function current_version(): string {
+		return self::VERSION;
+	}
 
 	/**
 	 * Fully-qualified credentials table name.
@@ -76,6 +91,73 @@ final class Schema {
 		if ( get_option( self::VERSION_OPTION ) === self::VERSION ) {
 			return;
 		}
+		self::run_upgrade();
+	}
+
+	/**
+	 * Run the migration for a request that is not an admin one — at most once per
+	 * back-off window, however many requests arrive.
+	 *
+	 * The admin path above runs the migration whenever it is behind: an
+	 * administrator asking for it is a bounded, authenticated event. A ceremony
+	 * request is neither, and a migration that cannot complete (no ALTER
+	 * permission, a lock held elsewhere, a half-applied change) would otherwise let
+	 * an anonymous caller re-run dbDelta and a table-wide back-fill on every
+	 * request. So the attempt itself has to be claimed, and the claim is a row
+	 * whose name is unique for the current window: the first request in a window
+	 * gets it, everyone else is refused by the database and simply carries on.
+	 *
+	 * @param int $window Back-off window in seconds.
+	 * @return void
+	 */
+	public static function maybe_upgrade_throttled( int $window = 300 ): void {
+		global $wpdb;
+
+		if ( get_option( self::VERSION_OPTION ) === self::VERSION ) {
+			return;
+		}
+
+		$window = max( 60, $window );
+		$name   = self::UPGRADE_LOCK_OPTION . ( (int) ( intdiv( time(), $window ) + 1 ) * $window );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$claimed = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+				$name,
+				(string) time()
+			)
+		);
+		if ( false === $claimed ) {
+			return; // Someone else has this window (or the database said no): do nothing.
+		}
+
+		self::gc_upgrade_locks();
+		self::run_upgrade();
+	}
+
+	/**
+	 * Remove spent back-off rows. Their names carry the window they belong to, so
+	 * anything ending before now is finished with.
+	 */
+	private static function gc_upgrade_locks(): void {
+		global $wpdb;
+		$like = $wpdb->esc_like( self::UPGRADE_LOCK_OPTION ) . '%';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING(option_name, %d) AS UNSIGNED) < %d",
+				$like,
+				strlen( self::UPGRADE_LOCK_OPTION ) + 1,
+				time()
+			)
+		);
+	}
+
+	/**
+	 * Perform the migration and record the version only on full success.
+	 */
+	private static function run_upgrade(): void {
 		// Record the new version ONLY when the migration completed — including the
 		// slot back-fill and the unique index that enforces the per-user cap. If any
 		// step failed (a locked table, a permissions problem, a half-applied
@@ -156,6 +238,7 @@ final class Schema {
 		// index can only be created once those rows carry distinct numbers.
 		$ok = self::backfill_slots();
 		$ok = self::ensure_slot_index() && $ok;
+		$ok = self::backfill_handle_claims() && $ok;
 
 		/*
 		 * Audit log: one row per security-relevant event (registration, login,
@@ -177,6 +260,36 @@ final class Schema {
 		dbDelta( $audit_sql );
 
 		return $ok;
+	}
+
+	/**
+	 * Give every user who already has a WebAuthn handle the claim row that says so.
+	 *
+	 * {@see UserHandle} decides "does this account already have a handle?" from
+	 * whether that row can be inserted — a question the database answers on the
+	 * writer. For accounts that got their handle before this version the row does
+	 * not exist yet, and without it a reader that has not caught up would look like
+	 * an account with no handle at all. One INSERT … SELECT on the writer closes
+	 * that gap; IGNORE makes it safe to run again.
+	 *
+	 * @return bool True when the back-fill ran (or had nothing to do).
+	 */
+	private static function backfill_handle_claims(): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload)
+				 SELECT CONCAT(%s, user_id), meta_value, 'no'
+				 FROM {$wpdb->usermeta}
+				 WHERE meta_key = %s AND meta_value <> ''",
+				UserHandle::CLAIM_PREFIX,
+				UserHandle::META
+			)
+		);
+
+		return false !== $result;
 	}
 
 	/**

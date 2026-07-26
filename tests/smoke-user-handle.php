@@ -1,11 +1,14 @@
 <?php
 if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
- * UserHandle: one stable handle per user. It is DERIVED from the user id and the
- * site salt rather than minted and stored, so concurrent first uses, retries and
- * readers that lag behind all arrive at the same value (F-19, R21-04). A handle
- * already stored — a passwordless sign-up adopting the one its ceremony used —
- * always wins.
+ * UserHandle: one handle per user, and never a second one.
+ *
+ * A first use DERIVES the handle from the user id and the site salt and claims
+ * the account's one handle row — an insert the database either accepts or
+ * refuses, so concurrent first uses and retries all settle on the same value
+ * (F-19, R21-04). A stored handle always wins. And when the account provably has
+ * a handle that this request cannot see — a replica behind the writer — the
+ * answer is null, never a freshly derived second identity (V22-02).
  *
  *   php tests/smoke-user-handle.php
  *
@@ -79,36 +82,48 @@ function check( $label, $cond ) {
 	$cond ? $pass++ : $failc++;
 }
 
-// R21-04: with nothing stored, the handle is DERIVED — a pure function of the
-// user id and the site salt. No lock row, no insert, nothing read back.
+// --- first use: the handle is DERIVED, and the account's claim row records it --
 $h1 = UserHandle::get( 7 );
 check( 'get() returns a non-empty handle', is_string( $h1 ) && '' !== $h1 );
-check( 'no lock row is written any more', ! isset( $GLOBALS['wpdb']->store[ UserHandle::LOCK_PREFIX . 7 ] ) );
-check( 'nothing is written to user meta either', ! isset( $GLOBALS['__m'][ '7:' . UserHandle::META ] ) );
+check( 'the claim row is written, holding that handle', ( $GLOBALS['wpdb']->store[ UserHandle::CLAIM_PREFIX . 7 ] ?? null ) === $h1 );
+check( 'and the handle is mirrored into user meta', ( $GLOBALS['__m'][ '7:' . UserHandle::META ] ?? null ) === $h1 );
+check( 'no legacy lock row is written any more', ! isset( $GLOBALS['wpdb']->store[ UserHandle::LOCK_PREFIX . 7 ] ) );
 
-// Stable across calls, and — the point of the change — stable across
-// CONCURRENT first uses and retries, because it is computed, not minted.
 check( 'handle is stable across calls', $h1 === UserHandle::get( 7 ) );
 check( 'raw() is 32 bytes', strlen( UserHandle::raw( 7 ) ) === 32 );
 check( 'different users get different handles', UserHandle::get( 7 ) !== UserHandle::get( 8 ) );
 
-// A hostile reader that answers every meta read with '' (a replica that has not
-// caught up) must not produce a NEW handle — that is exactly how one account's
-// credentials used to end up split across two WebAuthn identities.
-$GLOBALS['__m'] = array();
-$under_stale_reads = UserHandle::get( 7 );
-check( 'a stale reader still yields the same handle (R21-04)', $under_stale_reads === $h1 );
+// --- V22-02: a reader that cannot see the stored handle must REFUSE ------------
+// The account above provably has a handle (its claim row exists). A replica that
+// has not caught up answers the meta read with nothing — and deriving on that
+// basis is precisely how one account's credentials end up split across two
+// WebAuthn identities. The only safe answer is "cannot establish it".
+$GLOBALS['__meta_writes_are_invisible'] = true;
+$blind = UserHandle::get( 7 );
+check( 'a stale reader gets null, not a second handle (V22-02)', null === $blind );
+check( 'and raw() reports it as unusable, so the caller refuses', '' === UserHandle::raw( 7 ) );
+$GLOBALS['__meta_writes_are_invisible'] = false;
+check( 'once the reader catches up, the original handle is back', $h1 === UserHandle::get( 7 ) );
 
-// An account that already carries a stored handle keeps it: the stored value
-// always wins over the derived one.
-$GLOBALS['__m'][ '9:' . UserHandle::META ] = 'STORED-HANDLE';
-check( 'a stored handle takes precedence over the derived one', UserHandle::get( 9 ) === 'STORED-HANDLE' );
+// A LEGACY account — random handle in meta, claim row back-filled by the
+// migration — behaves the same way: visible means use it, invisible means refuse.
+$GLOBALS['__m'][ '9:' . UserHandle::META ]                = 'LEGACY-RANDOM-HANDLE';
+$GLOBALS['wpdb']->store[ UserHandle::CLAIM_PREFIX . 9 ]   = 'LEGACY-RANDOM-HANDLE';
+check( 'a stored handle takes precedence over the derived one', UserHandle::get( 9 ) === 'LEGACY-RANDOM-HANDLE' );
+$GLOBALS['__meta_writes_are_invisible'] = true;
+check( 'a legacy handle hidden by a stale reader yields null (V22-02)', null === UserHandle::get( 9 ) );
+$GLOBALS['__meta_writes_are_invisible'] = false;
 
-// adopt(): sign-up hands the account the handle its ceremony already used.
+// An id with nothing at all is still served: the claim decides, not the reader.
+check( 'an account with no handle anywhere still gets one', is_string( UserHandle::get( 21 ) ) );
+
+// --- adopt(): sign-up hands the account the handle its ceremony already used ---
 check( 'adopt() stores the ceremony handle', UserHandle::adopt( 11, 'CEREMONY-HANDLE' ) === true );
+check( 'adopt() claims the row too', ( $GLOBALS['wpdb']->store[ UserHandle::CLAIM_PREFIX . 11 ] ?? null ) === 'CEREMONY-HANDLE' );
 check( 'and get() returns it from then on', UserHandle::get( 11 ) === 'CEREMONY-HANDLE' );
 check( 'adopt() rejects an empty handle', UserHandle::adopt( 12, '' ) === false );
 check( 'adopt() rejects a bad user id', UserHandle::adopt( 0, 'X' ) === false );
+check( 'adopt() refuses when the account already has a handle', UserHandle::adopt( 11, 'SECOND-HANDLE' ) === false );
 
 // R21-04: adopt() must NOT read the value back. A reader that has not caught up
 // would report failure and make the caller undo a sign-up that actually worked.

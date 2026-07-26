@@ -222,6 +222,14 @@ final class Endpoints {
 			return $limit;
 		}
 
+		// The account's WebAuthn identity must be established before a credential is
+		// created against it. When it cannot be — a handle exists that this request
+		// cannot see — refuse: registering under a second identity would split the
+		// account's passkeys between two of them.
+		if ( '' === UserHandle::raw( (int) $user->ID ) ) {
+			return $this->fail( 'rapls_passkey_register_failed', __( 'Failed to register the passkey.', 'rapls-passkey' ), 503, 'user_handle_unavailable: user=' . (int) $user->ID );
+		}
+
 		// Build the exclude list from the user's existing credentials. A single
 		// corrupt row must not break enrolment of a new passkey, so decode each row
 		// in isolation and skip (and flag) any that cannot be parsed — the worst
@@ -372,16 +380,21 @@ final class Endpoints {
 	/**
 	 * Issue request options.
 	 *
-	 * When a username is supplied, that account's credentials are allow-listed so
-	 * a non-discoverable authenticator (a security key with no resident key) can
-	 * still be used. That allow-list is exactly what would otherwise answer "does
-	 * this account exist, and does it hold a passkey?" to anyone who asks — a real
-	 * account returned descriptors and an unknown one returned none. So a username
-	 * with nothing behind it now gets DECOY descriptors instead: derived from the
-	 * name and a site secret, so they are stable per site (repeat probes agree),
-	 * unlinkable across sites, and indistinguishable from real ones. No assertion
-	 * can be produced for them, and verification matches the signature against
-	 * stored credentials, never against this list.
+	 * BY DEFAULT a username changes nothing: the response never carries an
+	 * allow-list, whoever is asked about, and sign-in relies on the browser's own
+	 * passkey picker (discoverable credentials). An allow-list is exactly what
+	 * would otherwise answer "does this account exist, and does it hold a
+	 * passkey?" — a real account returning descriptors and an unknown one
+	 * returning none.
+	 *
+	 * A site that must support non-discoverable authenticators (a security key
+	 * with no resident key, which has to be named by the server) can turn the
+	 * allow-list on with the `rapls_passkey/username_allow_list` filter. It is then
+	 * a FIXED-SIZE list every time: real descriptors first, padded with decoys
+	 * derived from the name and a site secret (stable per site, unlinkable across
+	 * sites), and trimmed if the account holds more than fit. No assertion can be
+	 * produced for a decoy, and verification matches the signature against stored
+	 * credentials, never against this list.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.30
+Stable tag: 0.13.31
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,7 +64,7 @@ This plugin stores authentication data on your own site and, by default, sends n
 What is stored on your site:
 
 * Passkey credential records (public key, credential ID, sign counter, a label and timestamps) in a custom database table.
-* A per-user WebAuthn user handle (random, not derived from personal data) in user meta.
+* A per-user WebAuthn user handle in user meta, plus one row in the options table recording that the account has one. The handle carries nothing about the person: for accounts created from this version it is derived from the account id and a site secret, and accounts that already had a random handle keep it.
 * An optional audit log of passkey events (registration, sign-in, removal) with the acting user, IP address and timestamp.
 
 External services (used only when you enable them):
@@ -80,6 +80,11 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.31 =
+* A passkey confirmation now completes. Pro's step-up held risky password sign-ins for a passkey check — and then held the passkey sign-in that answered it, so with the strictest setting nobody could get in at all. A sign-in now says what kind it is, and the confirmation is never held.
+* An account can no longer be given a second WebAuthn identity. When the handle an account already has cannot be read — a database whose reads lag behind its writes — registration is refused rather than started under a newly derived one, and the migration records every existing handle so that "does this account have one?" is answered by the database instead of by a read.
+* The table update after a plugin upgrade now also runs for the Pro QR and sign-up ceremonies, not only the free plugin's own, and at most once every few minutes on a site where it cannot complete.
 
 = 0.13.30 =
 * Fixed: a site updated without anyone opening the admin screens — a background update, or WP-CLI — could be left with the previous table layout, and a passkey sign-in would then be refused until an administrator visited the dashboard. The table is now brought up to date by the sign-in itself.

@@ -125,7 +125,29 @@ function sanitize_text_field( $s ) { return is_string( $s ) ? trim( $s ) : ''; }
 function wp_unslash( $s ) { return $s; }
 function hash_equals_stub() {}
 
+// User meta against a REAL table, so the handle scenarios below are answered by
+// the database rather than by an array. $__stale_meta_reads models a replica that
+// has not applied recent writes: reads return nothing, writes still land.
+$GLOBALS['__stale_meta_reads'] = false;
+function get_user_meta( $user_id, $key, $single = false ) {
+	global $wpdb;
+	if ( $GLOBALS['__stale_meta_reads'] ) {
+		return $single ? '' : array();
+	}
+	$v = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", $user_id, $key ) );
+	return null === $v ? ( $single ? '' : array() ) : $v;
+}
+function update_user_meta( $user_id, $key, $value ) {
+	global $wpdb;
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", $user_id, $key ) );
+	return false !== $wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES (%d, %s, %s)", $user_id, $key, $value ) );
+}
+function wp_cache_delete( $k, $g = '' ) { return true; }
+function wp_salt( $scheme = 'auth' ) { return 'integration-test-salt'; }
+
 require_once __DIR__ . '/wpdb-lite.php';
+require_once dirname( __DIR__, 2 ) . '/vendor/autoload.php';
+require_once dirname( __DIR__, 2 ) . '/src/Credentials/UserHandle.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/Schema.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/Credential.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/CredentialRepository.php';
@@ -134,6 +156,7 @@ require_once dirname( __DIR__, 2 ) . '/src/Rest/Endpoints.php';
 
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
+use RaplsPasskey\Credentials\UserHandle;
 use RaplsPasskey\Rest\Endpoints;
 use RaplsPasskey\Support\RateLimit;
 use RaplsPasskey\Support\Settings;
@@ -251,6 +274,18 @@ $wpdb->query(
 		autoload varchar(20) NOT NULL DEFAULT 'yes',
 		PRIMARY KEY (option_id),
 		UNIQUE KEY option_name (option_name)
+	)"
+);
+
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->usermeta}" );
+$wpdb->query(
+	"CREATE TABLE {$wpdb->usermeta} (
+		umeta_id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		user_id bigint(20) unsigned NOT NULL,
+		meta_key varchar(255) DEFAULT NULL,
+		meta_value longtext,
+		PRIMARY KEY (umeta_id),
+		KEY user_id (user_id)
 	)"
 );
 
@@ -523,6 +558,84 @@ report(
 	$results,
 	$failed
 );
+
+// --- V22-02: one WebAuthn identity per account, decided by the database --------
+
+// A legacy account: a random handle stored by an older version, and no claim row.
+$wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES (%d, %s, %s)", 501, UserHandle::META, 'LEGACY-RANDOM-HANDLE' ) );
+Schema::install();
+$claimed_value = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 501 ) );
+report(
+	'the migration back-fills a claim row carrying the existing handle (V22-02)',
+	'LEGACY-RANDOM-HANDLE' === $claimed_value,
+	array( 'claim_row' => $claimed_value ),
+	$results,
+	$failed
+);
+
+// Running the migration again must not disturb it.
+Schema::install();
+$claim_rows = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 501 ) );
+report(
+	'a repeated migration leaves exactly one claim row',
+	1 === $claim_rows && 'LEGACY-RANDOM-HANDLE' === $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 501 ) ),
+	array( 'rows' => $claim_rows ),
+	$results,
+	$failed
+);
+
+// The legacy account keeps its handle…
+report(
+	'a stored handle is returned unchanged',
+	'LEGACY-RANDOM-HANDLE' === UserHandle::get( 501 ),
+	array( 'handle' => UserHandle::get( 501 ) ),
+	$results,
+	$failed
+);
+
+// …and a reader that cannot see it must refuse, NOT mint a second identity.
+$GLOBALS['__stale_meta_reads'] = true;
+$blind = UserHandle::get( 501 );
+$GLOBALS['__stale_meta_reads'] = false;
+report(
+	'a stale reader gets null for an account that already has a handle (V22-02)',
+	null === $blind,
+	array( 'handle_under_stale_read' => $blind ),
+	$results,
+	$failed
+);
+
+// A fresh account: the claim decides, and the row records the handle it got.
+$fresh_handle = UserHandle::get( 502 );
+$fresh_row    = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 502 ) );
+report(
+	'a first use claims the row and stores the handle in it',
+	is_string( $fresh_handle ) && '' !== $fresh_handle && $fresh_handle === $fresh_row,
+	array( 'handle' => $fresh_handle, 'claim_row' => $fresh_row ),
+	$results,
+	$failed
+);
+report(
+	'and the same account keeps that handle on later requests',
+	$fresh_handle === UserHandle::get( 502 ),
+	array( 'again' => UserHandle::get( 502 ) ),
+	$results,
+	$failed
+);
+
+// A sign-up adopting a ceremony handle claims the row too, and a second adopt for
+// the same account is refused by the unique index — not by anything read.
+$adopted = UserHandle::adopt( 503, 'CEREMONY-HANDLE' );
+$second  = UserHandle::adopt( 503, 'SECOND-HANDLE' );
+report(
+	'adopt() claims the row once and refuses a second identity (V22-02)',
+	true === $adopted && false === $second && 'CEREMONY-HANDLE' === $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 503 ) ),
+	array( 'first' => $adopted, 'second' => $second ),
+	$results,
+	$failed
+);
+
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->usermeta}" );
 
 // Clean up.
 $wpdb->query( "DROP TABLE IF EXISTS {$table}" );

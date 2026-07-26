@@ -217,9 +217,19 @@ final class Plugin {
 	 * @return mixed The result, unchanged.
 	 */
 	public function upgrade_before_ceremony( $result, $server = null, $request = null ) {
-		if ( $request instanceof \WP_REST_Request && 0 === strpos( ltrim( (string) $request->get_route(), '/' ), 'rapls-passkey/' ) ) {
-			Schema::maybe_upgrade();
+		if ( ! $request instanceof \WP_REST_Request ) {
+			return $result;
 		}
+		// Both plugins' namespaces: the Pro QR and sign-up ceremonies write to this
+		// table too (slot numbers, the touch nonce), so covering only our own routes
+		// would leave those failing on a site nobody has opened wp-admin on.
+		$route = ltrim( (string) $request->get_route(), '/' );
+		if ( 0 !== strpos( $route, 'rapls-passkey/' ) && 0 !== strpos( $route, 'rapls-passkey-pro/' ) ) {
+			return $result;
+		}
+		// Throttled, because this runs before any permission callback: an anonymous
+		// caller must not be able to re-run a failing migration on every request.
+		Schema::maybe_upgrade_throttled();
 		return $result;
 	}
 

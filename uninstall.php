@@ -39,6 +39,11 @@ function rapls_passkey_uninstall_site(): void {
 	// rate-limit counters, and quota reservation slots (all raw options rather than
 	// transients).
 	$handle_lock = $wpdb->esc_like( 'rapls_pk_handle_lock_' ) . '%';
+	// The per-user handle claim row (rapls_pk_handle_<id>) — the row whose
+	// existence says "this account has a WebAuthn identity" — and the migration
+	// back-off rows.
+	$handle_claim = $wpdb->esc_like( 'rapls_pk_handle_' ) . '%';
+	$migrate_rows = $wpdb->esc_like( 'rapls_passkey_migrate_' ) . '%';
 	// Attempt slots (rapls_passkey_ra_) are the CURRENT rate-limit rows;
 	// rapls_passkey_rl_ below is the counter this plugin used before them and may
 	// still be present on a site that upgraded. Both go.
@@ -46,7 +51,7 @@ function rapls_passkey_uninstall_site(): void {
 	$reg_lock    = $wpdb->esc_like( 'rapls_pk_reg_lock_' ) . '%';
 	$rate_rows   = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';
 	$slot_rows   = $wpdb->esc_like( 'rapls_passkey_rs_' ) . '%';
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s", $handle_lock, $reg_lock, $rate_rows, $slot_rows, $attempt_rows ) ); // phpcs:ignore WordPress.DB
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s", $handle_lock, $handle_claim, $migrate_rows, $reg_lock, $rate_rows, $slot_rows, $attempt_rows ) ); // phpcs:ignore WordPress.DB
 }
 
 // Remove per-user meta this plugin stored, for every user (global, not per-site).

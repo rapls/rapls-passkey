@@ -17,6 +17,8 @@ define( 'ABSPATH', __DIR__ . '/' );
 // --- Minimal $wpdb stub ---------------------------------------------------
 class WPDB_Stub {
 	public $prefix = 'wp_';
+	public $options  = 'wp_options';
+	public $usermeta = 'wp_usermeta';
 	public $dropped = array();
 	public $last_error = '';
 	/** Set to the index name once the migration's ALTER TABLE has "created" it. */
@@ -32,8 +34,27 @@ class WPDB_Stub {
 	/** Probe rows the writer currently holds, keyed by "user_id:slot_no". */
 	private $probe = array();
 
+	/** Migration back-off rows this "database" holds, by option_name. */
+	public $lock_rows = array();
+	/** Handle-claim back-fill statements seen. */
+	public $claim_backfills = array();
+
 	public function query( $sql ) {
 		$this->dropped[] = $sql;
+		// The handle-claim back-fill: one INSERT … SELECT from the usermeta table.
+		if ( false !== strpos( $sql, 'INSERT IGNORE INTO' ) && false !== strpos( $sql, 'usermeta' ) ) {
+			$this->claim_backfills[] = $sql;
+			return 1;
+		}
+		// The migration back-off row: unique option_name, so the second attempt in
+		// the same window is refused by the database.
+		if ( false !== strpos( $sql, 'rapls_passkey_migrate_' ) && 0 === strpos( ltrim( $sql ), 'INSERT INTO' ) ) {
+			if ( preg_match( "/VALUES \('([^']+)'/", $sql, $m ) ) {
+				if ( isset( $this->lock_rows[ $m[1] ] ) ) { return false; }
+				$this->lock_rows[ $m[1] ] = true;
+				return 1;
+			}
+		}
 		if ( false !== strpos( $sql, 'ADD UNIQUE KEY user_slot' ) ) {
 			$this->slot_index = 'user_slot';
 		}
@@ -113,6 +134,8 @@ if ( ! file_exists( __DIR__ . '/wp-admin/includes/upgrade.php' ) ) {
 	file_put_contents( __DIR__ . '/wp-admin/includes/upgrade.php', "<?php\n" );
 }
 
+require dirname( __DIR__ ) . '/vendor/autoload.php';
+require dirname( __DIR__ ) . '/src/Credentials/UserHandle.php';
 require dirname( __DIR__ ) . '/src/Credentials/Schema.php';
 
 use RaplsPasskey\Credentials\Schema;
@@ -207,6 +230,40 @@ check( 'drop() issues DROP TABLE IF EXISTS', (bool) array_filter(
 	$GLOBALS['wpdb']->dropped,
 	static fn( $q ) => false !== strpos( $q, 'DROP TABLE IF EXISTS wp_rapls_passkey_credentials' )
 ) );
+
+// --- V22-02: the migration gives existing handles their claim row -------------
+$GLOBALS['wpdb']->claim_backfills = array();
+Schema::install();
+check( 'the migration back-fills a claim row for every stored handle (V22-02)', 1 === count( $GLOBALS['wpdb']->claim_backfills ) );
+$backfill = $GLOBALS['wpdb']->claim_backfills[0] ?? '';
+check( 'it names the handle meta key as its source', false !== strpos( $backfill, 'rapls_passkey_user_handle' ) );
+check( 'it writes rows under the claim prefix', false !== strpos( $backfill, 'rapls_pk_handle_' ) );
+check( 'and it is an INSERT IGNORE, so running it again is safe', 0 === strpos( ltrim( $backfill ), 'INSERT IGNORE' ) );
+
+// --- V22-06: a non-admin request may run the migration once per window --------
+// rest_pre_dispatch runs before any permission callback, so an anonymous caller
+// must not be able to re-run a failing migration on every request.
+$GLOBALS['__options'] = array();                 // stored version: absent -> behind
+$GLOBALS['wpdb']->lock_rows      = array();
+$GLOBALS['wpdb']->claim_backfills = array();
+Schema::maybe_upgrade_throttled( 300 );
+$first_attempt = count( $GLOBALS['wpdb']->claim_backfills );
+check( 'the first ceremony request in a window runs the migration (V22-06)', $first_attempt >= 1 );
+check( 'and claims the window with one row', 1 === count( $GLOBALS['wpdb']->lock_rows ) );
+
+$GLOBALS['__options'] = array();                 // still behind: the migration "failed"
+$GLOBALS['wpdb']->claim_backfills = array();
+Schema::maybe_upgrade_throttled( 300 );
+Schema::maybe_upgrade_throttled( 300 );
+Schema::maybe_upgrade_throttled( 300 );
+check( 'further requests in the same window do NOT re-run it (V22-06)', 0 === count( $GLOBALS['wpdb']->claim_backfills ) );
+check( 'and no second row is claimed for that window', 1 === count( $GLOBALS['wpdb']->lock_rows ) );
+
+// Once the schema is current, the throttled path does nothing at all.
+$GLOBALS['__options'][ 'rapls_passkey_schema_version' ] = Schema::current_version();
+$GLOBALS['wpdb']->lock_rows = array();
+Schema::maybe_upgrade_throttled( 300 );
+check( 'an up-to-date site claims nothing and does nothing', array() === $GLOBALS['wpdb']->lock_rows );
 
 // --- cleanup the temporary upgrade.php stub ------------------------------
 @unlink( __DIR__ . '/wp-admin/includes/upgrade.php' );

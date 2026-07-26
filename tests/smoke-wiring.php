@@ -47,7 +47,7 @@ function get_option( $k, $d = false ) {
 		// The schema check ran. Answer "already current" so it does no work here;
 		// the migration itself is covered by the real-database tests.
 		$GLOBALS['__upgraded']++;
-		return '6';
+		return \RaplsPasskey\Credentials\Schema::current_version();
 	}
 	return $d;
 }
@@ -125,9 +125,14 @@ check( 'boot() hooks show_user_profile (admin)', in_array( 'show_user_profile', 
 check( 'boot() hooks rest_pre_dispatch (schema upgrade for our own routes)', in_array( 'rest_pre_dispatch', $hooked, true ) );
 $GLOBALS['__upgraded'] = 0;   // count from here
 $r_ours = new WP_REST_Request( '/rapls-passkey/v1/login/options' );
+$r_pro   = new WP_REST_Request( '/rapls-passkey-pro/v1/channel/verify' );
 $r_other = new WP_REST_Request( '/wp/v2/posts' );
 check( 'a request to our namespace triggers the upgrade check', null === $plugin->upgrade_before_ceremony( null, null, $r_ours ) && 1 === $GLOBALS['__upgraded'] );
-check( 'a request to another namespace does not', null === $plugin->upgrade_before_ceremony( null, null, $r_other ) && 1 === $GLOBALS['__upgraded'] );
+// The Pro QR and sign-up ceremonies write to the same table (slot numbers, the
+// touch nonce), so covering only our own namespace would leave them failing on a
+// site updated without an admin page load (V22-04).
+check( "a request to Pro's namespace triggers it too (V22-04)", null === $plugin->upgrade_before_ceremony( null, null, $r_pro ) && 2 === $GLOBALS['__upgraded'] );
+check( 'a request to another namespace does not', null === $plugin->upgrade_before_ceremony( null, null, $r_other ) && 2 === $GLOBALS['__upgraded'] );
 check( 'the dispatch result is passed through untouched', 'x' === $plugin->upgrade_before_ceremony( 'x', null, $r_ours ) );
 
 $count_after_first = count( $GLOBALS['__hooks'] );

@@ -33,25 +33,98 @@ final class UserHandle {
 	public const LOCK_PREFIX = 'rapls_pk_handle_lock_';
 
 	/**
+	 * wp_options prefix for the per-user handle claim row. The row's existence is
+	 * the fact "this account has a handle"; its value is that handle. The unique
+	 * index on option_name is what makes claiming it a decision the database
+	 * takes, rather than one taken from a value that was read.
+	 */
+	public const CLAIM_PREFIX = 'rapls_pk_handle_';
+
+	/**
 	 * Get (creating on first use) the base64url handle for a user.
 	 *
+	 * Returns null when the account's handle cannot be established — never a
+	 * second handle for an account that already has one. A caller must refuse the
+	 * ceremony rather than continue: minting a different identity for the same
+	 * account is the failure this whole class exists to prevent.
+	 *
 	 * @param int $user_id WordPress user id.
-	 * @return string Base64url-encoded handle.
+	 * @return string|null Base64url-encoded handle, or null when it cannot be established.
 	 */
-	public static function get( int $user_id ): string {
+	public static function get( int $user_id ): ?string {
+		if ( $user_id <= 0 ) {
+			return null;
+		}
+
 		$handle = get_user_meta( $user_id, self::META, true );
 		if ( is_string( $handle ) && '' !== $handle ) {
+			// A stored handle is authoritative. Even a lagging reader is safe here:
+			// a handle never changes once set, so the value a replica carries is the
+			// value the writer holds.
 			return $handle;
 		}
 
-		// No stored handle: DERIVE one. It is a pure function of the user id and the
-		// site's salt, so every request — concurrent first registrations, a retry
-		// after a failed write, a read served by a replica that has not caught up —
-		// arrives at the same value. That is what stops one account's credentials
-		// being split across two WebAuthn identities, and it needs no lock, no
-		// insert, and nothing read back. (An account that already carries a stored
-		// handle keeps it: the meta above always wins.)
-		return self::derive( $user_id );
+		// Nothing visible — which is NOT the same as nothing stored. A reader served
+		// by a replica that has not caught up returns exactly this, and deriving a
+		// handle on that basis is how an account's credentials end up split across
+		// two WebAuthn identities.
+		//
+		// So prove it with a WRITE. Every account that holds a handle also holds a
+		// claim row, whose name is unique in the options table (the migration
+		// back-fills one for every existing handle). Inserting that row succeeds
+		// only if no handle was ever established for this account — a fact the
+		// database decides, on the writer, with no read involved.
+		$derived = self::derive( $user_id );
+		$claimed = self::claim( $user_id, $derived );
+
+		if ( true === $claimed ) {
+			// Ours: this account provably had no handle. Mirror it into the meta so
+			// the ordinary path finds it from now on (and so a salt change cannot
+			// move it afterwards).
+			update_user_meta( $user_id, self::META, $derived );
+			return $derived;
+		}
+
+		// The row exists, or the database refused to answer. Either way an
+		// established handle may be sitting where we cannot see it: refuse.
+		return null;
+	}
+
+	/**
+	 * Claim the one-and-only handle row for a user.
+	 *
+	 * A plain INSERT into a table whose `option_name` is unique. It either wrote
+	 * the row — meaning this account had no handle and now has this one — or the
+	 * database refused it. Nothing is read, so no replica can change the answer.
+	 *
+	 * @param int    $user_id User id.
+	 * @param string $handle  The handle to claim.
+	 * @return bool|null True when claimed here, false when a row already exists,
+	 *                   null when the database could not be asked.
+	 */
+	private static function claim( int $user_id, string $handle ): ?bool {
+		global $wpdb;
+
+		if ( ! isset( $wpdb ) || ! is_object( $wpdb ) ) {
+			return null;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ok = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+				self::CLAIM_PREFIX . $user_id,
+				$handle
+			)
+		);
+
+		if ( false !== $ok ) {
+			return true;
+		}
+		// The insert failed. A duplicate name is the expected reason; a broken
+		// connection is not, and the two are not distinguishable from here — both
+		// mean "cannot establish this handle", which is what the caller acts on.
+		return false;
 	}
 
 	/**
@@ -89,11 +162,19 @@ final class UserHandle {
 			return false;
 		}
 
-		// Store it and judge by the write itself. Nothing is read back: a read can be
-		// answered by a replica that has not applied the write yet, and treating that
-		// as failure would undo a sign-up that in fact succeeded. update_user_meta()
-		// returns false only on a real failure here, because this account is brand
-		// new and so cannot already hold this exact value.
+		// Claim the account's one handle row FIRST. The account is brand new, so the
+		// row cannot exist; if it somehow does, another handle is already
+		// established for this id and adopting a second one is exactly what must not
+		// happen. The claim is decided by the database, not by a value read back.
+		if ( true !== self::claim( $user_id, $handle ) ) {
+			return false;
+		}
+
+		// Then store it and judge by the write itself. Nothing is read back: a read
+		// can be answered by a replica that has not applied the write yet, and
+		// treating that as failure would undo a sign-up that in fact succeeded.
+		// update_user_meta() returns false only on a real failure here, because this
+		// account is brand new and so cannot already hold this exact value.
 		return false !== update_user_meta( $user_id, self::META, $handle );
 	}
 
@@ -101,9 +182,18 @@ final class UserHandle {
 	 * Raw (binary) handle bytes for use as the library `user.id`.
 	 *
 	 * @param int $user_id WordPress user id.
-	 * @return string Raw bytes.
+	 * @return string Raw bytes, or '' when the handle could not be established —
+	 *                callers treat that as "refuse the ceremony".
 	 */
 	public static function raw( int $user_id ): string {
-		return Base64UrlSafe::decode( self::get( $user_id ) );
+		$handle = self::get( $user_id );
+		if ( null === $handle ) {
+			return '';
+		}
+		try {
+			return Base64UrlSafe::decode( $handle );
+		} catch ( \Throwable $e ) {
+			return '';
+		}
 	}
 }

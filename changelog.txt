@@ -3,6 +3,18 @@
 The full release history for Rapls Passkey. The most recent releases are also
 listed in readme.txt; older entries live here.
 
+= 0.13.21 =
+* Fourth re-review fixes (concurrency correctness):
+* The passkey per-user limit is now enforced under a real database row lock (a short transaction on a per-user row), so it holds exactly regardless of the server's transaction isolation level — not just the default. The lock releases automatically on commit/rollback, so a crashed request cannot leave it stuck.
+* The atomic quota primitive reads its own result before the opportunistic cleanup runs (a stray cleanup query could otherwise flip a reservation's success/failure), and a slot is now handed back only to the exact time-window it was taken in, so a late failure from an expired window cannot subtract from a newer one.
+* Re-opening the anonymous passkey-login REST routes when a security plugin locks the REST API to logged-in users is now an explicit, off-by-default admin setting (Settings -> Rapls Passkey -> REST API). It never overrides a firewall / IP-block / maintenance response, and does nothing unless you turn it on.
+
+= 0.13.20 =
+* Third re-review fixes (concurrency and REST hardening):
+* The passkey per-user limit is now enforced in a single atomic INSERT ... SELECT statement, so two simultaneous registrations can never both exceed the maximum — the cap no longer depends on a post-insert rollback. The per-user registration lock is released only by its owner (compare-and-delete), so a stale lock cannot be freed out from under the request that stole it.
+* The shared rate/attempt counter now FAILS CLOSED on a database error (a read or write failure blocks the guarded action instead of silently allowing it), and gained an atomic "reserve one slot under a cap" primitive for callers that need a strict quota.
+* The REST re-open for the anonymous passkey-login routes now clears ONLY a genuine 401 "authentication required" restriction; a 403 from a WAF, IP gate, maintenance mode or capability check is preserved even on the plugin's own routes.
+
 = 0.13.19 =
 * Second re-review fixes (concurrency, 2FA and distribution build):
 * Distribution build: WooCommerce's global WC() (and the wc_*/WC_* family) is excluded from prefixing, so the build no longer rewrites a function_exists('WC') check or emits a global WC() alias that forwards to a non-existent prefixed function (which could mis-detect WooCommerce or fatal another plugin). The final-artifact check now also fails on any mis-prefixed WooCommerce symbol or any generated host-function alias.

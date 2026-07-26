@@ -40,6 +40,13 @@ final class Schema {
 	private const SLOT_INDEX = 'user_slot';
 
 	/**
+	 * Per-request memo for {@see cap_enforceable()}. Null until asked.
+	 *
+	 * @var bool|null
+	 */
+	private static $cap_enforceable = null;
+
+	/**
 	 * Fully-qualified credentials table name.
 	 *
 	 * @return string
@@ -69,14 +76,23 @@ final class Schema {
 		if ( get_option( self::VERSION_OPTION ) === self::VERSION ) {
 			return;
 		}
-		self::install();
-		update_option( self::VERSION_OPTION, self::VERSION, false );
+		// Record the new version ONLY when the migration completed — including the
+		// slot back-fill and the unique index that enforces the per-user cap. If any
+		// step failed (a locked table, a permissions problem, a half-applied
+		// change), leaving the stored version behind means the next admin request
+		// retries it instead of treating a partial schema as finished.
+		if ( self::install() ) {
+			update_option( self::VERSION_OPTION, self::VERSION, false );
+		}
 	}
 
 	/**
 	 * Create or update the table via dbDelta.
+	 *
+	 * @return bool True when the schema is fully in place (tables, slot numbers and
+	 *              the unique slot index), false when a step did not complete.
 	 */
-	public static function install(): void {
+	public static function install(): bool {
 		global $wpdb;
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -131,8 +147,8 @@ final class Schema {
 		// The unique slot index is added AFTER dbDelta, not as part of the CREATE
 		// TABLE: on an existing install every row starts with slot_no NULL, and the
 		// index can only be created once those rows carry distinct numbers.
-		self::backfill_slots();
-		self::ensure_slot_index();
+		$ok = self::backfill_slots();
+		$ok = self::ensure_slot_index() && $ok;
 
 		/*
 		 * Audit log: one row per security-relevant event (registration, login,
@@ -152,6 +168,8 @@ final class Schema {
 		) {$charset_collate};";
 
 		dbDelta( $audit_sql );
+
+		return $ok;
 	}
 
 	/**
@@ -160,8 +178,10 @@ final class Schema {
 	 * rows occupy slots against the cap. Rows written by this version already carry
 	 * a number, so this only ever touches the upgrade backlog and is a no-op
 	 * afterwards.
+	 *
+	 * @return bool True when no row is left without a slot number.
 	 */
-	private static function backfill_slots(): void {
+	private static function backfill_slots(): bool {
 		global $wpdb;
 		$table = self::credentials_table();
 
@@ -171,8 +191,11 @@ final class Schema {
 				"SELECT id, user_id FROM {$table} WHERE slot_no IS NULL ORDER BY user_id ASC, id ASC LIMIT 500",
 				ARRAY_A
 			);
+			if ( ! is_array( $rows ) || '' !== (string) $wpdb->last_error ) {
+				return false; // Could not even read the backlog.
+			}
 			if ( ! $rows ) {
-				return;
+				return true;
 			}
 			foreach ( $rows as $row ) {
 				$user_id = (int) $row['user_id'];
@@ -180,20 +203,27 @@ final class Schema {
 				$next = 1 + (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 					$wpdb->prepare( "SELECT COALESCE(MAX(slot_no), 0) FROM {$table} WHERE user_id = %d", $user_id )
 				);
-				$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 					$wpdb->prepare( "UPDATE {$table} SET slot_no = %d WHERE id = %d AND slot_no IS NULL", $next, (int) $row['id'] )
 				);
+				if ( false === $updated ) {
+					return false; // Leave the version behind so this is retried.
+				}
 			}
 		} while ( count( $rows ) === 500 );
+
+		return true;
 	}
 
 	/**
 	 * Create the UNIQUE (user_id, slot_no) index if it is not already there, and
-	 * record whether it exists. The per-user cap is enforced by this index, so
-	 * Rest\Endpoints refuses to register (rather than registering unprotected) when
-	 * a cap is configured and the flag says the index is missing.
+	 * report whether it is now in place. The per-user cap is enforced by this
+	 * index, so a registration that has a cap to apply refuses (rather than
+	 * registering unprotected) when it is missing.
+	 *
+	 * @return bool True when the index exists afterwards.
 	 */
-	private static function ensure_slot_index(): void {
+	private static function ensure_slot_index(): bool {
 		global $wpdb;
 		$table = self::credentials_table();
 
@@ -203,7 +233,11 @@ final class Schema {
 			);
 		}
 
-		update_option( self::SLOT_INDEX_OPTION, self::slot_index_exists() ? '1' : '0', false );
+		// Confirm against the table rather than trusting the ALTER's return value.
+		self::flush_cap_cache();
+		$exists = self::slot_index_exists();
+		update_option( self::SLOT_INDEX_OPTION, $exists ? '1' : '0', false );
+		return $exists;
 	}
 
 	/**
@@ -221,13 +255,35 @@ final class Schema {
 	}
 
 	/**
-	 * Whether the database can enforce the per-user cap (the unique slot index is
-	 * in place). Cheap: reads the flag recorded by the migration.
+	 * Whether the database can enforce the per-user cap right now — i.e. the unique
+	 * slot index really is on the table.
+	 *
+	 * This asks the DATABASE, not a stored flag. A flag written during migration
+	 * would still say "yes" after the index was later dropped by a restore, a DBA,
+	 * or a half-applied schema change, and the cap would then be silently
+	 * unenforced. The answer is memoised for the current request only (registration
+	 * is rare, so one SHOW INDEX per request costs nothing), and anything other
+	 * than a confirmed index — including a failed query — counts as "no", so the
+	 * caller fails closed.
 	 *
 	 * @return bool
 	 */
 	public static function cap_enforceable(): bool {
-		return '1' === (string) get_option( self::SLOT_INDEX_OPTION, '0' );
+		if ( null === self::$cap_enforceable ) {
+			self::$cap_enforceable = self::slot_index_exists();
+			// Keep the stored flag in step so Site Health and admin notices can show
+			// the state without repeating the query. It is a report, never the
+			// authority for allowing a write.
+			update_option( self::SLOT_INDEX_OPTION, self::$cap_enforceable ? '1' : '0', false );
+		}
+		return self::$cap_enforceable;
+	}
+
+	/**
+	 * Forget the memoised index check (after a migration, or in tests).
+	 */
+	public static function flush_cap_cache(): void {
+		self::$cap_enforceable = null;
 	}
 
 	/**

@@ -292,11 +292,13 @@ final class SecondFactor {
 			return false;
 		}
 
-		// Count the wrong attempt atomically (concurrent tries after the first
-		// factor cannot lose a count and slip past MAX_ATTEMPTS via a
-		// read-modify-write). Keyed by the pending-login token.
-		$attempts = RateLimit::incr( '2fa_attempts|' . self::hash( $token ), self::TTL );
-		if ( $attempts >= self::MAX_ATTEMPTS ) {
+		// Claim this wrong attempt's slot. The slot number is our own position in
+		// the budget, taken from a row the database guarantees only we hold, so
+		// concurrent tries can neither share a slot nor read a stale total and slip
+		// past MAX_ATTEMPTS. A claim that cannot be confirmed returns 0, which
+		// discards the pending login (fail closed). Keyed by the pending-login token.
+		$attempt = RateLimit::admit( '2fa_attempts|' . self::hash( $token ), self::TTL, self::MAX_ATTEMPTS );
+		if ( 0 === $attempt || $attempt >= self::MAX_ATTEMPTS ) {
 			self::forget();
 			return false;
 		}

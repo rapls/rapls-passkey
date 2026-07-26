@@ -108,9 +108,29 @@ jobs:
             --host=127.0.0.1 --port=3306 --db=rapls_test --user=root --pass=rootpw \
             --workers=100 --json=concurrency-${{ matrix.db.name }}-foundrows.json
 
+      # The same scenarios through the SHIPPED plugin classes (Schema migration,
+      # CredentialRepository, RateLimit) rather than stand-alone SQL: migration
+      # from the previous schema, the cap refusing when its unique index is gone,
+      # fail-closed on a database error, and an idempotent replay.
+      - name: Plugin integration test
+        run: |
+          php tests/db/integration.php \
+            --host=127.0.0.1 --port=3306 --db=rapls_test --user=root --pass=rootpw \
+            --workers=20 --json=integration-${{ matrix.db.name }}.json
+
+      - name: Plugin integration test with CLIENT_FOUND_ROWS
+        env:
+          RAPLS_CLIENT_FOUND_ROWS: '1'
+        run: |
+          php tests/db/integration.php \
+            --host=127.0.0.1 --port=3306 --db=rapls_test --user=root --pass=rootpw \
+            --workers=20 --json=integration-${{ matrix.db.name }}-foundrows.json
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: concurrency-${{ matrix.db.name }}
-          path: concurrency-*.json
+          path: |
+            concurrency-*.json
+            integration-*.json

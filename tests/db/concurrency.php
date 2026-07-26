@@ -165,20 +165,28 @@ if ( '' !== $opts['worker'] ) {
 	}
 
 	if ( 'admit' === $opts['worker'] ) {
-		// Atomic admission: consume one attempt, then decide — the V14-03 order.
-		list( $name, $max, $window_end ) = explode( ':', $opts['arg'] );
-		$name = $c->real_escape_string( $name );
-		$max  = (int) $max;
-		$init = "1:{$window_end}";
-		$c->query(
-			'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('{$name}', '{$init}')
-			 ON DUPLICATE KEY UPDATE option_value = CONCAT(
-				CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) + 1, ':', SUBSTRING_INDEX(option_value, ':', -1))"
-		);
-		$res    = $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = '{$name}'" );
-		$stored = $res ? ( $res->fetch_row()[0] ?? null ) : null;
-		$count  = is_string( $stored ) ? (int) explode( ':', $stored )[0] : PHP_INT_MAX;
-		echo ( $count <= $max ? "OK count={$count}\n" : "NO over={$count}\n" );
+		// The shipped admission: claim a numbered attempt slot, prove ownership by
+		// reading the row back. No total is ever read, so a replica cannot inflate
+		// the budget and a window boundary cannot open a hole.
+		list( $key, $max, $end ) = explode( ':', $opts['arg'] );
+		$max   = (int) $max;
+		$nonce = bin2hex( random_bytes( 12 ) );
+		for ( $slot = 1; $slot <= $max; $slot++ ) {
+			$name  = $c->real_escape_string( "ra_{$key}_{$end}_{$slot}" );
+			$value = $c->real_escape_string( "{$end}:{$nonce}" );
+			$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('{$name}', '{$value}')" );
+			$res    = $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = '{$name}'" );
+			$stored = $res ? ( $res->fetch_row()[0] ?? null ) : null;
+			if ( null === $stored && '' !== $c->error ) {
+				echo "NO read-error\n";
+				exit( 0 );
+			}
+			if ( (string) $stored === "{$end}:{$nonce}" ) {
+				echo "OK slot={$slot}\n";
+				exit( 0 );
+			}
+		}
+		echo "NO budget-gone\n";
 		exit( 0 );
 	}
 
@@ -269,30 +277,34 @@ echo '  server: ' . $server . ', workers: ' . $opts['workers'] . "\n\n";
 $out      = run( 'cap', '101:1:c1-{i}', $opts['workers'], $php, $self, $conn );
 $admitted = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
 $rows     = (int) $c->query( 'SELECT COUNT(*) FROM ' . CRED_TABLE . ' WHERE user_id = 101' )->fetch_row()[0];
-report( 'cap=1: admitted<=1 and final rows<=1', $admitted <= 1 && $rows <= 1, array( 'workers' => $opts['workers'], 'admitted' => $admitted, 'rows' => $rows ), $results, $failed );
+report( 'cap=1: exactly 1 admitted, exactly 1 row', 1 === $admitted && 1 === $rows, array( 'workers' => $opts['workers'], 'admitted' => $admitted, 'rows' => $rows ), $results, $failed );
 
 // 2. cap = 3, N concurrent registrations for one user.
 $out      = run( 'cap', '102:3:c3-{i}', $opts['workers'], $php, $self, $conn );
 $admitted = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
 $rows     = (int) $c->query( 'SELECT COUNT(*) FROM ' . CRED_TABLE . ' WHERE user_id = 102' )->fetch_row()[0];
-report( 'cap=3: admitted<=3 and final rows<=3', $admitted <= 3 && $rows <= 3, array( 'workers' => $opts['workers'], 'admitted' => $admitted, 'rows' => $rows ), $results, $failed );
+report( 'cap=3: exactly 3 admitted, exactly 3 rows', 3 === $admitted && 3 === $rows, array( 'workers' => $opts['workers'], 'admitted' => $admitted, 'rows' => $rows ), $results, $failed );
 
 // 3. Quota cap = 5, N concurrent reservations in one window.
 $end      = ( intdiv( time(), 3600 ) + 1 ) * 3600;
 $out      = run( 'quota', "q1:5:{$end}", $opts['workers'], $php, $self, $conn );
 $admitted = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
 $rows     = (int) $c->query( 'SELECT COUNT(*) FROM ' . OPT_TABLE . " WHERE option_name LIKE 'rs\\_q1\\_%'" )->fetch_row()[0];
-report( 'quota cap=5: admitted<=5 and final rows<=5', $admitted <= 5 && $rows <= 5, array( 'workers' => $opts['workers'], 'admitted' => $admitted, 'rows' => $rows ), $results, $failed );
+report( 'quota cap=5: exactly 5 admitted, exactly 5 rows', 5 === $admitted && 5 === $rows, array( 'workers' => $opts['workers'], 'admitted' => $admitted, 'rows' => $rows ), $results, $failed );
 
-// 4. Admission with the counter at max-1: at most ONE of N may proceed.
+// 4. Admission with the budget at max-1: exactly ONE of N may proceed.
 $win = time() + 3600;
-$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('rl_a', '4:{$win}')" );
+for ( $s = 1; $s <= 4; $s++ ) {                        // 4 of 5 attempts already spent
+	$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('ra_rl_a_{$win}_{$s}', '{$win}:taken')" );
+}
 $out      = run( 'admit', "rl_a:5:{$win}", 20, $php, $self, $conn );
 $admitted = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
-report( 'count=max-1: at most 1 of 20 admitted', $admitted <= 1, array( 'workers' => 20, 'admitted' => $admitted ), $results, $failed );
+report( 'count=max-1: exactly 1 of 20 admitted', 1 === $admitted, array( 'workers' => 20, 'admitted' => $admitted ), $results, $failed );
 
-// 5. Admission with the counter already at max: none may proceed.
-$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('rl_b', '5:{$win}')" );
+// 5. Admission with the budget already spent: none may proceed.
+for ( $s = 1; $s <= 5; $s++ ) {
+	$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('ra_rl_b_{$win}_{$s}', '{$win}:taken')" );
+}
 $out      = run( 'admit', "rl_b:5:{$win}", 20, $php, $self, $conn );
 $admitted = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
 report( 'count=max: 0 of 20 admitted', 0 === $admitted, array( 'workers' => 20, 'admitted' => $admitted ), $results, $failed );

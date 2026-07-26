@@ -908,11 +908,11 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return true;
 		}
-		// Atomic increment-then-check via the shared fail-closed counter: concurrent
-		// username-bearing lookups cannot both slip under the cap via a
-		// read-modify-write race, and a DB error returns OVERFLOW (> cap), so the
-		// enumeration guard fails closed (returns empty options, as if unknown).
-		return RateLimit::incr( $this->rate_logical_key( 'login_options' ), (int) Settings::login_rate_window() ) <= $max;
+		// One of exactly $max slots per window, enforced by the database: concurrent
+		// username-bearing lookups cannot all slip under the cap, and a claim that
+		// cannot be confirmed counts as refused, so the guard fails closed (returns
+		// empty options, exactly as it does for an unknown user).
+		return 0 !== RateLimit::admit( $this->rate_logical_key( 'login_options' ), (int) Settings::login_rate_window(), $max );
 	}
 
 	/**
@@ -928,9 +928,12 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return false;
 		}
-		// count() returns OVERFLOW on a DB read error, so a database failure blocks
-		// the request (429) instead of being read as "0 attempts so far".
-		return RateLimit::count( $this->rate_logical_key( $bucket ) ) >= $max;
+		// ADVISORY ONLY — an early 429 that saves the request some work. This is a
+		// read, so a replica may answer with a stale value; the decision that has to
+		// hold is rate_admit(), which the verify route calls before doing anything
+		// and which the database enforces. A stale read here can only let a request
+		// reach that authoritative check.
+		return RateLimit::used( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window() ) >= $max;
 	}
 
 	/**
@@ -951,8 +954,11 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return null;
 		}
-		$count = RateLimit::incr( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window() );
-		if ( $count > $max ) {
+		// admit() claims one of exactly $max slots, enforced by the unique index on
+		// the row it inserts. Nothing is decided from a value that was read, so a
+		// replica serving a stale count (or a window boundary) cannot let a batch
+		// through; being unable to confirm the claim returns 0, which blocks.
+		if ( 0 === RateLimit::admit( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window(), $max ) ) {
 			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
 		return null;

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.23
+Stable tag: 0.13.24
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,14 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.24 =
+* Seventh re-review fixes. Every attempt limit is now enforced the same way the passkey limit is — by a database constraint rather than by comparing a number the plugin has read:
+* Login, two-factor, recovery-code, magic-link, QR-code and sign-up limits each claim a numbered attempt row whose uniqueness the database guarantees. Because nothing is decided from a value that was read, the limits hold even where a read/write-splitting database drop-in can serve a stale count from a replica — a configuration in which a counter-based limit can be bypassed entirely.
+* Time windows are now clock-aligned and half-open, so every request places itself in the same window. Previously the exact second a window ended was read inconsistently, which let a burst of requests arriving on that boundary through.
+* The per-user passkey limit now verifies its unique index on the database at the moment of registration instead of trusting a flag stored during the upgrade. If the index is ever lost (a restore, a manual change), registration refuses with an error rather than silently letting the limit be exceeded.
+* A failed upgrade no longer records itself as complete: if the slot numbering or the index cannot be created, the schema version is left behind so the next admin request retries it.
+* Verified against a real MySQL server, running the plugin's own code: upgrading from the previous schema, limit 1 storing exactly 1 passkey and limit 3 exactly 3 under 20 simultaneous processes, registration refusing when the index is dropped, refusing on a database error, and a replayed registration storing one passkey rather than two. The test ships in the repository (tests/db/integration.php) and runs in CI against MySQL 8.0/8.4 and MariaDB 10.11/11.4.
+
 = 0.13.23 =
 * Sixth re-review fixes. The per-user passkey limit and the sign-up quota are now enforced by DATABASE CONSTRAINTS instead of an application lock:
 * Each passkey occupies a numbered slot under a new UNIQUE (user_id, slot_no) index, and only slots within the configured limit are ever offered — so two simultaneous registrations can never both take the last one. Unlike the previous named lock, this holds even when WordPress transparently reconnects and replays a statement, when a db.php drop-in (HyperDB and similar) routes queries to a different server, and on any storage engine. A replayed registration after a reconnect now stores exactly one passkey instead of two.
@@ -95,16 +103,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * Every SQL step in the registration path is now checked, and the per-user count fails closed on a database error (a failed count no longer reads as "under the limit").
 * The passkey-login REST routes and the Pro recovery-code login now use the shared fail-closed rate counter as well, so a database error blocks instead of silently allowing, on every login path.
 
-= 0.13.21 =
-* Fourth re-review fixes (concurrency correctness):
-* The passkey per-user limit is now enforced under a real database row lock (a short transaction on a per-user row), so it holds exactly regardless of the server's transaction isolation level — not just the default. The lock releases automatically on commit/rollback, so a crashed request cannot leave it stuck.
-* The atomic quota primitive reads its own result before the opportunistic cleanup runs (a stray cleanup query could otherwise flip a reservation's success/failure), and a slot is now handed back only to the exact time-window it was taken in, so a late failure from an expired window cannot subtract from a newer one.
-* Re-opening the anonymous passkey-login REST routes when a security plugin locks the REST API to logged-in users is now an explicit, off-by-default admin setting (Settings -> Rapls Passkey -> REST API). It never overrides a firewall / IP-block / maintenance response, and does nothing unless you turn it on.
-
-= 0.13.20 =
-* Third re-review fixes (concurrency and REST hardening):
-* The passkey per-user limit is now enforced in a single atomic INSERT ... SELECT statement, so two simultaneous registrations can never both exceed the maximum — the cap no longer depends on a post-insert rollback. The per-user registration lock is released only by its owner (compare-and-delete), so a stale lock cannot be freed out from under the request that stole it.
-* The shared rate/attempt counter now FAILS CLOSED on a database error (a read or write failure blocks the guarded action instead of silently allowing it), and gained an atomic "reserve one slot under a cap" primitive for callers that need a strict quota.
-* The REST re-open for the anonymous passkey-login routes now clears ONLY a genuine 401 "authentication required" restriction; a 403 from a WAF, IP gate, maintenance mode or capability check is preserved even on the plugin's own routes.
-
-For the change history of 0.13.19 and earlier releases, see changelog.txt.
+For the change history of 0.13.21 and earlier releases, see changelog.txt.

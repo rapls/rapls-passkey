@@ -1,9 +1,9 @@
 <?php
 if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
- * Per-IP login rate limit. The counter is incremented ONLY on a failed assertion
- * (rate_bump) and checked read-only by the gate (rate_limited) — so repeatedly
- * calling /login/options never accumulates. A successful login clears it.
+ * Per-IP login rate limit. An attempt is CLAIMED before the assertion is verified
+ * (rate_admit), so only `max` verifications per window can ever start; the gate's
+ * read (rate_limited) is advisory. A successful login gives the budget back.
  *
  *   php tests/smoke-rate-limit.php
  *
@@ -37,9 +37,9 @@ class WP_Error {
 }
 
 /**
- * Minimal wpdb double emulating the atomic fixed-window counter: option_name is
- * unique, and INSERT ... ON DUPLICATE KEY UPDATE either starts a new window or
- * increments "count:window_end" in place.
+ * Minimal wpdb double. The one behaviour that matters is that option_name is
+ * UNIQUE: a second INSERT of the same slot row fails instead of overwriting,
+ * which is exactly what makes a cap hold under concurrency.
  */
 class FakeWpdb {
 	public $options       = 'wp_options';
@@ -65,22 +65,9 @@ class FakeWpdb {
 			$this->last_error = 'simulated DB error';
 			return false; // wpdb::query() returns false on a DB error
 		}
-		if ( false !== strpos( $q, 'ON DUPLICATE KEY UPDATE' ) ) {
-			preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m );
-			preg_match( "/', -1\\) AS UNSIGNED\\) < (\\d+)/", $q, $n );
-			$name = $m[1]; $init = $m[2]; $now = (int) $n[1];
-			if ( ! isset( $this->store[ $name ] ) ) {
-				$this->store[ $name ] = $init;
-			} else {
-				list( $c, $e ) = explode( ':', $this->store[ $name ], 2 );
-				$this->store[ $name ] = ( (int) $e < $now ) ? $init : ( ( (int) $c + 1 ) . ':' . $e );
-			}
-			$this->rows_affected = 1;
-			return 1;
-		}
-		// reserve(): a PLAIN insert of one reservation slot. option_name is unique, so
-		// a second request for the same slot must FAIL rather than overwrite — that
-		// database constraint is what makes the quota exact.
+		// A claim: a PLAIN insert of one slot row. option_name is unique, so a second
+		// request for the same slot must FAIL rather than overwrite — that database
+		// constraint is the whole enforcement mechanism.
 		if ( 0 === strpos( ltrim( $q ), 'INSERT INTO' )
 			&& preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m ) ) {
 			if ( isset( $this->store[ $m[1] ] ) ) {
@@ -100,8 +87,16 @@ class FakeWpdb {
 			}
 			return 0;
 		}
-		// gc(): DELETE of expired rows. Sets rows_affected so a test can prove a
-		// reservation result is not confused with the GC DELETE's row count.
+		// clear(): DELETE ... WHERE option_name LIKE '<key prefix>%'
+		if ( 0 === strpos( ltrim( $q ), 'DELETE' ) && preg_match( "/option_name LIKE '([^']*)%'$/", trim( $q ), $m ) ) {
+			$gone = 0;
+			foreach ( array_keys( $this->store ) as $name ) {
+				if ( 0 === strpos( $name, $m[1] ) ) { unset( $this->store[ $name ] ); $gone++; }
+			}
+			$this->rows_affected = $gone;
+			return $gone;
+		}
+		// gc(): DELETE of rows whose window has passed.
 		if ( 0 === strpos( ltrim( $q ), 'DELETE' ) ) {
 			$this->rows_affected = (int) ( $GLOBALS['__gc_deleted'] ?? 0 );
 			return $this->rows_affected;
@@ -197,10 +192,11 @@ $batch = 0;
 for ( $i = 0; $i < 20; $i++ ) { if ( $admitted() ) { $batch++; } }
 check( 'count=max: none of 20 attempts admitted (V14-03)', $batch === 0 );
 
-// A DB error must not admit anyone (incr returns OVERFLOW).
+// A database that cannot confirm the claim must not admit anyone.
 $GLOBALS['wpdb']->store = array(); set_limit( 5 );
-$GLOBALS['wpdb']->fail_next = true;
+$GLOBALS['wpdb']->fail_all = true;
 check( 'DB error admits nobody (fail closed)', $admitted() === false );
+$GLOBALS['wpdb']->fail_all = false;
 
 // A successful login clears the counter.
 $GLOBALS['wpdb']->store = array(); set_limit( 3 );
@@ -220,17 +216,46 @@ $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
 $k2 = $key->invoke( $ep, 'login' );
 check( 'per-IP key differs by IP', $k1 !== $k2 );
 
-// --- RateLimit primitives: fail-closed + atomic reservation (R-03) ------------
+// --- Attempt slots: admission decided by a constraint, never by a count -------
 $RL = 'RaplsPasskey\\Support\\RateLimit';
 
-// incr()/count() FAIL CLOSED (return OVERFLOW) on a DB error, so a caller that
-// gates on "count > max" blocks instead of silently admitting the request.
+// admit() returns the caller's OWN slot number, from a row only it can hold, so a
+// caller that must act on the Nth attempt (2FA, QR code tries) can rely on it
+// without reading a shared total.
 $GLOBALS['wpdb']->store = array();
-$GLOBALS['wpdb']->fail_next = true;
-check( 'incr() returns OVERFLOW on a DB write error (fail closed)', $RL::incr( 'k|x', 60 ) === $RL::OVERFLOW );
-$GLOBALS['wpdb']->store = array( 'rapls_passkey_rl_' . md5( 'k|x' ) => '1:' . ( time() + 60 ) );
-$GLOBALS['wpdb']->fail_next = true;
-check( 'count() returns OVERFLOW on a DB read error (fail closed)', $RL::count( 'k|x' ) === $RL::OVERFLOW );
+$slots = array();
+for ( $i = 0; $i < 7; $i++ ) { $slots[] = $RL::admit( 'a|k', 3600, 4 ); }
+check( 'admit() hands out 1,2,3,4 then refuses with 0', array( 1, 2, 3, 4, 0, 0, 0 ) === $slots );
+check( 'used() reports the slots held (advisory)', $RL::used( 'a|k', 3600 ) === 4 );
+check( 'clear() gives the whole budget back', ( function () use ( $RL ) {
+	$RL::clear( 'a|k' );
+	return 0 === $RL::used( 'a|k', 3600 ) && 1 === $RL::admit( 'a|k', 3600, 4 );
+} )() );
+
+// V15-02: the window boundary must not be a hole. A window ending exactly at
+// "now" has already passed, so admissions land in the NEXT window — and every
+// concurrent caller agrees on that, rather than one seeing "expired, count 0"
+// while another keeps adding to the old window.
+$GLOBALS['wpdb']->store = array();
+$boundary = ( intdiv( time(), 60 ) + 1 ) * 60;   // the window end admit() will use
+for ( $i = 0; $i < 3; $i++ ) { $RL::admit( 'b|k', 60, 3 ); }
+$names = array_keys( $GLOBALS['wpdb']->store );
+check( 'slots are stamped with the half-open window end', 3 === count( array_filter(
+	$names,
+	static fn( $n ) => false !== strpos( $n, '_' . $boundary . '_' )
+) ) );
+check( 'at the cap the window admits nobody, boundary or not', $RL::admit( 'b|k', 60, 3 ) === 0 );
+// A row left over from a window that ended exactly now must not be reusable as
+// budget: the next window has its own, separate slot names.
+$GLOBALS['wpdb']->store = array( 'rapls_passkey_ra_' . md5( 'c|k' ) . '_' . time() . '_1' => time() . ':stale' );
+check( 'a slot from the just-ended window does not consume the new one', $RL::admit( 'c|k', 60, 1 ) === 1 );
+
+// admit() fails closed when ownership cannot be confirmed.
+$GLOBALS['wpdb']->store = array();
+$GLOBALS['wpdb']->fail_all = true;
+check( 'admit() fails closed when the database is down', $RL::admit( 'd|k', 3600, 5 ) === 0 );
+$GLOBALS['wpdb']->fail_all = false;
+check( 'admit() with max 0 admits nothing', $RL::admit( 'd|k', 3600, 0 ) === 0 );
 
 // --- Quota reservation: unique slot rows, token-scoped release (V14-01/V14-05) ---
 // reserve() claims a NUMBERED row whose uniqueness the database enforces, so the
@@ -241,23 +266,23 @@ for ( $i = 0; $i < 8; $i++ ) {
 	$t = $RL::reserve( 'q|y', 3600, 5 );
 	if ( '' !== $t ) { $tokens[] = $t; }
 }
-check( 'reserve() admits exactly the cap and no more', count( $tokens ) === 5 && $RL::reserved_count( 'q|y', 3600 ) === 5 );
+check( 'reserve() admits exactly the cap and no more', count( $tokens ) === 5 && $RL::used( 'q|y', 3600, true ) === 5 );
 check( 'reserve() returns "" once the cap is reached', $RL::reserve( 'q|y', 3600, 5 ) === '' );
 check( 'each reservation got a distinct token', count( array_unique( $tokens ) ) === 5 );
 
 // release() removes EXACTLY the row its token identifies.
 $RL::release( 'q|y', $tokens[2] );
-check( 'release() frees one slot', $RL::reserved_count( 'q|y', 3600 ) === 4 );
-check( 'a released slot can be reserved again', '' !== $RL::reserve( 'q|y', 3600, 5 ) && $RL::reserved_count( 'q|y', 3600 ) === 5 );
+check( 'release() frees one slot', $RL::used( 'q|y', 3600, true ) === 4 );
+check( 'a released slot can be reserved again', '' !== $RL::reserve( 'q|y', 3600, 5 ) && $RL::used( 'q|y', 3600, true ) === 5 );
 
 // V14-05: a second release of the same token is a no-op — it cannot free somebody
 // else's slot, so a double release cannot inflate or deflate the quota.
-$before = $RL::reserved_count( 'q|y', 3600 );
+$before = $RL::used( 'q|y', 3600, true );
 $RL::release( 'q|y', $tokens[2] );
-check( 'releasing an already-released token is a no-op (V14-05)', $RL::reserved_count( 'q|y', 3600 ) === $before );
+check( 'releasing an already-released token is a no-op (V14-05)', $RL::used( 'q|y', 3600, true ) === $before );
 $RL::release( 'q|y', '9999|1|forged-nonce' );
-check( 'releasing with a forged token frees nothing (V14-05)', $RL::reserved_count( 'q|y', 3600 ) === $before );
-check( 'release with an empty token is a no-op', null === $RL::release( 'q|y', '' ) && $RL::reserved_count( 'q|y', 3600 ) === $before );
+check( 'releasing with a forged token frees nothing (V14-05)', $RL::used( 'q|y', 3600, true ) === $before );
+check( 'release with an empty token is a no-op', null === $RL::release( 'q|y', '' ) && $RL::used( 'q|y', 3600, true ) === $before );
 
 // reserve() fails closed ('') when ownership cannot be confirmed, and cap<=0 admits none.
 $GLOBALS['wpdb']->store = array();
@@ -269,11 +294,13 @@ $GLOBALS['wpdb']->fail_all = false;
 $GLOBALS['wpdb']->store = array();
 $GLOBALS['wpdb']->fail_next = true;
 $after_blip = $RL::reserve( 'q|blip', 3600, 5 );
-check( 'a transient error never over-admits (one slot claimed at most)', '' === $after_blip || $RL::reserved_count( 'q|blip', 3600 ) === 1 );
+check( 'a transient error never over-admits (one slot claimed at most)', '' === $after_blip || $RL::used( 'q|blip', 3600, true ) === 1 );
 check( 'reserve() with cap 0 admits nothing', $RL::reserve( 'q|z', 3600, 0 ) === '' );
-check( 'reserved_count() fails closed on a DB read error', ( function () use ( $RL ) {
+check( 'used() reports 0 rather than a guess when the read fails', ( function () use ( $RL ) {
 	$GLOBALS['wpdb']->fail_next = true;
-	return $RL::reserved_count( 'q|z', 3600 ) === $RL::OVERFLOW;
+	// used() is advisory only — admission never consults it — so an unreadable
+	// count reports 0 instead of pretending to know.
+	return $RL::used( 'q|z', 3600, true ) === 0;
 } )() );
 
 // The opportunistic GC must not disturb a reservation's own result.
@@ -288,9 +315,9 @@ $GLOBALS['wpdb']->store = array();
 $live = $RL::reserve( 'w|k', 3600, 3 );
 list( $w_end, $w_slot, $w_nonce ) = explode( '|', $live );
 $RL::release( 'w|k', ( (int) $w_end - 3600 ) . '|' . $w_slot . '|' . $w_nonce );
-check( 'a token from another window frees nothing', $RL::reserved_count( 'w|k', 3600 ) === 1 );
+check( 'a token from another window frees nothing', $RL::used( 'w|k', 3600, true ) === 1 );
 $RL::release( 'w|k', $live );
-check( 'the matching token frees its slot', $RL::reserved_count( 'w|k', 3600 ) === 0 );
+check( 'the matching token frees its slot', $RL::used( 'w|k', 3600, true ) === 0 );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

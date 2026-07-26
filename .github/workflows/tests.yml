@@ -126,6 +126,20 @@ jobs:
             --host=127.0.0.1 --port=3306 --db=rapls_test --user=root --pass=rootpw \
             --workers=20 --json=integration-${{ matrix.db.name }}-foundrows.json
 
+      # Run the very procedure the reviewer's bundle documents: build the two
+      # distribution ZIPs, then let verify.sh check their SHA-256, stage the
+      # source, and run every suite. This proves the reproduction instructions
+      # work, rather than asserting that they do.
+      - name: Reproduction procedure (verify-bundle.sh) end to end
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          curl -sSL -o bin/php-scoper.phar \
+            https://github.com/humbug/php-scoper/releases/download/0.18.11/php-scoper.phar
+          bash bin/build-dist.sh
+          bash tests/db/verify-bundle.sh --free ../rapls-passkey.zip \
+            --db-host 127.0.0.1 --db-port 3306 --db-name rapls_test \
+            --db-user root --db-pass rootpw --workers 50
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4

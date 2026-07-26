@@ -320,41 +320,67 @@ final class Schema {
 		// request that cannot. The claim row is the record, so the mirror is
 		// repaired from it here, on the writer, in one statement.
 		//
-		// The cache entries for any repaired accounts are dropped first, because the
-		// UPDATE goes around the object cache. Getting that list is a read, but it
-		// decides nothing: a row it misses is repaired in place by UserHandle the
-		// next time that account is used.
-		self::flush_repaired_meta_cache();
-
+		// This bulk pass is a CONVENIENCE, not the guarantee. What actually holds is
+		// that UserHandle::get() compares the two byte for byte and repairs the
+		// mirror the next time the account is used; a row this statement misses is
+		// therefore corrected in place, and the handle it hands out is the record's
+		// either way.
+		//
+		// The comparison is made BINARY on purpose. These columns normally carry a
+		// case-insensitive collation, and a handle is base64url — 'AbCd' and 'abCd'
+		// are different handles that a default comparison would call equal, leaving
+		// the mirror unrepaired while reporting success.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$repaired = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->usermeta} um
 				 JOIN {$wpdb->options} o ON o.option_name = CONCAT(%s, um.user_id)
 				 SET um.meta_value = o.option_value
-				 WHERE um.meta_key = %s AND um.meta_value <> o.option_value",
+				 WHERE um.meta_key = %s AND BINARY um.meta_value <> BINARY o.option_value",
 				UserHandle::CLAIM_PREFIX,
 				UserHandle::META
 			)
 		);
 
-		return false !== $repaired;
+		if ( false === $repaired ) {
+			return false;
+		}
+
+		// The UPDATE goes around the object cache, so anything cached from before it
+		// is now stale. Which accounts were repaired cannot be established after the
+		// fact — and asking beforehand is a READ, which on a split deployment may be
+		// answered by a replica that has not seen the disagreement at all. So the
+		// whole meta group is dropped where the cache supports it, and otherwise the
+		// per-account list is used as a best effort. Neither is load-bearing: the
+		// runtime repair above drops the entry itself when it corrects a mirror.
+		self::flush_meta_cache_after_repair();
+
+		return true;
 	}
 
 	/**
-	 * Drop the user-meta cache for accounts whose mirror is about to be repaired.
+	 * Drop user-meta cache entries the bulk mirror repair may have made stale.
 	 *
 	 * @return void
 	 */
-	private static function flush_repaired_meta_cache(): void {
+	private static function flush_meta_cache_after_repair(): void {
 		global $wpdb;
 
+		// Preferred: drop the whole group, which needs no list and cannot miss.
+		if ( function_exists( 'wp_cache_supports' ) && wp_cache_supports( 'flush_group' ) && function_exists( 'wp_cache_flush_group' ) ) {
+			wp_cache_flush_group( 'user_meta' );
+			return;
+		}
+
+		// Fallback: the accounts whose mirror still differs from the record. After a
+		// successful repair this is normally empty; it catches whatever the UPDATE
+		// could not reach. BINARY for the same reason as above.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$ids = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT um.user_id FROM {$wpdb->usermeta} um
 				 JOIN {$wpdb->options} o ON o.option_name = CONCAT(%s, um.user_id)
-				 WHERE um.meta_key = %s AND um.meta_value <> o.option_value",
+				 WHERE um.meta_key = %s AND BINARY um.meta_value <> BINARY o.option_value",
 				UserHandle::CLAIM_PREFIX,
 				UserHandle::META
 			)

@@ -87,7 +87,16 @@ final class UserHandle {
 					return null; // The record exists but cannot be read: refuse.
 				}
 				if ( $record !== $stored ) {
+					// Drop the cached mirror on BOTH sides of the write. Before,
+					// because what we just read may have come from the cache; after,
+					// because the write can be a no-op — the migration may already have
+					// corrected the row, and update_user_meta() then changes nothing and
+					// leaves the stale entry in place. The comparison is a byte
+					// comparison ('AbCd' and 'abCd' are different handles), which is why
+					// this repair, not the migration's SQL, is the guarantee.
+					wp_cache_delete( $user_id, 'user_meta' );
 					update_user_meta( $user_id, self::META, $record );
+					wp_cache_delete( $user_id, 'user_meta' );
 				}
 				return $record;
 			}

@@ -21,7 +21,14 @@ class WPDB_Mem {
 	public $last_error = '';
 	public $fail_next = false; // simulate a single DB error on the next get_var
 	public $rows = array();
+	/** Every suppress_errors() argument, so a test can prove the pair is balanced. */
+	public $suppress_calls = array();
 	private $auto = 0;
+
+	public function suppress_errors( $s = null ) {
+		$this->suppress_calls[] = $s;
+		return false;   // the previous state
+	}
 
 	public function insert( $table, $data, $formats ) {
 		$this->last_error = '';
@@ -381,6 +388,13 @@ check( 'deleted row is gone', $repo->find_by_credential_id( 'credAAA' ) === null
 // delete_by_id (admin/CLI path) ignores ownership.
 check( 'delete_by_id removes another user\'s row', $repo->delete_by_id( $id3 ) === true );
 check( 'delete_by_id row is gone', $repo->find_by_id( $id3 ) === null );
+
+// V24-02 / V25-03: a slot taken by a concurrent registration is a normal outcome,
+// so its duplicate must not be reported as a database error — and the suppression
+// state must be restored.
+$GLOBALS['wpdb']->suppress_calls = array();
+$repo->insert_in_slot( 77, 1, 'cred-suppress-1', '{}', 0, null );
+check( 'insert_in_slot suppresses errors and restores the previous state (V25-03)', array( true, false ) === $GLOBALS['wpdb']->suppress_calls );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

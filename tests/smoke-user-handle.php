@@ -36,7 +36,8 @@ function update_user_meta( $id, $key, $val ) {
 	$GLOBALS['__m'][ "$id:$key" ] = $val;
 	return 123; // wpdb returns the new meta_id for a first write
 }
-function wp_cache_delete( $id, $group = '' ) { return true; }
+$GLOBALS['__cache_deletes'] = array();
+function wp_cache_delete( $id, $group = '' ) { $GLOBALS['__cache_deletes'][] = array( $id, $group ); return true; }
 
 /**
  * Minimal wpdb double: option_name is unique-indexed, so a second INSERT of the
@@ -274,6 +275,33 @@ foreach ( array( false, true ) as $blind_meta ) {
 }
 $GLOBALS['__meta_writes_are_invisible'] = false;
 check( 'no path ever returns the stale mirror value (V24-01)', ! in_array( 'H1-MIRROR', $answers, true ) );
+
+// --- V25-01: a mirror that differs only by CASE is still a different handle ---
+// base64url is case-sensitive, so 'AbCd' and 'abCd' are two handles. The bulk
+// repair runs on a database whose collation may call them equal; the runtime
+// comparison is a byte comparison, which is what makes the repair guaranteed.
+$GLOBALS['__m'] = array();
+$GLOBALS['wpdb']->store = array();
+$GLOBALS['__m'][ '81:' . UserHandle::META ]             = 'AbCdEfGh';
+$GLOBALS['wpdb']->store[ UserHandle::CLAIM_PREFIX . 81 ] = 'abCdEfGh';
+$GLOBALS['__cache_deletes'] = array();
+$case_seen = UserHandle::get( 81 );
+check( 'a case-only difference is still the record winning (V25-01)', 'abCdEfGh' === $case_seen );
+check( 'and the mirror is repaired to the record byte for byte', ( $GLOBALS['__m'][ '81:' . UserHandle::META ] ?? null ) === 'abCdEfGh' );
+
+// The cached mirror is dropped on BOTH sides of the write: what we read may have
+// come from the cache, and the write may change nothing (the migration may have
+// corrected the row already), which would leave a stale entry behind.
+check( 'the cached mirror is dropped before and after the repair (V25-01)', array( array( 81, 'user_meta' ), array( 81, 'user_meta' ) ) === $GLOBALS['__cache_deletes'] );
+
+// A write that reports failure because the row already holds the value must not
+// leave the cache stale either.
+$GLOBALS['__m'][ '81:' . UserHandle::META ] = 'AbCdEfGh';
+$GLOBALS['__cache_deletes']    = array();
+$GLOBALS['__meta_write_fails'] = true;   // as when the value is already correct
+$again_case = UserHandle::get( 81 );
+$GLOBALS['__meta_write_fails'] = false;
+check( 'a no-op repair write still drops the cached mirror (V25-01)', 'abCdEfGh' === $again_case && 2 === count( $GLOBALS['__cache_deletes'] ) );
 
 // --- V24-02: the expected duplicate is not reported as an error --------------
 $GLOBALS['wpdb']->suppress_calls = array();

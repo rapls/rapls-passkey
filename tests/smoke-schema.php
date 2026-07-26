@@ -21,6 +21,12 @@ class WPDB_Stub {
 	public $usermeta = 'wp_usermeta';
 	public $dropped = array();
 	public $last_error = '';
+	/** Every suppress_errors() argument, so a test can prove the pair is balanced. */
+	public $suppress_calls = array();
+	public function suppress_errors( $s = null ) {
+		$this->suppress_calls[] = $s;
+		return false;   // the previous state
+	}
 	/** Set to the index name once the migration's ALTER TABLE has "created" it. */
 	public $slot_index = null;
 	public function get_charset_collate() {
@@ -48,7 +54,7 @@ class WPDB_Stub {
 		}
 		// The mirror repair: the claim row is the record, so a meta value that
 		// disagrees with it is rewritten from it.
-		if ( 0 === strpos( ltrim( $sql ), 'UPDATE' ) && false !== strpos( $sql, 'um.meta_value <> o.option_value' ) ) {
+		if ( 0 === strpos( ltrim( $sql ), 'UPDATE' ) && false !== strpos( $sql, 'um.meta_value <> BINARY o.option_value' ) ) {
 			$this->mirror_repairs[] = $sql;
 			return count( $this->mismatched_users );
 		}
@@ -116,7 +122,7 @@ class WPDB_Stub {
 	/** Mirror repairs the migration issued. */
 	public $mirror_repairs = array();
 	public function get_col( $sql ) {
-		return ( false !== strpos( $sql, 'um.meta_value <> o.option_value' ) ) ? $this->mismatched_users : array();
+		return ( false !== strpos( $sql, 'um.meta_value <> BINARY o.option_value' ) ) ? $this->mismatched_users : array();
 	}
 }
 $GLOBALS['wpdb'] = new WPDB_Stub();
@@ -133,6 +139,10 @@ $GLOBALS['__options'] = array();
 $GLOBALS['__deleted_options'] = array();
 function wp_rand( $min = 0, $max = 1 ) { return random_int( $min, $max ); }
 function wp_cache_delete( $key, $group = '' ) { $GLOBALS['__cache_deletes'][] = array( $key, $group ); return true; }
+$GLOBALS['__supports_flush_group'] = false;
+$GLOBALS['__flush_groups']         = array();
+function wp_cache_supports( $feature ) { return 'flush_group' === $feature && ! empty( $GLOBALS['__supports_flush_group'] ); }
+function wp_cache_flush_group( $group ) { $GLOBALS['__flush_groups'][] = $group; return true; }
 $GLOBALS['__cache_deletes'] = array();
 function update_option( $k, $v, $autoload = null ) { $GLOBALS['__options'][ $k ] = $v; return true; }
 function get_option( $k, $default = false ) { return $GLOBALS['__options'][ $k ] ?? $default; }
@@ -264,9 +274,23 @@ $installed_again = Schema::install();
 check( 'the migration repairs a mirror that disagrees with the claim row (V24-01)', 1 === count( $GLOBALS['wpdb']->mirror_repairs ) );
 $repair = $GLOBALS['wpdb']->mirror_repairs[0] ?? '';
 check( 'the repair takes its value FROM the claim row', false !== strpos( $repair, 'SET um.meta_value = o.option_value' ) );
-check( 'and only touches rows that actually differ', false !== strpos( $repair, 'um.meta_value <> o.option_value' ) );
+check( 'and only touches rows that actually differ', false !== strpos( $repair, 'um.meta_value <> BINARY o.option_value' ) );
+// V25-01: these columns normally carry a case-insensitive collation, and a
+// handle is base64url — 'AbCd' and 'abCd' are DIFFERENT handles that a default
+// comparison would call equal, leaving the mirror unrepaired.
+check( 'the comparison is made byte for byte, not by collation (V25-01)', false !== strpos( $repair, 'BINARY um.meta_value <> BINARY o.option_value' ) );
 check( 'the migration still reports success when it could repair them', true === $installed_again );
-check( "and drops those accounts' cached meta first", array( array( 77, 'user_meta' ), array( 78, 'user_meta' ) ) === $GLOBALS['__cache_deletes'] );
+check( "and drops those accounts' cached meta afterwards", array( array( 77, 'user_meta' ), array( 78, 'user_meta' ) ) === $GLOBALS['__cache_deletes'] );
+
+// V25-01: where the cache can drop a whole group, that is used instead — it needs
+// no list, so a reader that cannot see the disagreement cannot make it miss.
+$GLOBALS['__flush_groups']         = array();
+$GLOBALS['__cache_deletes']        = array();
+$GLOBALS['__supports_flush_group'] = true;
+Schema::install();
+check( 'a cache that can drop a group has the whole meta group dropped (V25-01)', array( 'user_meta' ) === $GLOBALS['__flush_groups'] );
+check( 'and no per-account list is consulted then', array() === $GLOBALS['__cache_deletes'] );
+$GLOBALS['__supports_flush_group'] = false;
 $GLOBALS['wpdb']->mismatched_users = array();
 
 // --- V22-06: a non-admin request may run the migration once per window --------
@@ -293,6 +317,22 @@ $GLOBALS['__options'][ 'rapls_passkey_schema_version' ] = Schema::current_versio
 $GLOBALS['wpdb']->lock_rows = array();
 Schema::maybe_upgrade_throttled( 300 );
 check( 'an up-to-date site claims nothing and does nothing', array() === $GLOBALS['wpdb']->lock_rows );
+
+// --- V24-02 / V25-03: the two Schema writes whose duplicate is expected -------
+// The writer probe's SECOND insert is meant to fail, and losing the migration
+// window is the normal outcome for every request but the first — neither should
+// be logged as a database error, and both must restore the suppression state.
+Schema::flush_cap_cache();
+$GLOBALS['wpdb']->suppress_calls = array();
+Schema::cap_enforceable();
+check( 'the writer probe suppresses errors and restores the state (V25-03)', array( true, false ) === $GLOBALS['wpdb']->suppress_calls );
+
+$GLOBALS['__options'] = array();          // schema behind, so the attempt is made
+$GLOBALS['wpdb']->lock_rows      = array();
+$GLOBALS['wpdb']->suppress_calls = array();
+Schema::maybe_upgrade_throttled( 300 );
+check( 'the migration back-off claim does the same (V25-03)', array( true, false ) === $GLOBALS['wpdb']->suppress_calls );
+$GLOBALS['__options'][ 'rapls_passkey_schema_version' ] = Schema::current_version();
 
 // --- cleanup the temporary upgrade.php stub ------------------------------
 @unlink( __DIR__ . '/wp-admin/includes/upgrade.php' );

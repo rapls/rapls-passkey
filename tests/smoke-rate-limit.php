@@ -49,6 +49,12 @@ class FakeWpdb {
 	public $last_error    = '';
 	public $fail_next     = false; // simulate a single DB error on the next query/get_var
 	public $fail_all      = false; // simulate a database that is down for every query
+	/** Every suppress_errors() argument, so a test can prove the pair is balanced. */
+	public $suppress_calls = array();
+	public function suppress_errors( $s = null ) {
+		$this->suppress_calls[] = $s;
+		return false;   // the previous state
+	}
 	public function prepare( $q, ...$a ) {
 		foreach ( $a as $x ) {
 			$rep = is_int( $x ) ? (string) $x : "'" . str_replace( "'", "''", (string) $x ) . "'";
@@ -346,6 +352,17 @@ $RL::release( 'w|k', ( (int) $w_end - 3600 ) . '|' . $w_slot . '|' . $w_nonce );
 check( 'a token from another window frees nothing', $RL::used( 'w|k', 3600, true ) === 1 );
 $RL::release( 'w|k', $live );
 check( 'the matching token frees its slot', $RL::used( 'w|k', 3600, true ) === 0 );
+
+// V24-02 / V25-03: losing a slot to somebody else is the normal outcome here, so
+// the duplicate it produces must not be logged as a database error — and the
+// suppression must be put back exactly as it was found.
+$GLOBALS['wpdb']->suppress_calls = array();
+$RL::admit( 'suppress|key', 3600, 2 );
+check( 'the slot claim suppresses errors and restores the previous state (V25-03)', array( true, false ) === $GLOBALS['wpdb']->suppress_calls );
+
+$GLOBALS['wpdb']->suppress_calls = array();
+$RL::admit( 'suppress|key', 3600, 2 );   // second claimant: slot 1 is taken, slot 2 free
+check( 'and does so once per slot it tries', 0 === count( $GLOBALS['wpdb']->suppress_calls ) % 2 && count( $GLOBALS['wpdb']->suppress_calls ) >= 2 );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

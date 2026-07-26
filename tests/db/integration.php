@@ -748,6 +748,35 @@ report(
 	$failed
 );
 
+// V25-01: a mirror that differs from the record only by CASE. These columns
+// carry a case-insensitive collation by default, so a plain <> comparison calls
+// these two equal — but base64url is case-sensitive and they are two different
+// handles. Both the migration and the runtime repair must treat them as such.
+$wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES (%d, %s, %s)", 801, UserHandle::META, 'AbCdEfGh' ) );
+$wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", UserHandle::CLAIM_PREFIX . 801, 'abCdEfGh' ) );
+
+$migrated_case = Schema::install();
+$mirror_case   = $wpdb->get_var( $wpdb->prepare( "SELECT BINARY meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", 801, UserHandle::META ) );
+report(
+	'the migration repairs a mirror that differs only by case (V25-01)',
+	$migrated_case && 'abCdEfGh' === $mirror_case,
+	array( 'install' => $migrated_case, 'mirror' => $mirror_case ),
+	$results,
+	$failed
+);
+
+// And the runtime repair does it too, from a mirror the migration has not seen.
+$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->usermeta} SET meta_value = %s WHERE user_id = %d AND meta_key = %s", 'AbCdEfGh', 801, UserHandle::META ) );
+$case_seen    = UserHandle::get( 801 );
+$case_mirror  = $wpdb->get_var( $wpdb->prepare( "SELECT BINARY meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", 801, UserHandle::META ) );
+report(
+	'and so does the runtime repair, byte for byte (V25-01)',
+	'abCdEfGh' === $case_seen && 'abCdEfGh' === $case_mirror,
+	array( 'returned' => $case_seen, 'mirror' => $case_mirror ),
+	$results,
+	$failed
+);
+
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->usermeta}" );
 
 // Clean up.

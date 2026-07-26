@@ -62,6 +62,20 @@ final class Schema {
 	}
 
 	/**
+	 * Whether the migration for this build has completed.
+	 *
+	 * The version is stored only when every step succeeded, so this answers "are
+	 * the guarantees the current code relies on actually in place?" — among them
+	 * the handle claim rows that stop an account being given a second WebAuthn
+	 * identity. Callers that would establish new state use it to fail closed.
+	 *
+	 * @return bool
+	 */
+	public static function is_current(): bool {
+		return get_option( self::VERSION_OPTION ) === self::VERSION;
+	}
+
+	/**
 	 * Fully-qualified credentials table name.
 	 *
 	 * @return string
@@ -88,7 +102,7 @@ final class Schema {
 	 * from activation and from Plugin::boot() on admin_init.
 	 */
 	public static function maybe_upgrade(): void {
-		if ( get_option( self::VERSION_OPTION ) === self::VERSION ) {
+		if ( self::is_current() ) {
 			return;
 		}
 		self::run_upgrade();
@@ -113,7 +127,7 @@ final class Schema {
 	public static function maybe_upgrade_throttled( int $window = 300 ): void {
 		global $wpdb;
 
-		if ( get_option( self::VERSION_OPTION ) === self::VERSION ) {
+		if ( self::is_current() ) {
 			return;
 		}
 

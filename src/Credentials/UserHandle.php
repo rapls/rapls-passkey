@@ -38,6 +38,15 @@ final class UserHandle {
 	 */
 	public const CLAIM_PREFIX = 'rapls_pk_handle_';
 
+	/** {@see claim()} wrote the row: this account had no handle until now. */
+	private const CLAIM_WON = 'won';
+
+	/** The row was already there: this account already has a handle. */
+	private const CLAIM_TAKEN = 'taken';
+
+	/** The database could not be asked, so nothing is known either way. */
+	private const CLAIM_ERROR = 'error';
+
 	/**
 	 * Get (creating on first use) the base64url handle for a user.
 	 *
@@ -54,12 +63,20 @@ final class UserHandle {
 			return null;
 		}
 
-		$handle = get_user_meta( $user_id, self::META, true );
-		if ( is_string( $handle ) && '' !== $handle ) {
-			// A stored handle is authoritative. Even a lagging reader is safe here:
-			// a handle never changes once set, so the value a replica carries is the
-			// value the writer holds.
-			return $handle;
+		$stored = get_user_meta( $user_id, self::META, true );
+		if ( is_string( $stored ) && '' !== $stored ) {
+			// A stored handle is authoritative — a handle never changes once set, so
+			// even a lagging reader carries the right value. But the account may date
+			// from before the claim row existed, or from a migration that could not
+			// finish, and without that row a LATER request whose meta read comes back
+			// empty would be free to derive a second identity. So establish the row
+			// for this handle before handing it out.
+			if ( self::CLAIM_ERROR === self::claim( $user_id, $stored ) ) {
+				// The row could not be established and we cannot tell whether it is
+				// there. Handing the handle out now would leave that gap open.
+				return null;
+			}
+			return $stored;
 		}
 
 		// Nothing visible — which is NOT the same as nothing stored. A reader served
@@ -68,24 +85,73 @@ final class UserHandle {
 		// two WebAuthn identities.
 		//
 		// So prove it with a WRITE. Every account that holds a handle also holds a
-		// claim row, whose name is unique in the options table (the migration
-		// back-fills one for every existing handle). Inserting that row succeeds
-		// only if no handle was ever established for this account — a fact the
-		// database decides, on the writer, with no read involved.
-		$derived = self::derive( $user_id );
-		$claimed = self::claim( $user_id, $derived );
+		// claim row, whose name is unique in the options table. Inserting that row
+		// succeeds only if no handle was ever established for this account — a fact
+		// the database decides, on the writer, with no read involved.
+		//
+		// That guarantee rests on the migration having given every pre-existing
+		// handle its row, so until the schema is confirmed current nothing is MINTED:
+		// an account whose handle is invisible right now may simply be one the
+		// back-fill has not reached. An account that already has its row is
+		// unaffected — its handle is recovered from that row as usual.
+		if ( ! Schema::is_current() ) {
+			return self::stored_claim( $user_id );
+		}
 
-		if ( true === $claimed ) {
+		$derived = self::derive( $user_id );
+		$claim   = self::claim( $user_id, $derived );
+
+		if ( self::CLAIM_WON === $claim ) {
 			// Ours: this account provably had no handle. Mirror it into the meta so
-			// the ordinary path finds it from now on (and so a salt change cannot
-			// move it afterwards).
+			// the ordinary path finds it from now on (and so a salt change cannot move
+			// it afterwards). The mirror is a convenience, not the record — the claim
+			// row already holds this exact value, so a failed write here costs a slower
+			// path next time, not the account's identity.
 			update_user_meta( $user_id, self::META, $derived );
 			return $derived;
 		}
 
-		// The row exists, or the database refused to answer. Either way an
-		// established handle may be sitting where we cannot see it: refuse.
+		if ( self::CLAIM_TAKEN === $claim ) {
+			// A handle exists for this account and the meta could not show it to us.
+			// The claim row carries that same value and is written exactly once, so
+			// whatever it holds IS the handle: a replica either has the one true value
+			// or has nothing, and can never offer a different one. This is what keeps
+			// a failed meta write from leaving an account permanently unable to
+			// register.
+			$recovered = self::stored_claim( $user_id );
+			if ( null !== $recovered ) {
+				update_user_meta( $user_id, self::META, $recovered );
+				return $recovered;
+			}
+		}
+
+		// The row exists but cannot be read yet, or the database refused to answer.
+		// Either way an established handle may be sitting where we cannot see it.
 		return null;
+	}
+
+	/**
+	 * The handle recorded in the account's claim row, or null when it cannot be
+	 * read.
+	 *
+	 * @param int $user_id User id.
+	 * @return string|null
+	 */
+	private static function stored_claim( int $user_id ): ?string {
+		global $wpdb;
+
+		if ( ! isset( $wpdb ) || ! is_object( $wpdb ) ) {
+			return null;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$value = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+				self::CLAIM_PREFIX . $user_id
+			)
+		);
+
+		return ( is_string( $value ) && '' !== $value ) ? $value : null;
 	}
 
 	/**
@@ -95,16 +161,19 @@ final class UserHandle {
 	 * the row — meaning this account had no handle and now has this one — or the
 	 * database refused it. Nothing is read, so no replica can change the answer.
 	 *
+	 * The three outcomes are kept apart because they mean different things: a
+	 * duplicate says the account already has a handle, which is the steady state on
+	 * every later request, while any other failure says we do not know.
+	 *
 	 * @param int    $user_id User id.
 	 * @param string $handle  The handle to claim.
-	 * @return bool|null True when claimed here, false when a row already exists,
-	 *                   null when the database could not be asked.
+	 * @return string One of CLAIM_WON, CLAIM_TAKEN, CLAIM_ERROR.
 	 */
-	private static function claim( int $user_id, string $handle ): ?bool {
+	private static function claim( int $user_id, string $handle ): string {
 		global $wpdb;
 
 		if ( ! isset( $wpdb ) || ! is_object( $wpdb ) ) {
-			return null;
+			return self::CLAIM_ERROR;
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -117,12 +186,28 @@ final class UserHandle {
 		);
 
 		if ( false !== $ok ) {
-			return true;
+			return self::CLAIM_WON;
 		}
-		// The insert failed. A duplicate name is the expected reason; a broken
-		// connection is not, and the two are not distinguishable from here — both
-		// mean "cannot establish this handle", which is what the caller acts on.
-		return false;
+		return self::duplicate_key_error() ? self::CLAIM_TAKEN : self::CLAIM_ERROR;
+	}
+
+	/**
+	 * Whether the last statement failed because the row was already there.
+	 *
+	 * The driver is asked first (errno 1062 is unambiguous) and only then the
+	 * message, so a driver that exposes no error number still works. When neither
+	 * can answer, the caller treats it as "do not know" — which refuses.
+	 *
+	 * @return bool
+	 */
+	private static function duplicate_key_error(): bool {
+		global $wpdb;
+
+		if ( isset( $wpdb->dbh ) && $wpdb->dbh instanceof \mysqli && 0 !== (int) $wpdb->dbh->errno ) {
+			return 1062 === (int) $wpdb->dbh->errno;
+		}
+		$message = isset( $wpdb->last_error ) ? (string) $wpdb->last_error : '';
+		return '' !== $message && ( false !== stripos( $message, 'duplicate entry' ) || false !== strpos( $message, '1062' ) );
 	}
 
 	/**
@@ -197,7 +282,7 @@ final class UserHandle {
 		// row cannot exist; if it somehow does, another handle is already
 		// established for this id and adopting a second one is exactly what must not
 		// happen. The claim is decided by the database, not by a value read back.
-		if ( true !== self::claim( $user_id, $handle ) ) {
+		if ( self::CLAIM_WON !== self::claim( $user_id, $handle ) ) {
 			return false;
 		}
 

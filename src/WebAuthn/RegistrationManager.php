@@ -49,12 +49,22 @@ final class RegistrationManager {
 	 * @param string            $username          Account name (WebAuthn user.name).
 	 * @param string            $display_name      Display name.
 	 * @param CredentialRecord[] $existing_records Already-registered records to exclude.
+	 * @param string            $handle            The account's WebAuthn handle, raw bytes.
+	 *                                             Established ONCE by the caller and passed
+	 *                                             in: resolving it again here would ask the
+	 *                                             same question a second time, and a reader
+	 *                                             that has fallen behind between the two
+	 *                                             would answer differently.
 	 * @return array{state:string,publicKey:array<string,mixed>}
+	 * @throws \RuntimeException When no handle is given (the caller must refuse first).
 	 */
-	public function create_options( int $user_id, string $username, string $display_name, array $existing_records ): array {
+	public function create_options( int $user_id, string $username, string $display_name, array $existing_records, string $handle ): array {
+		if ( '' === $handle ) {
+			throw new \RuntimeException( 'user_handle_unavailable' );
+		}
 		$user = PublicKeyCredentialUserEntity::create(
 			$username,
-			UserHandle::raw( $user_id ),
+			$handle,
 			'' !== $display_name ? $display_name : $username
 		);
 

@@ -311,6 +311,12 @@ foreach ( array( array( 7, 'old-a' ), array( 7, 'old-b' ), array( 9, 'old-c' ) )
 }
 
 $installed = Schema::install();
+// In production the version is stored by the migration runner when install()
+// reports success; the tests call install() directly, so record it here — the
+// handle logic refuses to MINT an identity while the migration is outstanding.
+if ( $installed ) {
+	update_option( 'rapls_passkey_schema_version', Schema::current_version() );
+}
 Schema::flush_cap_cache();
 $repo  = new CredentialRepository();
 $slots = $repo->used_slots( 7 );
@@ -592,13 +598,15 @@ report(
 	$failed
 );
 
-// …and a reader that cannot see it must refuse, NOT mint a second identity.
+// …and a reader that cannot see it must never produce a DIFFERENT one. The claim
+// row is written once and never changed, so it can only ever give back the same
+// value — or, if it cannot be read either, nothing at all.
 $GLOBALS['__stale_meta_reads'] = true;
 $blind = UserHandle::get( 501 );
 $GLOBALS['__stale_meta_reads'] = false;
 report(
-	'a stale reader gets null for an account that already has a handle (V22-02)',
-	null === $blind,
+	'a stale reader never yields a second handle for that account (V22-02)',
+	'LEGACY-RANDOM-HANDLE' === $blind || null === $blind,
 	array( 'handle_under_stale_read' => $blind ),
 	$results,
 	$failed
@@ -630,6 +638,69 @@ report(
 	'adopt() claims the row once and refuses a second identity (V22-02)',
 	true === $adopted && false === $second && 'CEREMONY-HANDLE' === $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 503 ) ),
 	array( 'first' => $adopted, 'second' => $second ),
+	$results,
+	$failed
+);
+
+// V23-01: a legacy handle whose claim row the migration never created. A request
+// that CAN see the meta must establish the row, so that a later request whose
+// meta read is empty can no longer mint a second identity.
+$wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES (%d, %s, %s)", 601, UserHandle::META, 'ORPHAN-LEGACY-HANDLE' ) );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 601 ) );
+$seen        = UserHandle::get( 601 );
+$row_created = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 601 ) );
+report(
+	'seeing a legacy handle establishes its claim row (V23-01)',
+	'ORPHAN-LEGACY-HANDLE' === $seen && 'ORPHAN-LEGACY-HANDLE' === $row_created,
+	array( 'handle' => $seen, 'claim_row' => $row_created ),
+	$results,
+	$failed
+);
+
+$GLOBALS['__stale_meta_reads'] = true;
+$after_stale = UserHandle::get( 601 );
+$GLOBALS['__stale_meta_reads'] = false;
+report(
+	'and a later stale read then recovers it instead of deriving a new one (V23-01)',
+	'ORPHAN-LEGACY-HANDLE' === $after_stale,
+	array( 'handle_under_stale_read' => $after_stale ),
+	$results,
+	$failed
+);
+
+// V23-01: while the migration is outstanding, no handle is minted at all — the
+// back-fill may simply not have reached this account yet.
+$stored_version = get_option( 'rapls_passkey_schema_version' );
+update_option( 'rapls_passkey_schema_version', '0' );
+$minted_early = UserHandle::get( 602 );
+$row_early    = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 602 ) );
+update_option( 'rapls_passkey_schema_version', $stored_version );
+report(
+	'nothing is minted while the migration is outstanding (V23-01)',
+	null === $minted_early && null === $row_early,
+	array( 'handle' => $minted_early, 'claim_row' => $row_early ),
+	$results,
+	$failed
+);
+report(
+	'and minting works again once it has completed',
+	is_string( UserHandle::get( 602 ) ),
+	array( 'handle' => UserHandle::get( 602 ) ),
+	$results,
+	$failed
+);
+
+// V23-02: a claim that succeeded while its user-meta mirror did not. The account
+// has an identity — the claim row holds it — so it must be recoverable rather
+// than permanently unable to register.
+$handle_603 = UserHandle::get( 603 );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", 603, UserHandle::META ) );
+$recovered_603 = UserHandle::get( 603 );
+$mirror_603    = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", 603, UserHandle::META ) );
+report(
+	'a lost meta mirror is recovered from the claim row, not replaced (V23-02)',
+	is_string( $handle_603 ) && $handle_603 === $recovered_603 && $handle_603 === $mirror_603,
+	array( 'original' => $handle_603, 'recovered' => $recovered_603, 'mirror_repaired' => $mirror_603 ),
 	$results,
 	$failed
 );

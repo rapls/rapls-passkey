@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.31
+Stable tag: 0.13.32
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,12 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.32 =
+* More of the same audit, all about one account keeping exactly one WebAuthn identity:
+* An account whose identity was recorded by an older version now has that fact registered the first time it is used, so a later request that cannot read it can no longer start a second one. While the table update is still outstanding no new identity is created at all — an account that looks new may simply be one the update has not reached.
+* An identity whose copy in the account's profile data is lost is recovered from the record itself instead of leaving the account permanently unable to register a passkey.
+* Registration establishes the identity once per request and carries it through, rather than asking twice and risking two different answers on a database whose reads lag behind its writes.
 
 = 0.13.31 =
 * A passkey confirmation now completes. Pro's step-up held risky password sign-ins for a passkey check — and then held the passkey sign-in that answered it, so with the strictest setting nobody could get in at all. A sign-in now says what kind it is, and the confirmation is never held.

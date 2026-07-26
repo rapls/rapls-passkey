@@ -94,8 +94,19 @@ $challenges = new ChallengeStore();
 $ceremonies = new Ceremonies( $rp );
 $manager    = new RegistrationManager( $rp, $codec, $challenges, $ceremonies );
 
-$result = $manager->create_options( 1, 'alice', 'Alice Example', array() );
+// The handle is established once by the caller and passed in — create_options()
+// must not go looking for it a second time (V23-02).
+$handle = str_repeat( "\x41", 32 );
+$result = $manager->create_options( 1, 'alice', 'Alice Example', array(), $handle );
 $pk     = $result['publicKey'];
+
+$threw = false;
+try {
+	$manager->create_options( 1, 'alice', 'Alice Example', array(), '' );
+} catch ( \RuntimeException $e ) {
+	$threw = true;
+}
+check( 'create_options refuses without an established handle (V23-02)', $threw );
 
 check( 'returns a state id', ! empty( $result['state'] ) );
 check( 'publicKey has a challenge', ! empty( $pk['challenge'] ) );
@@ -109,7 +120,7 @@ check( 'timeout reflects the setting (60000ms)', ( $pk['timeout'] ?? null ) === 
 check( 'hints injected into the options', ( $pk['hints'] ?? null ) === array( 'hybrid', 'security-key' ) );
 
 // user.id is stable per user (UserHandle cached in meta).
-$result2 = $manager->create_options( 1, 'alice', 'Alice Example', array() );
+$result2 = $manager->create_options( 1, 'alice', 'Alice Example', array(), $handle );
 check( 'user.id is stable across ceremonies', $pk['user']['id'] === $result2['publicKey']['user']['id'] );
 
 // The challenge was stored and is retrievable + deserialisable.

@@ -222,11 +222,15 @@ final class Endpoints {
 			return $limit;
 		}
 
-		// The account's WebAuthn identity must be established before a credential is
-		// created against it. When it cannot be — a handle exists that this request
-		// cannot see — refuse: registering under a second identity would split the
-		// account's passkeys between two of them.
-		if ( '' === UserHandle::raw( (int) $user->ID ) ) {
+		// Establish the account's WebAuthn identity ONCE, here, and carry the value
+		// through the rest of the request. Asking for it twice is asking the same
+		// question of a database that may answer differently the second time: the
+		// first call can create the handle while a reader that has not caught up
+		// makes the second look like an account whose handle cannot be seen. When it
+		// cannot be established at all, refuse — registering under a second identity
+		// would split the account's passkeys between two of them.
+		$handle = UserHandle::raw( (int) $user->ID );
+		if ( '' === $handle ) {
 			return $this->fail( 'rapls_passkey_register_failed', __( 'Failed to register the passkey.', 'rapls-passkey' ), 503, 'user_handle_unavailable: user=' . (int) $user->ID );
 		}
 
@@ -252,7 +256,8 @@ final class Endpoints {
 			(int) $user->ID,
 			$user->user_login,
 			$user->display_name,
-			$records
+			$records,
+			$handle
 		);
 
 		return rest_ensure_response( $result );

@@ -173,6 +173,14 @@ $GLOBALS['__creds'][8]     = array();
 $no_keys = $ids( $ep->login_options( new WP_REST_Request( array( 'username' => 'bob' ) ) ) );
 check( 'an account without passkeys is indistinguishable in size', count( $no_keys ) === count( $unknown ) );
 
+// …and neither does an account with MORE passkeys than the fixed size: the list
+// is trimmed, never grown, so a long answer can never announce a real account.
+$GLOBALS['__users']['carol'] = 9;
+$GLOBALS['__creds'][9]       = array( 'c1', 'c2', 'c3', 'c4', 'c5', 'c6' );
+$many = $ids( $ep->login_options( new WP_REST_Request( array( 'username' => 'carol' ) ) ) );
+check( 'a user with more credentials than the fixed size is trimmed to it', count( $many ) === count( $unknown ) );
+check( 'and the trimmed list is the first of the real ones', array( 'c1', 'c2', 'c3', 'c4' ) === $many );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );
 

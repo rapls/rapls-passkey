@@ -412,9 +412,17 @@ final class Endpoints {
 				}
 			}
 
-			// Pad to a FIXED number of entries, so the size of the answer says nothing
-			// about the account. Real entries come first; the rest are fabricated.
-			$decoys = $this->decoy_credential_ids( $username, max( 0, self::ALLOW_LIST_SIZE - count( $records ) ) );
+			// Pad — and if necessary TRIM — to a FIXED number of entries, so the size
+			// of the answer says nothing about the account. Real entries come first;
+			// the rest are fabricated. A user holding more than ALLOW_LIST_SIZE
+			// credentials is offered only the first ALLOW_LIST_SIZE of them here:
+			// letting the answer grow would announce the account outright. This is a
+			// limit of allow-list mode only, which is off by default and exists for
+			// security keys that cannot be found without being named.
+			if ( count( $records ) > self::ALLOW_LIST_SIZE ) {
+				$records = array_slice( $records, 0, self::ALLOW_LIST_SIZE );
+			}
+			$decoys = $this->decoy_credential_ids( $username, self::ALLOW_LIST_SIZE - count( $records ) );
 		}
 
 		// A caller (e.g. Pro's step-up confirmation) may RAISE the requirement to

@@ -343,35 +343,60 @@ report(
 	$failed
 );
 
-// 3b-2. V18-01: a probe that cannot remove its own rows must NOT report success.
-//       Leaving debris behind and calling the cap enforceable would be a health
+// 3b-2. V18-01: a probe that cannot remove its own rows must NOT report success,
+//       and registration must be refused WHILE that failure is happening —
+//       leaving debris behind and calling the cap enforceable would be a health
 //       check that hides a failing database.
 $wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
-Schema::flush_cap_cache();
-$wpdb->fail_probe_cleanup = true;
-$probe_dirty              = ( new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' ) );
+$probe_dirty = new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' );
 $probe_dirty->setAccessible( true );
-$dirty_result             = $probe_dirty->invoke( null );
+
+// The fault stays ON for everything in this block.
+$wpdb->fail_probe_cleanup = true;
+
 Schema::flush_cap_cache();
-$dirty_cap                = Schema::cap_enforceable();
-$wpdb->fail_probe_cleanup = false;
+$dirty_result = $probe_dirty->invoke( null );
+
 Schema::flush_cap_cache();
-$dirty_reg                = claim_credential( $repo, 109, 'cleanup-failed', 1 );
-// Remove the debris the injected failure left, so later scenarios start clean.
-$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
-$wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+$dirty_cap = Schema::cap_enforceable();
+
 Schema::flush_cap_cache();
+$dirty_reg  = claim_credential( $repo, 109, 'cleanup-failed', 1 );
+$dirty_rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 109" );
+
 report(
-	'a probe that cannot clean up reports false, and the cap fails closed (V18-01)',
-	false === $dirty_result && false === $dirty_cap && $dirty_reg > 0,
+	'while cleanup keeps failing: probe false, cap unenforceable, registration 503, nothing stored (V18-01)',
+	false === $dirty_result && false === $dirty_cap && -503 === $dirty_reg && 0 === $dirty_rows,
 	array(
-		'probe_result'          => $dirty_result,
-		'cap_enforceable'       => $dirty_cap,
-		'registration_once_ok'  => $dirty_reg > 0,
+		'probe_result'    => $dirty_result,
+		'cap_enforceable' => $dirty_cap,
+		'registration'    => $dirty_reg,
+		'rows_for_user'   => $dirty_rows,
 	),
 	$results,
 	$failed
 );
+
+// Now lift the fault: the same registration must succeed again. Recovery is a
+// SEPARATE assertion, so neither can stand in for the other.
+$wpdb->fail_probe_cleanup = false;
+$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+Schema::flush_cap_cache();
+$recovered_cap = Schema::cap_enforceable();
+Schema::flush_cap_cache();
+$recovered_reg = claim_credential( $repo, 109, 'cleanup-recovered', 1 );
+report(
+	'once cleanup works again: cap enforceable and registration succeeds (V18-01)',
+	true === $recovered_cap && $recovered_reg > 0,
+	array( 'cap_enforceable' => $recovered_cap, 'registration' => $recovered_reg ),
+	$results,
+	$failed
+);
+
+$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+$wpdb->query( "DELETE FROM {$table} WHERE user_id = 109" );
+$wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+Schema::flush_cap_cache();
 
 // 3c. V16-01 / P3-02: the writer probe itself. Called DIRECTLY (not through
 //     cap_enforceable(), whose && would short-circuit before reaching it), with a

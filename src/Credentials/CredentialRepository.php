@@ -90,6 +90,11 @@ final class CredentialRepository {
 	public function insert_in_slot( int $user_id, int $slot, string $credential_id, string $record_json, int $sign_count, ?string $label ): int {
 		global $wpdb;
 		$now = gmdate( 'Y-m-d H:i:s' );
+		// Losing a slot to a concurrent registration is a normal outcome here — the
+		// caller simply tries the next one — so the duplicate it produces should not
+		// be logged as a database error. Suppression is restored below and leaves
+		// last_error intact for the checks that follow.
+		$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
 		$ok  = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			Schema::credentials_table(),
 			array(
@@ -103,6 +108,9 @@ final class CredentialRepository {
 			),
 			array( '%d', '%d', '%s', '%s', '%d', '%s', '%s' )
 		);
+		if ( null !== $suppressed ) {
+			$wpdb->suppress_errors( $suppressed );
+		}
 		if ( $ok ) {
 			return (int) $wpdb->insert_id;
 		}

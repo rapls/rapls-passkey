@@ -65,18 +65,36 @@ final class UserHandle {
 
 		$stored = get_user_meta( $user_id, self::META, true );
 		if ( is_string( $stored ) && '' !== $stored ) {
-			// A stored handle is authoritative — a handle never changes once set, so
-			// even a lagging reader carries the right value. But the account may date
-			// from before the claim row existed, or from a migration that could not
-			// finish, and without that row a LATER request whose meta read comes back
-			// empty would be free to derive a second identity. So establish the row
-			// for this handle before handing it out.
-			if ( self::CLAIM_ERROR === self::claim( $user_id, $stored ) ) {
-				// The row could not be established and we cannot tell whether it is
-				// there. Handing the handle out now would leave that gap open.
-				return null;
+			// The meta is a MIRROR of the claim row, not the record. It is checked
+			// first only because it is the cheap path; what it says is accepted only
+			// once the row agrees with it.
+			$claim = self::claim( $user_id, $stored );
+
+			if ( self::CLAIM_WON === $claim ) {
+				// No row existed — an account from before the row, or one the
+				// migration never reached — and this value is now recorded as its
+				// identity. The mirror was right, and is now backed by the record.
+				return $stored;
 			}
-			return $stored;
+
+			if ( self::CLAIM_TAKEN === $claim ) {
+				// A row exists. Whether the mirror matches it is exactly the question:
+				// a mirror that disagrees is how the same account hands out two
+				// different handles depending on which request reads which copy. So
+				// the row decides, and a disagreeing mirror is repaired to match it.
+				$record = self::stored_claim( $user_id );
+				if ( null === $record ) {
+					return null; // The record exists but cannot be read: refuse.
+				}
+				if ( $record !== $stored ) {
+					update_user_meta( $user_id, self::META, $record );
+				}
+				return $record;
+			}
+
+			// The row could not be established and we cannot tell whether it is
+			// there. Handing the mirror out now would leave that gap open.
+			return null;
 		}
 
 		// Nothing visible — which is NOT the same as nothing stored. A reader served
@@ -176,6 +194,15 @@ final class UserHandle {
 			return self::CLAIM_ERROR;
 		}
 
+		// A duplicate here is the NORMAL answer for an account that already has a
+		// handle, so it must not be reported as a database error: left unsuppressed
+		// it writes to debug.log, shows up in monitoring, can leak into a REST
+		// response on a site with show_errors on, and buries real failures in noise.
+		// Suppression is restored afterwards, and it does not hide anything from us —
+		// the driver's error number and $wpdb->last_error are still set, which is
+		// what the classification below reads.
+		$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$ok = $wpdb->query(
 			$wpdb->prepare(
@@ -185,10 +212,15 @@ final class UserHandle {
 			)
 		);
 
-		if ( false !== $ok ) {
-			return self::CLAIM_WON;
+		$result = ( false !== $ok )
+			? self::CLAIM_WON
+			: ( self::duplicate_key_error() ? self::CLAIM_TAKEN : self::CLAIM_ERROR );
+
+		if ( null !== $suppressed ) {
+			$wpdb->suppress_errors( $suppressed );
 		}
-		return self::duplicate_key_error() ? self::CLAIM_TAKEN : self::CLAIM_ERROR;
+
+		return $result;
 	}
 
 	/**

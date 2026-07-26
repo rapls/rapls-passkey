@@ -134,6 +134,9 @@ final class Schema {
 		$window = max( 60, $window );
 		$name   = self::UPGRADE_LOCK_OPTION . ( (int) ( intdiv( time(), $window ) + 1 ) * $window );
 
+		// Losing this race is the normal outcome for every request but the first in
+		// the window, so the duplicate it produces is not an error worth logging.
+		$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$claimed = $wpdb->query(
 			$wpdb->prepare(
@@ -142,6 +145,9 @@ final class Schema {
 				(string) time()
 			)
 		);
+		if ( null !== $suppressed ) {
+			$wpdb->suppress_errors( $suppressed );
+		}
 		if ( false === $claimed ) {
 			return; // Someone else has this window (or the database said no): do nothing.
 		}
@@ -303,7 +309,62 @@ final class Schema {
 			)
 		);
 
-		return false !== $result;
+		if ( false === $result ) {
+			return false;
+		}
+
+		// An account can already carry a claim row that DISAGREES with its meta —
+		// a mirror written before a claim landed, a half-applied earlier migration,
+		// a connection lost between the two writes. Left alone, the account answers
+		// with one handle to a request that can read the meta and another to a
+		// request that cannot. The claim row is the record, so the mirror is
+		// repaired from it here, on the writer, in one statement.
+		//
+		// The cache entries for any repaired accounts are dropped first, because the
+		// UPDATE goes around the object cache. Getting that list is a read, but it
+		// decides nothing: a row it misses is repaired in place by UserHandle the
+		// next time that account is used.
+		self::flush_repaired_meta_cache();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$repaired = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->usermeta} um
+				 JOIN {$wpdb->options} o ON o.option_name = CONCAT(%s, um.user_id)
+				 SET um.meta_value = o.option_value
+				 WHERE um.meta_key = %s AND um.meta_value <> o.option_value",
+				UserHandle::CLAIM_PREFIX,
+				UserHandle::META
+			)
+		);
+
+		return false !== $repaired;
+	}
+
+	/**
+	 * Drop the user-meta cache for accounts whose mirror is about to be repaired.
+	 *
+	 * @return void
+	 */
+	private static function flush_repaired_meta_cache(): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT um.user_id FROM {$wpdb->usermeta} um
+				 JOIN {$wpdb->options} o ON o.option_name = CONCAT(%s, um.user_id)
+				 WHERE um.meta_key = %s AND um.meta_value <> o.option_value",
+				UserHandle::CLAIM_PREFIX,
+				UserHandle::META
+			)
+		);
+		if ( ! is_array( $ids ) ) {
+			return;
+		}
+		foreach ( $ids as $id ) {
+			wp_cache_delete( (int) $id, 'user_meta' );
+		}
 	}
 
 	/**
@@ -463,8 +524,17 @@ final class Schema {
 			);
 		};
 
+		// The probe's second insert is MEANT to fail; that is the whole point of it.
+		$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
+		$restore    = static function () use ( $wpdb, $suppressed ) {
+			if ( null !== $suppressed ) {
+				$wpdb->suppress_errors( $suppressed );
+			}
+		};
+
 		$first = $insert( 'a' );
 		if ( false === $first ) {
+			$restore();
 			return false; // Cannot even probe — do not claim the cap is enforced.
 		}
 		$second = $insert( 'b' );
@@ -478,6 +548,8 @@ final class Schema {
 		if ( false === $cleaned ) {
 			$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
+		$restore();
+
 		if ( false === $cleaned ) {
 			// Both attempts failed, so probe rows are still there and the database is
 			// evidently not answering writes reliably. Report the cap as

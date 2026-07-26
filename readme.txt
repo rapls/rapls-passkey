@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.32
+Stable tag: 0.13.33
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,10 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.33 =
+* An account whose two records of its WebAuthn identity disagreed — the registry entry and the copy kept with the account — could hand out one or the other depending on which a request happened to read. The registry entry is now the record: it decides, the copy is corrected from it, and the plugin update corrects any account where the two differ.
+* Expected collisions — a passkey slot another registration just took, a rate-limit slot, a registry entry that already exists — are no longer written to the site's error log. They were never failures, and logging them buried real database problems.
 
 = 0.13.32 =
 * More of the same audit, all about one account keeping exactly one WebAuthn identity:

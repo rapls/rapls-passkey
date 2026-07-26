@@ -46,6 +46,12 @@ class WPDB_Stub {
 			$this->claim_backfills[] = $sql;
 			return 1;
 		}
+		// The mirror repair: the claim row is the record, so a meta value that
+		// disagrees with it is rewritten from it.
+		if ( 0 === strpos( ltrim( $sql ), 'UPDATE' ) && false !== strpos( $sql, 'um.meta_value <> o.option_value' ) ) {
+			$this->mirror_repairs[] = $sql;
+			return count( $this->mismatched_users );
+		}
 		// The migration back-off row: unique option_name, so the second attempt in
 		// the same window is refused by the database.
 		if ( false !== strpos( $sql, 'rapls_passkey_migrate_' ) && 0 === strpos( ltrim( $sql ), 'INSERT INTO' ) ) {
@@ -105,6 +111,13 @@ class WPDB_Stub {
 	public function get_var( $sql ) {
 		return null;
 	}
+	/** Accounts whose mirror disagrees with their claim row; none by default. */
+	public $mismatched_users = array();
+	/** Mirror repairs the migration issued. */
+	public $mirror_repairs = array();
+	public function get_col( $sql ) {
+		return ( false !== strpos( $sql, 'um.meta_value <> o.option_value' ) ) ? $this->mismatched_users : array();
+	}
 }
 $GLOBALS['wpdb'] = new WPDB_Stub();
 if ( ! defined( 'ARRAY_A' ) ) { define( 'ARRAY_A', 'ARRAY_A' ); }
@@ -119,6 +132,8 @@ function dbDelta( $sql ) {
 $GLOBALS['__options'] = array();
 $GLOBALS['__deleted_options'] = array();
 function wp_rand( $min = 0, $max = 1 ) { return random_int( $min, $max ); }
+function wp_cache_delete( $key, $group = '' ) { $GLOBALS['__cache_deletes'][] = array( $key, $group ); return true; }
+$GLOBALS['__cache_deletes'] = array();
 function update_option( $k, $v, $autoload = null ) { $GLOBALS['__options'][ $k ] = $v; return true; }
 function get_option( $k, $default = false ) { return $GLOBALS['__options'][ $k ] ?? $default; }
 function delete_option( $k ) {
@@ -238,6 +253,21 @@ $backfill = $GLOBALS['wpdb']->claim_backfills[0] ?? '';
 check( 'it names the handle meta key as its source', false !== strpos( $backfill, 'rapls_passkey_user_handle' ) );
 check( 'it writes rows under the claim prefix', false !== strpos( $backfill, 'rapls_pk_handle_' ) );
 check( 'and it is an INSERT IGNORE, so running it again is safe', 0 === strpos( ltrim( $backfill ), 'INSERT IGNORE' ) );
+
+// V24-01: a claim row that DISAGREES with the account's mirror is not left alone
+// — the row is the record, so the mirror is rewritten from it.
+$GLOBALS['__cache_deletes']        = array();
+$GLOBALS['wpdb']->mismatched_users = array( 77, 78 );
+$GLOBALS['wpdb']->mirror_repairs   = array();
+$GLOBALS['wpdb']->dropped          = array();
+$installed_again = Schema::install();
+check( 'the migration repairs a mirror that disagrees with the claim row (V24-01)', 1 === count( $GLOBALS['wpdb']->mirror_repairs ) );
+$repair = $GLOBALS['wpdb']->mirror_repairs[0] ?? '';
+check( 'the repair takes its value FROM the claim row', false !== strpos( $repair, 'SET um.meta_value = o.option_value' ) );
+check( 'and only touches rows that actually differ', false !== strpos( $repair, 'um.meta_value <> o.option_value' ) );
+check( 'the migration still reports success when it could repair them', true === $installed_again );
+check( "and drops those accounts' cached meta first", array( array( 77, 'user_meta' ), array( 78, 'user_meta' ) ) === $GLOBALS['__cache_deletes'] );
+$GLOBALS['wpdb']->mismatched_users = array();
 
 // --- V22-06: a non-admin request may run the migration once per window --------
 // rest_pre_dispatch runs before any permission callback, so an anonymous caller

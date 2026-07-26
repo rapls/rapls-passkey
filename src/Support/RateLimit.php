@@ -200,9 +200,17 @@ final class RateLimit {
 			// about what the writer accepted. Success is also not read from an
 			// affected-row count, only from "did the statement error", which no
 			// connection flag can change.
-			$ok = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// A duplicate is the NORMAL answer here (somebody else holds this slot),
+			// so it must not be reported as a database error: unsuppressed it fills
+			// debug.log and monitoring with expected failures and buries real ones.
+			// Suppression does not hide anything from us — last_error is still set.
+			$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
+			$ok         = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$wpdb->prepare( "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, $value )
 			);
+			if ( null !== $suppressed ) {
+				$wpdb->suppress_errors( $suppressed );
+			}
 			if ( false !== $ok ) {
 				self::gc();
 				return array(

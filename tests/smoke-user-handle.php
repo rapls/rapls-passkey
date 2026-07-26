@@ -50,7 +50,12 @@ class FakeWpdb {
 	public $blind_reads = false;
 	/** Set true to model a database that refuses writes for a reason other than a duplicate. */
 	public $writes_fail = false;
-	public function suppress_errors( $s = null ) { return false; }
+	/** Every suppress_errors() call, so a test can prove the pair is balanced. */
+	public $suppress_calls = array();
+	public function suppress_errors( $s = null ) {
+		$this->suppress_calls[] = $s;
+		return false;   // the previous state
+	}
 	public function prepare( $q, ...$a ) {
 		foreach ( $a as $x ) {
 			$rep = is_int( $x ) ? (string) $x : "'" . str_replace( "'", "''", (string) $x ) . "'";
@@ -229,6 +234,51 @@ $call2 = UserHandle::raw( 61 );
 $GLOBALS['__meta_writes_are_invisible'] = false;
 check( 'the first call establishes a usable handle', 32 === strlen( $call1 ) );
 check( 'a second call in the same request never contradicts it (V23-02)', $call2 === $call1 || '' === $call2 );
+
+// --- V24-01: the record and its mirror disagreeing ---------------------------
+// meta = H1, claim row = H2. These are two different handles for one account,
+// and whichever one a request happens to read decides which identity it uses —
+// the split this class exists to prevent, just from the other direction. The
+// claim row is the record, so H2 must win every time, and H1 must never be
+// returned by any path.
+$GLOBALS['__m'] = array();
+$GLOBALS['wpdb']->store = array();
+$GLOBALS['__m'][ '71:' . UserHandle::META ]             = 'H1-MIRROR';
+$GLOBALS['wpdb']->store[ UserHandle::CLAIM_PREFIX . 71 ] = 'H2-RECORD';
+
+$seen = UserHandle::get( 71 );
+check( 'the claim row wins over a disagreeing mirror (V24-01)', 'H2-RECORD' === $seen );
+check( 'and the mirror is repaired to match the record', ( $GLOBALS['__m'][ '71:' . UserHandle::META ] ?? null ) === 'H2-RECORD' );
+
+// The same, but this request cannot see the meta at all.
+$GLOBALS['__m'][ '71:' . UserHandle::META ] = 'H1-MIRROR';   // put the disagreement back
+$GLOBALS['__meta_writes_are_invisible'] = true;
+$blind_seen = UserHandle::get( 71 );
+$GLOBALS['__meta_writes_are_invisible'] = false;
+check( 'a request that cannot read the mirror also gets the record (V24-01)', 'H2-RECORD' === $blind_seen );
+
+// And when the record itself cannot be read, the answer is nothing — never the
+// mirror, which may be the wrong handle.
+$GLOBALS['__m'][ '71:' . UserHandle::META ] = 'H1-MIRROR';
+$GLOBALS['wpdb']->blind_reads = true;
+check( 'an unreadable record never falls back to the mirror (V24-01)', null === UserHandle::get( 71 ) );
+$GLOBALS['wpdb']->blind_reads = false;
+check( 'and the record is used again once it can be read', 'H2-RECORD' === UserHandle::get( 71 ) );
+
+// Whatever happens, H1 is never handed out.
+$answers = array();
+foreach ( array( false, true ) as $blind_meta ) {
+	$GLOBALS['__m'][ '71:' . UserHandle::META ] = 'H1-MIRROR';
+	$GLOBALS['__meta_writes_are_invisible']     = $blind_meta;
+	$answers[] = UserHandle::get( 71 );
+}
+$GLOBALS['__meta_writes_are_invisible'] = false;
+check( 'no path ever returns the stale mirror value (V24-01)', ! in_array( 'H1-MIRROR', $answers, true ) );
+
+// --- V24-02: the expected duplicate is not reported as an error --------------
+$GLOBALS['wpdb']->suppress_calls = array();
+UserHandle::get( 71 );
+check( 'the deliberate duplicate is written with errors suppressed (V24-02)', array( true, false ) === $GLOBALS['wpdb']->suppress_calls );
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

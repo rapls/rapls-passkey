@@ -705,6 +705,49 @@ report(
 	$failed
 );
 
+// V24-01: the record and its mirror disagreeing, on a real server. meta = H1,
+// claim = H2 — two handles for one account, with whichever copy a request can
+// read deciding which identity it uses.
+$wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES (%d, %s, %s)", 701, UserHandle::META, 'H1-MIRROR' ) );
+$wpdb->query( $wpdb->prepare( "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", UserHandle::CLAIM_PREFIX . 701, 'H2-RECORD' ) );
+
+$mismatch_seen = UserHandle::get( 701 );
+$mirror_after  = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", 701, UserHandle::META ) );
+report(
+	'the claim row wins over a disagreeing mirror, and repairs it (V24-01)',
+	'H2-RECORD' === $mismatch_seen && 'H2-RECORD' === $mirror_after,
+	array( 'returned' => $mismatch_seen, 'mirror_after' => $mirror_after ),
+	$results,
+	$failed
+);
+
+// Put the disagreement back and ask again through a reader that cannot see the
+// mirror at all: the answer must be the same one.
+$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->usermeta} SET meta_value = %s WHERE user_id = %d AND meta_key = %s", 'H1-MIRROR', 701, UserHandle::META ) );
+$GLOBALS['__stale_meta_reads'] = true;
+$mismatch_blind = UserHandle::get( 701 );
+$GLOBALS['__stale_meta_reads'] = false;
+report(
+	'a reader that cannot see the mirror gets the same record (V24-01)',
+	'H2-RECORD' === $mismatch_blind,
+	array( 'returned' => $mismatch_blind ),
+	$results,
+	$failed
+);
+
+// And the migration repairs the mirror by itself, from the record.
+$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->usermeta} SET meta_value = %s WHERE user_id = %d AND meta_key = %s", 'H1-MIRROR', 701, UserHandle::META ) );
+$migrated     = Schema::install();
+$mirror_fixed = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s", 701, UserHandle::META ) );
+$record_kept  = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", UserHandle::CLAIM_PREFIX . 701 ) );
+report(
+	'the migration repairs a disagreeing mirror from the record (V24-01)',
+	$migrated && 'H2-RECORD' === $mirror_fixed && 'H2-RECORD' === $record_kept,
+	array( 'install' => $migrated, 'mirror' => $mirror_fixed, 'record' => $record_kept ),
+	$results,
+	$failed
+);
+
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->usermeta}" );
 
 // Clean up.

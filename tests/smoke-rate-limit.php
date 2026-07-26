@@ -103,12 +103,18 @@ class FakeWpdb {
 		}
 		return 0;
 	}
+	/** When set, every option_value read answers with this stale value (a replica). */
+	public $stale_read = null;
+
 	public function get_var( $q ) {
 		$this->last_error = '';
 		if ( $this->fail_next || $this->fail_all ) {
 			$this->fail_next  = false;
 			$this->last_error = 'simulated DB error';
 			return null; // get_var() returns null on a DB error
+		}
+		if ( null !== $this->stale_read && false !== strpos( $q, 'option_value' ) && false === strpos( $q, 'COUNT(*)' ) ) {
+			return $this->stale_read;
 		}
 		// reserved_count(): COUNT(*) ... LIKE '<prefix>%'
 		if ( false !== strpos( $q, 'COUNT(*)' ) && preg_match( "/LIKE '([^']*)%'/", $q, $m ) ) {
@@ -249,6 +255,28 @@ check( 'at the cap the window admits nobody, boundary or not', $RL::admit( 'b|k'
 // budget: the next window has its own, separate slot names.
 $GLOBALS['wpdb']->store = array( 'rapls_passkey_ra_' . md5( 'c|k' ) . '_' . time() . '_1' => time() . ':stale' );
 check( 'a slot from the just-ended window does not consume the new one', $RL::admit( 'c|k', 60, 1 ) === 1 );
+
+// V16-02 / P3-01: a request that is refused must leave NOTHING behind, whatever a
+// reader says. The reader here is deliberately hostile — it answers every read
+// with a stale token from slots that were released long ago — because claiming
+// must not consult a reader at all.
+$GLOBALS['wpdb']->store = array();
+$GLOBALS['wpdb']->stale_read = '999999999:someone-elses-old-token';
+$before = count( $GLOBALS['wpdb']->store );
+$slot   = $RL::admit( 'stale|k', 3600, 5 );
+check( 'a stale reader does not change the outcome of a claim', 1 === $slot );
+check( 'one admitted claim writes exactly one row', 1 === count( $GLOBALS['wpdb']->store ) );
+
+// Now fill the window so every slot is genuinely taken, and let the hostile
+// reader answer while a fresh request is refused. The refused request must leave
+// no rows of its own.
+for ( $i = 0; $i < 4; $i++ ) { $RL::admit( 'stale|k', 3600, 5 ); }
+$full = count( $GLOBALS['wpdb']->store );
+check( 'the window fills to exactly the cap', 5 === $full );
+$refused = $RL::admit( 'stale|k', 3600, 5 );
+check( 'the next request is refused', 0 === $refused );
+check( 'a refused request leaves ZERO extra rows (V16-02)', $full === count( $GLOBALS['wpdb']->store ) );
+$GLOBALS['wpdb']->stale_read = null;
 
 // admit() fails closed when ownership cannot be confirmed.
 $GLOBALS['wpdb']->store = array();

@@ -17,21 +17,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Every limit here is enforced by the UNIQUE index on `option_name`, never by
  * comparing a number the code has read. One row is one consumed attempt: a
- * request claims slot N of the window by inserting a row whose name embeds N,
- * and then proves it owns that row by reading the row back and matching its own
- * random token. Because only slots 1..max exist, no number of simultaneous
- * requests can consume more than the cap.
+ * request claims slot N of the window by inserting a row whose name embeds N.
+ * Because only slots 1..max exist, no number of simultaneous requests can
+ * consume more than the cap.
  *
- * This matters on real deployments:
+ * Claiming READS NOTHING. The insert either succeeded — and with a unique
+ * option_name that means this request holds the slot — or it did not. This
+ * matters on real deployments:
  *
- *  - A read/write-splitting `db.php` drop-in can serve a SELECT from a replica
- *    that has not yet applied the write. A design that decides admission from
- *    such a read admits everyone; here a stale read can only fail to recognise
- *    our own token, which makes the caller skip to another slot — strictly
- *    fewer admissions, never more.
- *  - `wpdb` transparently reconnects and replays a statement. A replayed INSERT
- *    is rejected as a duplicate, but the read-back still shows our token, so the
- *    claim stays idempotent.
+ *  - A read/write-splitting `db.php` drop-in serves SELECTs from a replica,
+ *    which may not yet have the row just written, or may still show a row that
+ *    has since been released. Neither says anything true about what the writer
+ *    accepted, so no decision here depends on a read.
+ *  - `wpdb` transparently reconnects and replays a statement, so a failed insert
+ *    may be our own earlier one that did land. Each failed attempt is therefore
+ *    followed by a token-scoped DELETE — a write, so it reaches the writer —
+ *    which removes our row if it exists and nothing otherwise. A request that
+ *    ends up refused has provably left no row behind.
  *  - Nothing depends on affected-row counts (which vary with
  *    MYSQLI_CLIENT_FOUND_ROWS), on a session-scoped lock, or on a transactional
  *    storage engine.
@@ -190,30 +192,40 @@ final class RateLimit {
 		for ( $slot = 1; $slot <= $max; $slot++ ) {
 			$name = self::slot_name( $prefix, $key, $end, $slot );
 
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// The INSERT itself decides. It either wrote the row — which, with a
+			// UNIQUE option_name, means this request and no other holds the slot —
+			// or the database refused it. Nothing is read: a reader can be a replica,
+			// and a replica may be missing the row we just wrote OR still showing a
+			// row somebody has since released, and neither tells us anything true
+			// about what the writer accepted. Success is also not read from an
+			// affected-row count, only from "did the statement error", which no
+			// connection flag can change.
+			$ok = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$wpdb->prepare( "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, $value )
 			);
-
-			$stored = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
-			);
-			if ( null === $stored ) {
-				// No row at all. Either the read failed, or it was answered by a
-				// replica that has not caught up with the row we just wrote. Stop
-				// here rather than trying the next slot: walking on would write a row
-				// per slot and strand the whole window's budget for this key, none of
-				// which we could hand back. One unconfirmed claim, then refuse.
-				return $none;
-			}
-			if ( (string) $stored === $value ) {
+			if ( false !== $ok ) {
 				self::gc();
 				return array(
 					'slot'  => $slot,
 					'token' => $end . '|' . $slot . '|' . $nonce,
 				);
 			}
-			// Someone else holds this slot (or a replica has not caught up, which
-			// only ever costs us this slot) — try the next one.
+
+			// The insert did not go through. Usually that is a duplicate — somebody
+			// else holds this slot — and nothing of ours was written. But it can also
+			// be our OWN row: WordPress transparently reconnects and replays a
+			// statement, so the first execution may have landed before the failure we
+			// see. A token-scoped DELETE settles it: it is a write, so it reaches the
+			// writer, and it removes our row if it is there and nothing otherwise.
+			// After it, this request provably owns no row on this slot, so moving to
+			// the next one cannot leave anything behind.
+			$cleaned = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name = %s AND option_value = %s", $name, $value )
+			);
+			if ( false === $cleaned ) {
+				// Cannot confirm we left nothing behind — stop rather than write more.
+				return $none;
+			}
 		}
 
 		self::gc();

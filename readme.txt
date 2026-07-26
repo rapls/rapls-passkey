@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.25
+Stable tag: 0.13.26
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,11 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.26 =
+* Ninth re-review fixes (both about not trusting a read, and about proving it):
+* Claiming an attempt or a quota slot no longer reads anything at all. The insert either wrote the row — which, with a unique row name, means this request holds the slot — or it did not. Previously the plugin confirmed ownership with a follow-up read, and a read can be answered by a replica that is behind the writer, which could make a single request write a row for every slot and use up that key's whole allowance for the window. Each failed insert is now followed by a removal of that request's own row, so a request that ends up refused provably leaves nothing behind.
+* The test that checks the passkey limit's constraint on the write server now calls that check directly, with and without the constraint in place, and asserts it reports true only when the database really refuses a duplicate — previously the scenario could pass without the check having run.
+
 = 0.13.25 =
 * Eighth re-review fixes (the passkey limit's safety check, and one availability fix):
 * Before applying a passkey limit the plugin now proves the constraint on the server that takes the writes — it writes two rows claiming one slot and requires the second to be refused — instead of only asking whether an index with the right name exists. A read can be answered by a replica whose schema differs from the writer's, so an index that only the replica still has can no longer make the limit look enforced.
@@ -96,12 +101,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * A failed upgrade no longer records itself as complete: if the slot numbering or the index cannot be created, the schema version is left behind so the next admin request retries it.
 * Verified against a real MySQL server, running the plugin's own code: upgrading from the previous schema, limit 1 storing exactly 1 passkey and limit 3 exactly 3 under 20 simultaneous processes, registration refusing when the index is dropped, refusing on a database error, and a replayed registration storing one passkey rather than two. The test ships in the repository (tests/db/integration.php) and runs in CI against MySQL 8.0/8.4 and MariaDB 10.11/11.4.
 
-= 0.13.23 =
-* Sixth re-review fixes. The per-user passkey limit and the sign-up quota are now enforced by DATABASE CONSTRAINTS instead of an application lock:
-* Each passkey occupies a numbered slot under a new UNIQUE (user_id, slot_no) index, and only slots within the configured limit are ever offered — so two simultaneous registrations can never both take the last one. Unlike the previous named lock, this holds even when WordPress transparently reconnects and replays a statement, when a db.php drop-in (HyperDB and similar) routes queries to a different server, and on any storage engine. A replayed registration after a reconnect now stores exactly one passkey instead of two.
-* The sign-up quota reserves a numbered row and confirms ownership by reading it back, so it no longer depends on a database session, an advisory lock, or affected-row counts. A reservation is handed back by its own token, so a hand-back can never disturb another request's slot or mis-count the quota.
-* Login attempt limits are now consumed BEFORE the passkey assertion (or recovery code) is checked, not after it fails. Previously a batch of simultaneous attempts could all read the same under-limit count and all proceed; now exactly one can take the last attempt, which also caps the verification work a flood of requests can start.
-* Verified against a real MySQL server with 100 simultaneous processes: limit 1 stores 1 passkey, limit 3 stores 3, and with one attempt left exactly one of 20 concurrent logins is admitted. The test ships in the plugin's repository (tests/db/concurrency.php) and runs in CI against MySQL 8.0/8.4 and MariaDB 10.11/11.4.
-* With the passkey limit set to 0 (unlimited, the default) registration no longer performs any limit bookkeeping at all.
-
-For the change history of 0.13.22 and earlier releases, see changelog.txt.
+For the change history of 0.13.23 and earlier releases, see changelog.txt.

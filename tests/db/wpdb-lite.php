@@ -94,8 +94,12 @@ class WPDB_Lite {
 		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 	}
 
+	/** Statements issued through query(), so a test can prove work really happened. */
+	public $write_count = 0;
+
 	public function query( $sql ) {
 		$this->last_error = '';
+		++$this->write_count;
 		$res              = $this->db->query( $sql );
 		if ( false === $res ) {
 			$this->last_error    = $this->db->error;
@@ -107,8 +111,20 @@ class WPDB_Lite {
 		return true === $res ? $this->rows_affected : $res->num_rows;
 	}
 
+	/**
+	 * When set, every option_value read answers with this value instead of the
+	 * truth — a stand-in for a read replica that is behind the writer (it may miss
+	 * a row just written, or still show one that was released).
+	 *
+	 * @var string|null
+	 */
+	public $stale_read = null;
+
 	public function get_var( $sql ) {
 		$this->last_error = '';
+		if ( null !== $this->stale_read && false !== strpos( $sql, 'option_value' ) && false === strpos( $sql, 'COUNT(' ) ) {
+			return $this->stale_read;
+		}
 		$res              = $this->db->query( $sql );
 		if ( false === $res ) {
 			$this->last_error = $this->db->error;

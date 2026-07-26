@@ -343,18 +343,37 @@ report(
 	$failed
 );
 
-// 3c. V16-01: the check must be answered by the SERVER THAT TAKES THE WRITES. The
-//     plugin proves it by writing — two rows claiming one slot, the second of
-//     which must be refused — so an index that only a replica still has cannot
-//     make the cap look enforced.
-$wrote_probe = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
-Schema::flush_cap_cache();
-Schema::cap_enforceable();
-$probe_left = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+// 3c. V16-01 / P3-02: the writer probe itself. Called DIRECTLY (not through
+//     cap_enforceable(), whose && would short-circuit before reaching it), with a
+//     valid unique index restored, so what is asserted is the probe actually
+//     performing its two inserts and the database refusing the second.
+$wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
+$probe = new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' );
+$probe->setAccessible( true );
+
+$queries_before = $wpdb->write_count;
+$with_index     = $probe->invoke( null );
+$probe_writes   = $wpdb->write_count - $queries_before;
+$left_over      = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
 report(
-	'the writer is probed with a real duplicate write, and the probe cleans up (V16-01)',
-	0 === $wrote_probe && 0 === $probe_left,
-	array( 'probe_rows_before' => $wrote_probe, 'probe_rows_after' => $probe_left ),
+	'the writer probe runs (2 inserts + cleanup), the duplicate is refused, nothing is left behind (P3-02)',
+	true === $with_index && $probe_writes >= 3 && 0 === $left_over,
+	array( 'probe_result' => $with_index, 'statements_issued' => $probe_writes, 'rows_left' => $left_over ),
+	$results,
+	$failed
+);
+
+// The same probe against a writer WITHOUT the constraint must report false —
+// which is what proves the probe is really testing the writer and not just
+// returning true whenever the SQL runs.
+$wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+$without_index = $probe->invoke( null );
+$left_over2    = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+$wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
+report(
+	'without the constraint the writer accepts the duplicate and the probe reports false (P3-02)',
+	false === $without_index && 0 === $left_over2,
+	array( 'probe_result' => $without_index, 'rows_left' => $left_over2 ),
 	$results,
 	$failed
 );
@@ -396,6 +415,51 @@ report(
 	'one-second windows: never more than one admission per window (V15-02)',
 	$admitted_edge >= 1 && $admitted_edge <= 2,
 	array( 'workers' => $opts['workers'], 'max_per_window' => 1, 'admitted' => $admitted_edge, 'note' => 'the run can straddle at most two one-second windows' ),
+	$results,
+	$failed
+);
+
+// 8. P3-01: a refused claim must leave NOTHING on the writer, even when reads are
+//    answered by a lagging replica — including the awkward case of a stale
+//    NON-NULL token from a slot that has since been released. Claiming does not
+//    read at all, and each failed insert is followed by a token-scoped DELETE, so
+//    the row count on the writer is the proof.
+$stale_key = 'it_stale|' . bin2hex( random_bytes( 4 ) );
+$prefix    = 'rapls_passkey_ra_' . md5( $stale_key ) . '_';
+$like      = $wpdb->esc_like( $prefix ) . '%';
+
+// Fill the window, then release nothing: every slot is genuinely taken.
+for ( $i = 0; $i < 3; $i++ ) {
+	RateLimit::admit( $stale_key, 3600, 3 );
+}
+$rows_full = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '{$like}'" );
+
+// Now make every read answer with a stale token from a long-gone window.
+$wpdb->stale_read = '999999999:token-from-a-released-slot';
+$refused          = RateLimit::admit( $stale_key, 3600, 3 );
+$wpdb->stale_read = null;
+$rows_after       = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '{$like}'" );
+
+report(
+	'a refused claim under stale non-NULL reads leaves ZERO extra rows (P3-01)',
+	3 === $rows_full && 0 === $refused && $rows_after === $rows_full,
+	array( 'rows_before' => $rows_full, 'result' => $refused, 'rows_after' => $rows_after ),
+	$results,
+	$failed
+);
+
+// And a claim into a window with room still succeeds while reads are stale,
+// writing exactly one row — the reader plays no part either way.
+$fresh_key  = 'it_fresh|' . bin2hex( random_bytes( 4 ) );
+$fresh_like = $wpdb->esc_like( 'rapls_passkey_ra_' . md5( $fresh_key ) . '_' ) . '%';
+$wpdb->stale_read = '999999999:token-from-a-released-slot';
+$got              = RateLimit::admit( $fresh_key, 3600, 5 );
+$wpdb->stale_read = null;
+$fresh_rows       = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '{$fresh_like}'" );
+report(
+	'a successful claim under stale reads writes exactly one row (P3-01)',
+	1 === $got && 1 === $fresh_rows,
+	array( 'slot' => $got, 'rows' => $fresh_rows ),
 	$results,
 	$failed
 );

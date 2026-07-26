@@ -37,24 +37,17 @@ final class LoginGate {
 	 */
 	public static function check( WP_User $user, string $context = '' ): ?WP_Error {
 		// WordPress's own multisite check comes FIRST, before any of our filters.
-		// A normal password login reaches it through the `authenticate` chain; these
-		// logins set the cookie directly, so without this a user (or a user whose
-		// primary site) marked as spam on a network could still sign in with a
-		// passkey, a QR approval, a magic link or a recovery code. Core's rule wins
-		// over anything a site filter might allow.
+		// A normal password login reaches it through the `authenticate` chain (core
+		// registers it there at priority 99); these logins set the cookie directly,
+		// so without this a user marked as spam on a network — or one whose primary
+		// site is — could still sign in with a passkey, a QR approval, a magic link
+		// or a recovery code. Core's rule wins over anything a site filter allows.
 		if ( function_exists( 'wp_authenticate_spam_check' ) ) {
 			$spam = wp_authenticate_spam_check( $user );
 			if ( $spam instanceof WP_Error ) {
 				return $spam;
 			}
 		}
-		if ( function_exists( 'wp_authenticate_blog_check' ) ) {
-			$blog = wp_authenticate_blog_check( $user );
-			if ( $blog instanceof WP_Error ) {
-				return $blog;
-			}
-		}
-
 		/**
 		 * Filter whether a user may complete a passkey / alternative-method login.
 		 *

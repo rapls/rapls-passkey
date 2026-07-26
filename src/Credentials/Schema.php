@@ -27,7 +27,7 @@ final class Schema {
 	/**
 	 * Current schema version. Bump when a table definition changes.
 	 */
-	private const VERSION = '5';
+	private const VERSION = '6';
 
 	/**
 	 * Option flag recording that the UNIQUE (user_id, slot_no) index exists. The
@@ -116,6 +116,12 @@ final class Schema {
 		 * source of truth round-tripped through web-auth's serializer. sign_count
 		 * is denormalised for display and updated after every assertion.
 		 *
+		 * touch_nonce is rewritten to a fresh random value on every successful
+		 * assertion. It carries no meaning: it exists so the commit UPDATE always
+		 * CHANGES the row, which makes "did one row change" a truthful answer about
+		 * the write server — no follow-up SELECT, which a replica could answer with
+		 * pre-revocation state.
+		 *
 		 * slot_no numbers each user's passkeys 1, 2, 3, … and carries a UNIQUE
 		 * (user_id, slot_no) index (added separately below, after back-filling).
 		 * That index — not an application lock — is what makes the per-user cap
@@ -133,6 +139,7 @@ final class Schema {
 			credential_id varchar(512) NOT NULL,
 			credential_data longtext NOT NULL,
 			sign_count bigint(20) unsigned NOT NULL DEFAULT 0,
+			touch_nonce varchar(32) DEFAULT NULL,
 			label varchar(191) DEFAULT NULL,
 			active tinyint(1) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL,

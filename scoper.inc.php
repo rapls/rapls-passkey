@@ -60,14 +60,11 @@ $external_classes = array( 'Two_Factor_Core', 'WooCommerce', 'WP_CLI', '~^WC_~' 
 // detection and can fatal other plugins). Exclude WC and the wc_* family.
 $external_functions = array( 'WC', '~^wc_~', '~^woocommerce~i' );
 
-// WordPress functions the generated list misses because they are declared in the
-// multisite-only files (wp-includes/ms-*.php), which the upstream symbol export
-// does not cover. Prefixing one of these would emit a global alias forwarding to
-// a function that does not exist — exactly the breakage the WC() note above
-// describes. Add to this list when the final-artifact check flags a new alias.
-$external_functions[] = 'wp_authenticate_blog_check';
+// WordPress functions the generated symbol list can miss. Prefixing one of these
+// would emit a global alias forwarding to a function that does not exist —
+// exactly the breakage the WC() note above describes. Add to this list when the
+// final-artifact check flags a new alias.
 $external_functions[] = 'wp_authenticate_spam_check';
-$external_functions[] = 'is_user_spammy';
 
 return array(
 	'prefix' => 'RaplsPasskey\\Vendor',

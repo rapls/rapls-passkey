@@ -1,8 +1,11 @@
 <?php
 if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 /**
- * UserHandle: stable per-user handle, created atomically on first use so a
- * concurrent first registration cannot mint two different handles (F-19).
+ * UserHandle: one stable handle per user. It is DERIVED from the user id and the
+ * site salt rather than minted and stored, so concurrent first uses, retries and
+ * readers that lag behind all arrive at the same value (F-19, R21-04). A handle
+ * already stored — a passwordless sign-up adopting the one its ceremony used —
+ * always wins.
  *
  *   php tests/smoke-user-handle.php
  *
@@ -15,10 +18,21 @@ define( 'ABSPATH', __DIR__ . '/' );
 
 $GLOBALS['__m'] = array();
 
+function wp_salt( $scheme = 'auth' ) { return 'unit-test-salt'; }
 function get_user_meta( $id, $key, $single = false ) {
+	// A replica that has not applied recent writes answers with nothing.
+	if ( ! empty( $GLOBALS['__meta_writes_are_invisible'] ) ) {
+		return '';
+	}
 	return $GLOBALS['__m'][ "$id:$key" ] ?? '';
 }
-function update_user_meta( $id, $key, $val ) { $GLOBALS['__m'][ "$id:$key" ] = $val; return true; }
+function update_user_meta( $id, $key, $val ) {
+	if ( ! empty( $GLOBALS['__meta_write_fails'] ) ) {
+		return false;
+	}
+	$GLOBALS['__m'][ "$id:$key" ] = $val;
+	return 123; // wpdb returns the new meta_id for a first write
+}
 function wp_cache_delete( $id, $group = '' ) { return true; }
 
 /**
@@ -65,27 +79,47 @@ function check( $label, $cond ) {
 	$cond ? $pass++ : $failc++;
 }
 
-// First use mints a handle via the atomic lock insert.
+// R21-04: with nothing stored, the handle is DERIVED — a pure function of the
+// user id and the site salt. No lock row, no insert, nothing read back.
 $h1 = UserHandle::get( 7 );
 check( 'get() returns a non-empty handle', is_string( $h1 ) && '' !== $h1 );
-check( 'first use took the atomic lock', isset( $GLOBALS['wpdb']->store[ UserHandle::LOCK_PREFIX . 7 ] ) );
-check( 'the handle was stored in user meta', ( $GLOBALS['__m'][ '7:' . UserHandle::META ] ?? '' ) === $h1 );
+check( 'no lock row is written any more', ! isset( $GLOBALS['wpdb']->store[ UserHandle::LOCK_PREFIX . 7 ] ) );
+check( 'nothing is written to user meta either', ! isset( $GLOBALS['__m'][ '7:' . UserHandle::META ] ) );
 
-// Stable across calls (no second insert; served from meta).
-$h2 = UserHandle::get( 7 );
-check( 'handle is stable across calls', $h1 === $h2 );
-
-// raw() decodes to 32 bytes.
+// Stable across calls, and — the point of the change — stable across
+// CONCURRENT first uses and retries, because it is computed, not minted.
+check( 'handle is stable across calls', $h1 === UserHandle::get( 7 ) );
 check( 'raw() is 32 bytes', strlen( UserHandle::raw( 7 ) ) === 32 );
+check( 'different users get different handles', UserHandle::get( 7 ) !== UserHandle::get( 8 ) );
 
-// Race: a concurrent request already took the lock for user 9 and wrote its
-// handle there. Our INSERT loses (unique violation), so get() must return the
-// winner's handle from the lock row, not a fresh one.
-$winner = \ParagonIE\ConstantTime\Base64UrlSafe::encodeUnpadded( str_repeat( "\x41", 32 ) );
-$GLOBALS['wpdb']->store[ UserHandle::LOCK_PREFIX . 9 ] = $winner; // Winner already holds the lock.
-$h = UserHandle::get( 9 );
-check( 'the race loser returns the winner\'s handle, not a fresh one', $h === $winner );
-check( 'the loser mirrors the winner handle into user meta', ( $GLOBALS['__m'][ '9:' . UserHandle::META ] ?? '' ) === $winner );
+// A hostile reader that answers every meta read with '' (a replica that has not
+// caught up) must not produce a NEW handle — that is exactly how one account's
+// credentials used to end up split across two WebAuthn identities.
+$GLOBALS['__m'] = array();
+$under_stale_reads = UserHandle::get( 7 );
+check( 'a stale reader still yields the same handle (R21-04)', $under_stale_reads === $h1 );
+
+// An account that already carries a stored handle keeps it: the stored value
+// always wins over the derived one.
+$GLOBALS['__m'][ '9:' . UserHandle::META ] = 'STORED-HANDLE';
+check( 'a stored handle takes precedence over the derived one', UserHandle::get( 9 ) === 'STORED-HANDLE' );
+
+// adopt(): sign-up hands the account the handle its ceremony already used.
+check( 'adopt() stores the ceremony handle', UserHandle::adopt( 11, 'CEREMONY-HANDLE' ) === true );
+check( 'and get() returns it from then on', UserHandle::get( 11 ) === 'CEREMONY-HANDLE' );
+check( 'adopt() rejects an empty handle', UserHandle::adopt( 12, '' ) === false );
+check( 'adopt() rejects a bad user id', UserHandle::adopt( 0, 'X' ) === false );
+
+// R21-04: adopt() must NOT read the value back. A reader that has not caught up
+// would report failure and make the caller undo a sign-up that actually worked.
+$GLOBALS['__meta_writes_are_invisible'] = true;
+check( 'adopt() succeeds even when reads cannot see the write yet (R21-04)', UserHandle::adopt( 13, 'WRITTEN-BUT-UNREADABLE' ) === true );
+$GLOBALS['__meta_writes_are_invisible'] = false;
+
+// A genuine write failure is still reported.
+$GLOBALS['__meta_write_fails'] = true;
+check( 'adopt() reports a real write failure', UserHandle::adopt( 14, 'NOPE' ) === false );
+$GLOBALS['__meta_write_fails'] = false;
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

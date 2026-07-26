@@ -21,6 +21,7 @@ function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
 function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 
 $GLOBALS['__m'] = array();
+function wp_salt( $scheme = 'auth' ) { return 'unit-test-salt'; }
 function get_user_meta( $id, $key, $single = false ) { return $GLOBALS['__m'][ "$id:$key" ] ?? ''; }
 function update_user_meta( $id, $key, $val ) { $GLOBALS['__m'][ "$id:$key" ] = $val; return true; }
 function add_user_meta( $id, $key, $val, $unique = false ) {

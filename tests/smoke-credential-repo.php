@@ -112,12 +112,17 @@ class WPDB_Mem {
 		if ( false === strpos( $q, 'UPDATE' ) || false === strpos( $q, 'credential_data' ) ) {
 			return 0;
 		}
-		$id = (int) $a[3];
+		// touch(): record_json, sign_count, now, touch_nonce, id [, min sign_count].
+		$id = (int) $a[4];
 		if ( ! isset( $this->rows[ $id ] ) ) {
+			return 0;   // Row gone: no active row matched.
+		}
+		// `active = 1` is part of the WHERE, so a suspended credential matches nothing.
+		if ( false !== strpos( $q, 'active = 1' ) && 0 === (int) ( $this->rows[ $id ]['active'] ?? 1 ) ) {
 			return 0;
 		}
 		if ( false !== strpos( $q, 'sign_count < %d' ) ) {
-			$min = (int) $a[4];
+			$min = (int) $a[5];
 			if ( (int) $this->rows[ $id ]['sign_count'] >= $min ) {
 				return 0; // Counter did not advance.
 			}
@@ -125,6 +130,7 @@ class WPDB_Mem {
 		$this->rows[ $id ]['credential_data'] = (string) $a[0];
 		$this->rows[ $id ]['sign_count']      = (int) $a[1];
 		$this->rows[ $id ]['last_used_at']    = (string) $a[2];
+		$this->rows[ $id ]['touch_nonce']     = (string) $a[3];
 		return 1;
 	}
 	public function get_row( $prepared, $output = OBJECT ) {
@@ -339,6 +345,29 @@ check( 'a rejected touch leaves the record unchanged', $still->record_json === '
 // A counter-less authenticator (always 0) commits by row id (challenge is the
 // replay guard there), so it is not blocked by the CAS.
 check( 'touch on a counter-less authenticator commits (returns 1)', $repo->touch( $id3, '{"r":3,"u":1}', 0 ) === 1 );
+
+// R20-09 / R21-02: a credential suspended or removed DURING the ceremony must not
+// complete the login. The decision comes from the write itself — the row always
+// changes (touch_nonce), so "0 rows changed" can only mean no active row matched.
+// No follow-up read is involved, so a replica still showing the old state cannot
+// let the login through.
+$repo->set_active( $id3, null, false );
+check( 'a credential suspended mid-ceremony does not commit (counter-less)', $repo->touch( $id3, '{"r":3,"u":2}', 0 ) === 0 );
+check( 'and its record was not advanced', $repo->find_by_id( $id3 )->record_json === '{"r":3,"u":1}' );
+$repo->set_active( $id3, null, true );
+check( 'once resumed it commits again', $repo->touch( $id3, '{"r":3,"u":3}', 0 ) === 1 );
+
+$repo->set_active( $id2, null, false );
+check( 'a suspended credential does not commit with a counter either', $repo->touch( $id2, '{"r":2,"u":9}', 99 ) === 0 );
+$repo->set_active( $id2, null, true );
+
+// A deleted row is the same answer: nothing active matched.
+check( 'a removed credential does not commit', $repo->touch( 987654, '{}', 5 ) === 0 );
+
+// Every commit rewrites touch_nonce, which is what makes the row always change.
+$before_nonce = $GLOBALS['wpdb']->rows[ $id3 ]['touch_nonce'] ?? '';
+$repo->touch( $id3, '{"r":3,"u":4}', 0 );
+check( 'each commit writes a fresh touch_nonce', ( $GLOBALS['wpdb']->rows[ $id3 ]['touch_nonce'] ?? '' ) !== $before_nonce );
 
 // find_by_id (used by admin delete path).
 $by_id = $repo->find_by_id( $id3 );

@@ -208,52 +208,48 @@ final class CredentialRepository {
 		$table = Schema::credentials_table();
 		$now   = gmdate( 'Y-m-d H:i:s' );
 
-		// `active = 1` is part of every condition below. This UPDATE is the commit
-		// point of a login, and a ceremony takes long enough (network round trip
-		// plus signature verification) for an administrator to suspend or delete the
-		// credential in between. Re-checking it here means a revocation that lands
-		// during the ceremony is honoured instead of being overtaken by a login that
-		// started a moment earlier.
+		// `active = 1` is part of every condition, and touch_nonce is rewritten to a
+		// fresh value every time. That second part matters: because the row always
+		// changes, "one row changed" is a truthful answer from the SERVER THAT TOOK
+		// THE WRITE about whether an active row still existed. The previous version
+		// asked a follow-up SELECT when nothing changed, and a read/write-splitting
+		// db.php could answer that from a replica still showing the credential as
+		// active — letting a login complete against a credential suspended during
+		// the ceremony. Nothing is read here now.
+		$nonce = bin2hex( random_bytes( 8 ) );
+
 		if ( $sign_count > 0 ) {
 			$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 				$wpdb->prepare(
-					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d AND active = 1 AND sign_count < %d",
+					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s, touch_nonce = %s WHERE id = %d AND active = 1 AND sign_count < %d",
 					$record_json,
 					$sign_count,
 					$now,
+					$nonce,
 					$id,
 					$sign_count
 				)
 			);
-			if ( false === $affected ) {
-				return -1;
-			}
-			return (int) $affected >= 1 ? 1 : 0;
+		} else {
+			$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare(
+					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s, touch_nonce = %s WHERE id = %d AND active = 1",
+					$record_json,
+					$sign_count,
+					$now,
+					$nonce,
+					$id
+				)
+			);
 		}
 
-		$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$wpdb->prepare(
-				"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s WHERE id = %d AND active = 1",
-				$record_json,
-				$sign_count,
-				$now,
-				$id
-			)
-		);
 		if ( false === $affected ) {
 			return -1;
 		}
-		// A counter-less authenticator has no freshness signal, so 0 changed rows is
-		// normally just "nothing to change". But it also covers "the row is gone or
-		// no longer active", which must NOT sign anyone in — so confirm the row is
-		// still there and usable before treating this as a commit.
-		if ( 0 === (int) $affected ) {
-			$still = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-				$wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d AND active = 1", $id )
-			);
-			return null === $still ? 0 : 1;
-		}
-		return 1;
+		// 0 changed rows now means exactly one thing: no active row matched — the
+		// credential was suspended or removed, or (with a counter) the counter did
+		// not advance. Either way the login must not proceed.
+		return (int) $affected >= 1 ? 1 : 0;
 	}
 
 	/**

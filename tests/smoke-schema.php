@@ -24,8 +24,11 @@ class WPDB_Stub {
 	public function get_charset_collate() {
 		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 	}
+	public function esc_like( $s ) { return $s; }
 	/** Set false to model a writer that does NOT enforce the unique slot index. */
 	public $writer_enforces = true;
+	/** Set true to model a database that cannot delete the probe's own rows. */
+	public $fail_probe_cleanup = false;
 	/** Probe rows the writer currently holds, keyed by "user_id:slot_no". */
 	private $probe = array();
 
@@ -45,6 +48,9 @@ class WPDB_Stub {
 			return 1;
 		}
 		if ( 0 === strpos( ltrim( $sql ), 'DELETE' ) && preg_match( '/slot_no = (\d+)/', $sql, $m ) ) {
+			if ( $this->fail_probe_cleanup ) {
+				return false;
+			}
 			unset( $this->probe[ '0:' . $m[1] ] );
 			return 1;
 		}
@@ -184,6 +190,15 @@ check( 'a writer that accepts a duplicate slot does not count (V16-01)', Schema:
 Schema::flush_cap_cache();
 $wpdb->writer_enforces = true;
 check( 'index shape + writer both good is enforceable again', Schema::cap_enforceable() === true );
+
+// V18-01: a probe that cannot remove its own rows must not report success — that
+// would call a database that leaves debris a healthy one.
+Schema::flush_cap_cache();
+$wpdb->fail_probe_cleanup = true;
+check( 'a probe whose cleanup keeps failing reports NOT enforceable (V18-01)', Schema::cap_enforceable() === false );
+$wpdb->fail_probe_cleanup = false;
+Schema::flush_cap_cache();
+check( 'and it recovers once cleanup works again', Schema::cap_enforceable() === true );
 
 // Drop must short-circuit on $wpdb and remove the table.
 $GLOBALS['__deleted_options'] = array();

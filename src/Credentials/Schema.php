@@ -305,9 +305,11 @@ final class Schema {
 	 *
 	 * The probe uses user_id 0 (no WordPress user has that id) and a random slot
 	 * number, so concurrent probes cannot collide with each other or with real
-	 * credentials.
+	 * credentials. Its rows are removed before it answers; if they cannot be
+	 * removed, it answers false rather than report success while leaving debris.
 	 *
-	 * @return bool True only when the duplicate was rejected.
+	 * @return bool True only when the duplicate was rejected AND the probe cleaned
+	 *              up after itself.
 	 */
 	private static function writer_rejects_duplicate_slot(): bool {
 		global $wpdb;
@@ -333,13 +335,21 @@ final class Schema {
 		}
 		$second = $insert( 'b' );
 
-		// Remove the probe rows whatever happened. Retried once: under heavy
-		// concurrency the first attempt can lose a lock wait, and a stray probe row
-		// (harmless — user_id 0 is nobody) would otherwise sit there until the next
-		// migration sweeps it.
-		$cleanup = "DELETE FROM {$table} WHERE user_id = 0 AND slot_no = %d";
-		if ( false === $wpdb->query( $wpdb->prepare( $cleanup, $slot ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$wpdb->query( $wpdb->prepare( $cleanup, $slot ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// Remove this probe's rows — matched by its own tag as well as its slot, so a
+		// concurrent probe is never touched. Retried once, because under heavy
+		// concurrency the first attempt can lose a lock wait.
+		$cleanup = "DELETE FROM {$table} WHERE user_id = 0 AND slot_no = %d AND credential_id LIKE %s";
+		$like    = $wpdb->esc_like( $tag ) . '%';
+		$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		if ( false === $cleaned ) {
+			$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		}
+		if ( false === $cleaned ) {
+			// Both attempts failed, so probe rows are still there and the database is
+			// evidently not answering writes reliably. Report the cap as
+			// unenforceable rather than call a health check that left debris a
+			// success; the next migration sweeps the rows.
+			return false;
 		}
 
 		// The duplicate must have been refused. Anything else means the writer is

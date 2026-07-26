@@ -130,13 +130,45 @@ jobs:
       # distribution ZIPs, then let verify.sh check their SHA-256, stage the
       # source, and run every suite. This proves the reproduction instructions
       # work, rather than asserting that they do.
+      # Pro lives in a separate private repository. With RAPLS_PRO_REPO_TOKEN set
+      # (a token that can read rapls/rapls-passkey-pro) the reproduction step below
+      # covers BOTH plugins, exactly as the submitted bundle does. Without the
+      # secret the step runs Free only and says so — it never silently claims more
+      # than it ran.
+      - name: Check out Pro (needs RAPLS_PRO_REPO_TOKEN)
+        if: ${{ env.PRO_TOKEN != '' }}
+        env:
+          PRO_TOKEN: ${{ secrets.RAPLS_PRO_REPO_TOKEN }}
+        uses: actions/checkout@v4
+        with:
+          repository: rapls/rapls-passkey-pro
+          token: ${{ secrets.RAPLS_PRO_REPO_TOKEN }}
+          path: pro-src
+
       - name: Reproduction procedure (verify-bundle.sh) end to end
         run: |
           composer install --no-interaction --prefer-dist --no-progress
           curl -sSL -o bin/php-scoper.phar \
             https://github.com/humbug/php-scoper/releases/download/0.18.11/php-scoper.phar
           bash bin/build-dist.sh
-          bash tests/db/verify-bundle.sh --free ../rapls-passkey.zip \
+
+          PRO_ARGS=""
+          if [ -d pro-src ]; then
+            # Build the Pro ZIP from its own checkout, alongside Free the way both
+            # plugins are laid out on a real site.
+            mv pro-src ../rapls-passkey-pro
+            ( cd ../rapls-passkey-pro \
+              && composer install --no-interaction --prefer-dist --no-progress \
+              && cp ../rapls-passkey/bin/php-scoper.phar bin/php-scoper.phar \
+              && bash bin/build-dist.sh )
+            PRO_ARGS="--pro ../rapls-passkey-pro.zip"
+            echo "Pro included: running the full two-plugin procedure."
+          else
+            echo "NOTE: RAPLS_PRO_REPO_TOKEN is not set — this run covers the FREE plugin only."
+          fi
+
+          # shellcheck disable=SC2086
+          bash tests/db/verify-bundle.sh --free ../rapls-passkey.zip $PRO_ARGS \
             --db-host 127.0.0.1 --db-port 3306 --db-name rapls_test \
             --db-user root --db-pass rootpw --workers 50
 

@@ -97,9 +97,22 @@ class WPDB_Lite {
 	/** Statements issued through query(), so a test can prove work really happened. */
 	public $write_count = 0;
 
+	/**
+	 * When true, every DELETE of the schema probe's rows fails — a stand-in for a
+	 * database that accepts the probe's inserts but cannot clear them.
+	 *
+	 * @var bool
+	 */
+	public $fail_probe_cleanup = false;
+
 	public function query( $sql ) {
 		$this->last_error = '';
 		++$this->write_count;
+		if ( $this->fail_probe_cleanup && 0 === strpos( ltrim( $sql ), 'DELETE' ) && false !== strpos( $sql, 'rapls-probe-' ) ) {
+			$this->last_error    = 'simulated cleanup failure';
+			$this->rows_affected = 0;
+			return false;
+		}
 		$res              = $this->db->query( $sql );
 		if ( false === $res ) {
 			$this->last_error    = $this->db->error;

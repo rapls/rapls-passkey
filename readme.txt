@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.26
+Stable tag: 0.13.27
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,9 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.27 =
+* Tenth re-review fix: the check that proves the passkey limit's constraint on the database now also requires that it could remove its own temporary rows. If those deletions keep failing — a database that accepts writes but cannot complete them — the limit is reported as unenforceable and registration refuses, instead of reporting success while leaving rows behind.
 
 = 0.13.26 =
 * Ninth re-review fixes (both about not trusting a read, and about proving it):

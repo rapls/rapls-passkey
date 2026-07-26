@@ -343,6 +343,36 @@ report(
 	$failed
 );
 
+// 3b-2. V18-01: a probe that cannot remove its own rows must NOT report success.
+//       Leaving debris behind and calling the cap enforceable would be a health
+//       check that hides a failing database.
+$wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
+Schema::flush_cap_cache();
+$wpdb->fail_probe_cleanup = true;
+$probe_dirty              = ( new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' ) );
+$probe_dirty->setAccessible( true );
+$dirty_result             = $probe_dirty->invoke( null );
+Schema::flush_cap_cache();
+$dirty_cap                = Schema::cap_enforceable();
+$wpdb->fail_probe_cleanup = false;
+Schema::flush_cap_cache();
+$dirty_reg                = claim_credential( $repo, 109, 'cleanup-failed', 1 );
+// Remove the debris the injected failure left, so later scenarios start clean.
+$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+$wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+Schema::flush_cap_cache();
+report(
+	'a probe that cannot clean up reports false, and the cap fails closed (V18-01)',
+	false === $dirty_result && false === $dirty_cap && $dirty_reg > 0,
+	array(
+		'probe_result'          => $dirty_result,
+		'cap_enforceable'       => $dirty_cap,
+		'registration_once_ok'  => $dirty_reg > 0,
+	),
+	$results,
+	$failed
+);
+
 // 3c. V16-01 / P3-02: the writer probe itself. Called DIRECTLY (not through
 //     cap_enforceable(), whose && would short-circuit before reaching it), with a
 //     valid unique index restored, so what is asserted is the probe actually

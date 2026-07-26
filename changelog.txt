@@ -3,6 +3,12 @@
 The full release history for Rapls Passkey. The most recent releases are also
 listed in readme.txt; older entries live here.
 
+= 0.13.22 =
+* Fifth re-review fixes (concurrency correctness, isolation- and engine-independence):
+* The passkey per-user limit and the atomic quota reservation are now serialised with a MySQL advisory named lock (GET_LOCK) instead of a transaction + row lock. Named locks work regardless of the table's storage engine (they hold even on MyISAM, where SELECT ... FOR UPDATE does not), do not touch the shared connection's transaction state (so they cannot implicitly commit another plugin's open transaction), signal success with an explicit result rather than an affected-row count (so a quota can no longer be miscounted when the connection uses MYSQLI_CLIENT_FOUND_ROWS), and release automatically if the connection drops. A lock that cannot be taken fails closed.
+* Every SQL step in the registration path is now checked, and the per-user count fails closed on a database error (a failed count no longer reads as "under the limit").
+* The passkey-login REST routes and the Pro recovery-code login now use the shared fail-closed rate counter as well, so a database error blocks instead of silently allowing, on every login path.
+
 = 0.13.21 =
 * Fourth re-review fixes (concurrency correctness):
 * The passkey per-user limit is now enforced under a real database row lock (a short transaction on a per-user row), so it holds exactly regardless of the server's transaction isolation level — not just the default. The lock releases automatically on commit/rollback, so a crashed request cannot leave it stuck.

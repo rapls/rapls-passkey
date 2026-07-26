@@ -197,8 +197,13 @@ final class RateLimit {
 			$stored = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name )
 			);
-			if ( null === $stored && '' !== (string) $wpdb->last_error ) {
-				return $none; // Ownership cannot be confirmed — fail closed.
+			if ( null === $stored ) {
+				// No row at all. Either the read failed, or it was answered by a
+				// replica that has not caught up with the row we just wrote. Stop
+				// here rather than trying the next slot: walking on would write a row
+				// per slot and strand the whole window's budget for this key, none of
+				// which we could hand back. One unconfirmed claim, then refuse.
+				return $none;
 			}
 			if ( (string) $stored === $value ) {
 				self::gc();

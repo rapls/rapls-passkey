@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.24
+Stable tag: 0.13.25
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,13 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.25 =
+* Eighth re-review fixes (the passkey limit's safety check, and one availability fix):
+* Before applying a passkey limit the plugin now proves the constraint on the server that takes the writes — it writes two rows claiming one slot and requires the second to be refused — instead of only asking whether an index with the right name exists. A read can be answered by a replica whose schema differs from the writer's, so an index that only the replica still has can no longer make the limit look enforced.
+* The index check also verifies its shape: it must be UNIQUE and over exactly (user_id, slot_no) in that order. A same-named index that is not unique, or covers other columns, enforces nothing and is no longer mistaken for the real constraint.
+* When a limit cannot be confirmed, registration refuses (503) rather than proceeding unprotected.
+* Availability fix: if the row a request has just written is not yet visible (a replica lagging behind), the request now stops instead of trying the next attempt slot. Previously one request could write a row for every slot and use up that IP's whole login / recovery / sign-up budget for the window.
+
 = 0.13.24 =
 * Seventh re-review fixes. Every attempt limit is now enforced the same way the passkey limit is — by a database constraint rather than by comparing a number the plugin has read:
 * Login, two-factor, recovery-code, magic-link, QR-code and sign-up limits each claim a numbered attempt row whose uniqueness the database guarantees. Because nothing is decided from a value that was read, the limits hold even where a read/write-splitting database drop-in can serve a stale count from a replica — a configuration in which a counter-based limit can be bypassed entirely.
@@ -97,10 +104,4 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * Verified against a real MySQL server with 100 simultaneous processes: limit 1 stores 1 passkey, limit 3 stores 3, and with one attempt left exactly one of 20 concurrent logins is admitted. The test ships in the plugin's repository (tests/db/concurrency.php) and runs in CI against MySQL 8.0/8.4 and MariaDB 10.11/11.4.
 * With the passkey limit set to 0 (unlimited, the default) registration no longer performs any limit bookkeeping at all.
 
-= 0.13.22 =
-* Fifth re-review fixes (concurrency correctness, isolation- and engine-independence):
-* The passkey per-user limit and the atomic quota reservation are now serialised with a MySQL advisory named lock (GET_LOCK) instead of a transaction + row lock. Named locks work regardless of the table's storage engine (they hold even on MyISAM, where SELECT ... FOR UPDATE does not), do not touch the shared connection's transaction state (so they cannot implicitly commit another plugin's open transaction), signal success with an explicit result rather than an affected-row count (so a quota can no longer be miscounted when the connection uses MYSQLI_CLIENT_FOUND_ROWS), and release automatically if the connection drops. A lock that cannot be taken fails closed.
-* Every SQL step in the registration path is now checked, and the per-user count fails closed on a database error (a failed count no longer reads as "under the limit").
-* The passkey-login REST routes and the Pro recovery-code login now use the shared fail-closed rate counter as well, so a database error blocks instead of silently allowing, on every login path.
-
-For the change history of 0.13.21 and earlier releases, see changelog.txt.
+For the change history of 0.13.22 and earlier releases, see changelog.txt.

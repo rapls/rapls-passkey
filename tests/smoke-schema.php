@@ -24,10 +24,29 @@ class WPDB_Stub {
 	public function get_charset_collate() {
 		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 	}
+	/** Set false to model a writer that does NOT enforce the unique slot index. */
+	public $writer_enforces = true;
+	/** Probe rows the writer currently holds, keyed by "user_id:slot_no". */
+	private $probe = array();
+
 	public function query( $sql ) {
 		$this->dropped[] = $sql;
 		if ( false !== strpos( $sql, 'ADD UNIQUE KEY user_slot' ) ) {
 			$this->slot_index = 'user_slot';
+		}
+		// The writer probe: two rows claiming the same (user_id, slot_no). With the
+		// constraint in place the second INSERT must fail.
+		if ( false !== strpos( $sql, 'INSERT INTO' ) && preg_match( '/VALUES \(0, (\d+),/', $sql, $m ) ) {
+			$key = '0:' . $m[1];
+			if ( $this->writer_enforces && isset( $this->probe[ $key ] ) ) {
+				return false; // duplicate key
+			}
+			$this->probe[ $key ] = true;
+			return 1;
+		}
+		if ( 0 === strpos( ltrim( $sql ), 'DELETE' ) && preg_match( '/slot_no = (\d+)/', $sql, $m ) ) {
+			unset( $this->probe[ '0:' . $m[1] ] );
+			return 1;
 		}
 		return true;
 	}
@@ -38,15 +57,25 @@ class WPDB_Stub {
 		}
 		return $query;
 	}
-	// The slot back-fill reads rows needing a number; nothing pre-exists here.
+	/** Shape reported for the slot index; overridden in the tests below. */
+	public $index_rows = null;
+
 	public function get_results( $sql, $output = null ) {
+		// SHOW INDEX must report the index's SHAPE, not just its name: a non-unique
+		// index, or one over other columns, enforces nothing.
+		if ( false !== strpos( $sql, 'SHOW INDEX' ) ) {
+			if ( null === $this->slot_index ) {
+				return array();
+			}
+			return null !== $this->index_rows ? $this->index_rows : array(
+				array( 'Key_name' => 'user_slot', 'Non_unique' => '0', 'Seq_in_index' => '1', 'Column_name' => 'user_id' ),
+				array( 'Key_name' => 'user_slot', 'Non_unique' => '0', 'Seq_in_index' => '2', 'Column_name' => 'slot_no' ),
+			);
+		}
+		// The slot back-fill reads rows needing a number; nothing pre-exists here.
 		return array();
 	}
 	public function get_var( $sql ) {
-		// SHOW INDEX ... WHERE Key_name = 'user_slot'
-		if ( false !== strpos( $sql, 'SHOW INDEX' ) ) {
-			return $this->slot_index;
-		}
 		return null;
 	}
 }
@@ -62,6 +91,7 @@ function dbDelta( $sql ) {
 
 $GLOBALS['__options'] = array();
 $GLOBALS['__deleted_options'] = array();
+function wp_rand( $min = 0, $max = 1 ) { return random_int( $min, $max ); }
 function update_option( $k, $v, $autoload = null ) { $GLOBALS['__options'][ $k ] = $v; return true; }
 function get_option( $k, $default = false ) { return $GLOBALS['__options'][ $k ] ?? $default; }
 function delete_option( $k ) {
@@ -118,6 +148,42 @@ check( 'migration adds the UNIQUE (user_id, slot_no) index', (bool) array_filter
 	static fn( $q ) => false !== strpos( $q, 'ADD UNIQUE KEY user_slot (user_id, slot_no)' )
 ) );
 check( 'the slot index is recorded as present', Schema::cap_enforceable() === true );
+
+// V16-01: the cap may only be trusted when the index has the RIGHT SHAPE and the
+// WRITER actually refuses a duplicate. Either alone is not enough — a read can be
+// answered by a replica whose schema differs from the writer's.
+$wpdb = $GLOBALS['wpdb'];
+
+Schema::flush_cap_cache();
+$wpdb->index_rows = array(
+	array( 'Key_name' => 'user_slot', 'Non_unique' => '1', 'Seq_in_index' => '1', 'Column_name' => 'user_id' ),
+	array( 'Key_name' => 'user_slot', 'Non_unique' => '1', 'Seq_in_index' => '2', 'Column_name' => 'slot_no' ),
+);
+check( 'a same-named NON-UNIQUE index does not count (V16-01)', Schema::cap_enforceable() === false );
+
+Schema::flush_cap_cache();
+$wpdb->index_rows = array(
+	array( 'Key_name' => 'user_slot', 'Non_unique' => '0', 'Seq_in_index' => '1', 'Column_name' => 'user_id' ),
+	array( 'Key_name' => 'user_slot', 'Non_unique' => '0', 'Seq_in_index' => '2', 'Column_name' => 'label' ),
+);
+check( 'a unique index over the WRONG columns does not count (V16-01)', Schema::cap_enforceable() === false );
+
+Schema::flush_cap_cache();
+$wpdb->index_rows = array(
+	array( 'Key_name' => 'user_slot', 'Non_unique' => '0', 'Seq_in_index' => '1', 'Column_name' => 'slot_no' ),
+	array( 'Key_name' => 'user_slot', 'Non_unique' => '0', 'Seq_in_index' => '2', 'Column_name' => 'user_id' ),
+);
+check( 'the columns must be in the right order (V16-01)', Schema::cap_enforceable() === false );
+
+// The reader may still show a perfect index while the WRITER has lost it.
+Schema::flush_cap_cache();
+$wpdb->index_rows      = null;   // reader reports the correct index
+$wpdb->writer_enforces = false;  // but the writer accepts a duplicate
+check( 'a writer that accepts a duplicate slot does not count (V16-01)', Schema::cap_enforceable() === false );
+
+Schema::flush_cap_cache();
+$wpdb->writer_enforces = true;
+check( 'index shape + writer both good is enforceable again', Schema::cap_enforceable() === true );
 
 // Drop must short-circuit on $wpdb and remove the table.
 $GLOBALS['__deleted_options'] = array();

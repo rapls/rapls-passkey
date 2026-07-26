@@ -185,6 +185,10 @@ final class Schema {
 		global $wpdb;
 		$table = self::credentials_table();
 
+		// Clear any probe rows a killed request left behind (see
+		// writer_rejects_duplicate_slot(); user_id 0 is never a real user).
+		$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+
 		// Batched so a site with a large table does not build one huge statement.
 		do {
 			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -246,12 +250,97 @@ final class Schema {
 	 * @return bool
 	 */
 	private static function slot_index_exists(): bool {
+		return self::slot_index_well_formed();
+	}
+
+	/**
+	 * Whether an index named user_slot exists AND has the shape that enforces the
+	 * cap: UNIQUE, over exactly (user_id, slot_no), in that order.
+	 *
+	 * Checking only the name would accept a non-unique index, or a unique index on
+	 * different columns — neither of which stops two registrations taking the same
+	 * slot. Any doubt, including a failed query, reads as "no".
+	 *
+	 * @return bool
+	 */
+	private static function slot_index_well_formed(): bool {
 		global $wpdb;
 		$table = self::credentials_table();
-		$found = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", self::SLOT_INDEX )
+		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", self::SLOT_INDEX ),
+			ARRAY_A
 		);
-		return null !== $found;
+		if ( ! is_array( $rows ) || 2 !== count( $rows ) || '' !== (string) $wpdb->last_error ) {
+			return false;
+		}
+
+		$expected = array(
+			1 => 'user_id',
+			2 => 'slot_no',
+		);
+		foreach ( $rows as $row ) {
+			$seq = (int) ( $row['Seq_in_index'] ?? 0 );
+			if ( '0' !== (string) ( $row['Non_unique'] ?? '1' ) ) {
+				return false; // Not a UNIQUE index — it enforces nothing.
+			}
+			if ( ! isset( $expected[ $seq ] ) || $expected[ $seq ] !== (string) ( $row['Column_name'] ?? '' ) ) {
+				return false; // Wrong column, or the wrong position in the key.
+			}
+			unset( $expected[ $seq ] );
+		}
+		return array() === $expected;
+	}
+
+	/**
+	 * Prove, on the server that takes the writes, that a duplicate (user_id,
+	 * slot_no) is actually rejected.
+	 *
+	 * `SHOW INDEX` is an ordinary read. A read/write-splitting db.php drop-in can
+	 * answer it from a replica, which may still carry an index the writer has lost
+	 * — and it is the writer that decides whether two registrations can share a
+	 * slot. So this writes: two rows that differ only by credential_id and claim
+	 * the same slot. The second MUST fail. If it succeeds, the writer is not
+	 * enforcing the constraint and the cap cannot be honoured, whatever the replica
+	 * says. Both probe rows are removed either way.
+	 *
+	 * The probe uses user_id 0 (no WordPress user has that id) and a random slot
+	 * number, so concurrent probes cannot collide with each other or with real
+	 * credentials.
+	 *
+	 * @return bool True only when the duplicate was rejected.
+	 */
+	private static function writer_rejects_duplicate_slot(): bool {
+		global $wpdb;
+		$table = self::credentials_table();
+		$slot  = wp_rand( 1000000, 2000000000 );
+		$now   = gmdate( 'Y-m-d H:i:s' );
+		$tag   = 'rapls-probe-' . $slot . '-';
+
+		$insert = static function ( string $suffix ) use ( $wpdb, $table, $slot, $now, $tag ) {
+			return $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$wpdb->prepare(
+					"INSERT INTO {$table} (user_id, slot_no, credential_id, credential_data, sign_count, created_at) VALUES (0, %d, %s, '{}', 0, %s)",
+					$slot,
+					$tag . $suffix,
+					$now
+				)
+			);
+		};
+
+		$first = $insert( 'a' );
+		if ( false === $first ) {
+			return false; // Cannot even probe — do not claim the cap is enforced.
+		}
+		$second = $insert( 'b' );
+
+		// Remove the probe rows whatever happened.
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->prepare( "DELETE FROM {$table} WHERE user_id = 0 AND slot_no = %d", $slot )
+		);
+
+		// The duplicate must have been refused. Anything else means the writer is
+		// not enforcing UNIQUE (user_id, slot_no).
+		return false === $second;
 	}
 
 	/**
@@ -270,7 +359,11 @@ final class Schema {
 	 */
 	public static function cap_enforceable(): bool {
 		if ( null === self::$cap_enforceable ) {
-			self::$cap_enforceable = self::slot_index_exists();
+			// Two checks, both required. The first reads the index definition; the
+			// second PROVES the constraint on the server that actually takes the
+			// writes, because a read can be answered by a replica whose schema no
+			// longer matches the writer's.
+			self::$cap_enforceable = self::slot_index_well_formed() && self::writer_rejects_duplicate_slot();
 			// Keep the stored flag in step so Site Health and admin notices can show
 			// the state without repeating the query. It is a report, never the
 			// authority for allowing a write.

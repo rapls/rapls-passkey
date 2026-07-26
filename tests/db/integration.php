@@ -20,6 +20,33 @@
 
 // phpcs:disable
 
+namespace RaplsPasskey\WebAuthn {
+	class RegistrationManager {}
+	class AssertionManager {}
+	class Codec {
+		public function record_to_json( $record ) { return '{}'; }
+	}
+}
+namespace RaplsPasskey\Support {
+	class Str {
+		public static function substr( $s, $a, $b ) { return substr( $s, $a, $b ); }
+	}
+	class Settings {
+		public static $max = 0;
+		public static function max_passkeys(): int { return self::$max; }
+		public static function login_rate_max(): int { return 0; }
+		public static function login_rate_window(): int { return 300; }
+	}
+}
+namespace RaplsPasskey\Audit {
+	class AuditLog {
+		const REGISTERED = 'registered';
+		public static function record( ...$a ) {}
+	}
+}
+
+namespace {
+
 $opts = array(
 	'host'    => '127.0.0.1',
 	'port'    => 3306,
@@ -74,43 +101,73 @@ if ( ! file_exists( __DIR__ . '/wp-admin/includes/upgrade.php' ) ) {
 	file_put_contents( __DIR__ . '/wp-admin/includes/upgrade.php', "<?php\n" );
 }
 
+class WP_Error {
+	private $code; private $message; private $data;
+	public function __construct( $code = '', $message = '', $data = array() ) {
+		$this->code = $code; $this->message = $message; $this->data = $data;
+	}
+	public function get_error_code() { return $this->code; }
+	public function get_error_message() { return $this->message; }
+	public function get_error_data() { return $this->data; }
+}
+class WP_REST_Request {}
+class WP_REST_Response {}
+class WP_REST_Server { const READABLE = 'GET'; const CREATABLE = 'POST'; const EDITABLE = 'PUT'; const DELETABLE = 'DELETE'; }
+function __( $s, $d = null ) { return $s; }
+function esc_html__( $s, $d = null ) { return $s; }
+function add_action( ...$a ) {}
+function add_filter( ...$a ) {}
+function do_action( ...$a ) {}
+function is_user_logged_in() { return true; }
+function wp_get_current_user() { return (object) array( 'ID' => 1 ); }
+function rest_ensure_response( $r ) { return $r; }
+function sanitize_text_field( $s ) { return is_string( $s ) ? trim( $s ) : ''; }
+function wp_unslash( $s ) { return $s; }
+function hash_equals_stub() {}
+
 require_once __DIR__ . '/wpdb-lite.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/Schema.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/Credential.php';
 require_once dirname( __DIR__, 2 ) . '/src/Credentials/CredentialRepository.php';
 require_once dirname( __DIR__, 2 ) . '/src/Support/RateLimit.php';
+require_once dirname( __DIR__, 2 ) . '/src/Rest/Endpoints.php';
 
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\Schema;
+use RaplsPasskey\Rest\Endpoints;
 use RaplsPasskey\Support\RateLimit;
+use RaplsPasskey\Support\Settings;
 
 $GLOBALS['wpdb'] = new WPDB_Lite( WPDB_Lite::connect( $opts ) );
 $wpdb            = $GLOBALS['wpdb'];
 $table           = Schema::credentials_table();
 
-/** The cap logic exactly as Rest\Endpoints::store_credential() applies it. */
+/**
+ * Call the SHIPPED Rest\Endpoints::store_credential() — the code that actually
+ * runs in production — rather than a copy of its logic. Returns the stored row id,
+ * or the negative HTTP status the endpoint would answer with.
+ */
 function claim_credential( CredentialRepository $repo, int $user_id, string $credential_id, int $max ): int {
-	if ( $max > 0 && ! Schema::cap_enforceable() ) {
-		return -503; // fail closed: the database cannot guarantee the cap
+	Settings::$max = $max;
+	$ep  = ( new ReflectionClass( Endpoints::class ) )->newInstanceWithoutConstructor();
+	$ref = new ReflectionClass( Endpoints::class );
+	foreach ( array( 'repository' => $repo, 'codec' => new RaplsPasskey\WebAuthn\Codec() ) as $prop => $value ) {
+		$p = $ref->getProperty( $prop );
+		$p->setAccessible( true );
+		$p->setValue( $ep, $value );
 	}
-	for ( $attempt = 0; $attempt < 12; $attempt++ ) {
-		$used = $repo->used_slots( $user_id );
-		if ( null === $used ) {
-			return -503;
-		}
-		$ceiling = $max > 0 ? $max : count( $used ) + 1;
-		$slot    = 0;
-		for ( $s = 1; $s <= $ceiling; $s++ ) {
-			if ( ! in_array( $s, $used, true ) ) { $slot = $s; break; }
-		}
-		if ( 0 === $slot ) {
-			return -409; // limit reached
-		}
-		$id = $repo->insert_in_slot( $user_id, $slot, $credential_id, '{}', 0, null );
-		if ( $id > 0 ) { return $id; }
-		if ( 0 === $id ) { return -500; }
+	$m = $ref->getMethod( 'store_credential' );
+	$m->setAccessible( true );
+
+	$record = new stdClass();
+	$record->counter = 0;
+
+	$out = $m->invoke( $ep, $user_id, $credential_id, $record, null );
+	if ( $out instanceof WP_Error ) {
+		$data = $out->get_error_data();
+		return -( (int) ( $data['status'] ?? 500 ) );
 	}
-	return -409;
+	return (int) $out;
 }
 
 // --- Worker mode ------------------------------------------------------------
@@ -257,6 +314,51 @@ report(
 	$failed
 );
 
+// 3b. V16-01: the index must have the RIGHT SHAPE. A same-named index that is not
+//     unique, or is over other columns, enforces nothing — and must not be
+//     mistaken for the real constraint.
+$wpdb->query( "ALTER TABLE {$table} ADD INDEX user_slot (user_id, slot_no)" );   // same name, NOT unique
+Schema::flush_cap_cache();
+$shape_ok  = Schema::cap_enforceable();
+$shape_res = claim_credential( $repo, 107, 'non-unique-index', 1 );
+$wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+report(
+	'a same-named NON-UNIQUE index is not accepted as the constraint (V16-01)',
+	false === $shape_ok && -503 === $shape_res,
+	array( 'cap_enforceable' => $shape_ok, 'result' => $shape_res ),
+	$results,
+	$failed
+);
+
+$wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, credential_id)" ); // unique, wrong columns
+Schema::flush_cap_cache();
+$cols_ok  = Schema::cap_enforceable();
+$cols_res = claim_credential( $repo, 108, 'wrong-columns-index', 1 );
+$wpdb->query( "ALTER TABLE {$table} DROP INDEX user_slot" );
+report(
+	'a unique index over the WRONG columns is not accepted (V16-01)',
+	false === $cols_ok && -503 === $cols_res,
+	array( 'cap_enforceable' => $cols_ok, 'result' => $cols_res ),
+	$results,
+	$failed
+);
+
+// 3c. V16-01: the check must be answered by the SERVER THAT TAKES THE WRITES. The
+//     plugin proves it by writing — two rows claiming one slot, the second of
+//     which must be refused — so an index that only a replica still has cannot
+//     make the cap look enforced.
+$wrote_probe = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+Schema::flush_cap_cache();
+Schema::cap_enforceable();
+$probe_left = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
+report(
+	'the writer is probed with a real duplicate write, and the probe cleans up (V16-01)',
+	0 === $wrote_probe && 0 === $probe_left,
+	array( 'probe_rows_before' => $wrote_probe, 'probe_rows_after' => $probe_left ),
+	$results,
+	$failed
+);
+
 // …and an uncapped site still works, because there is no cap to guarantee.
 $unlimited = claim_credential( $repo, 104, 'no-cap-ok', 0 );
 report( 'with no cap configured, registration still works', $unlimited > 0, array( 'id' => $unlimited ), $results, $failed );
@@ -325,3 +427,5 @@ if ( '' !== $opts['json'] ) {
 
 echo "\n  " . ( count( $results ) - $failed ) . ' passed, ' . $failed . " failed\n";
 exit( 0 === $failed ? 0 : 1 );
+
+} // namespace

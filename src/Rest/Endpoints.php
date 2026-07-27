@@ -409,10 +409,14 @@ final class Endpoints {
 	 * produced for a decoy, and verification matches the signature against stored
 	 * credentials, never against this list.
 	 *
+	 * No return type is declared on purpose: this answers with a WP_Error when the
+	 * ceremony cannot be stored, and a declared WP_REST_Response would turn that
+	 * refusal into a TypeError.
+	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|WP_Error
 	 */
-	public function login_options( WP_REST_Request $request ): WP_REST_Response {
+	public function login_options( WP_REST_Request $request ) {
 		$username = sanitize_text_field( (string) $request->get_param( 'username' ) );
 		$records  = array();
 		$decoys   = array();
@@ -466,12 +470,10 @@ final class Endpoints {
 		try {
 			$options = $this->assertion->create_options( $records, $uv, $decoys );
 		} catch ( \Throwable $e ) {
-			return new WP_REST_Response(
-				array(
-					'code'    => 'rapls_passkey_login_unavailable',
-					'message' => __( 'Sign-in is temporarily unavailable. Please try again.', 'rapls-passkey' ),
-				),
-				503
+			return new WP_Error(
+				'rapls_passkey_login_unavailable',
+				__( 'Sign-in is temporarily unavailable. Please try again.', 'rapls-passkey' ),
+				array( 'status' => 503 )
 			);
 		}
 

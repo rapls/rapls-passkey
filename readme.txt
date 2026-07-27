@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.35
+Stable tag: 0.13.36
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,10 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.36 =
+* Sign-in options now answer with a proper error, rather than an unexpected one, when the record behind the ceremony could not be saved.
+* Build checks: the test runner now treats a run that produced no result — a file that stopped early, a directory with no tests in it, a process that died — as a failure instead of silence. The check that runs the suite inside the distribution package does the same, and the suites it cannot run there are named in a fixed list rather than matched by a pattern.
 
 = 0.13.35 =
 * Sign-in and registration now stop if the short-lived record behind them could not be saved, instead of handing the browser a challenge that can never be completed. Previously a failing cache or database could leave a passkey created on your device that this site would then refuse — one you would have to find and delete yourself.

@@ -128,6 +128,18 @@ if ( '' !== $sibling && is_dir( $work . '/rapls-passkey' ) && ! is_dir( $work . 
 	}
 }
 
+/*
+ * Which suites cannot run inside a scoped build, by name. A FIXED list, not a
+ * pattern: a pattern would quietly excuse any new file that happened to mention
+ * the bundled libraries, and "skipped" would grow without anyone deciding it
+ * should. Adding a name here is a deliberate act, and an unexpected skip fails.
+ */
+$allowed_skips = array(
+	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php' ),
+	'rapls-passkey-pro' => array( 'smoke-mds.php' ),
+);
+$expected_skips = $allowed_skips[ $slug ] ?? array();
+
 $php   = PHP_BINARY;
 $files = glob( $dest . '/smoke-*.php' ) ?: array();
 sort( $files );
@@ -139,13 +151,22 @@ $skipped = array();
 echo "Functional check of the SHIPPED code: {$slug}\n";
 echo '  ' . count( $files ) . " suites found in the extracted artifact\n\n";
 
+// No files means the suite did not run — a wrong path, a failed copy, a renamed
+// directory. That is not a pass.
+if ( array() === $files ) {
+	fwrite( STDERR, "no smoke-*.php found in the extracted artifact — refusing to report success\n" );
+	exit( 1 );
+}
+
 foreach ( $files as $file ) {
 	$name   = basename( $file );
 	$source = (string) file_get_contents( $file );
 
 	// A test that names the bundled libraries cannot run against a scoped build:
-	// those symbols exist under a private prefix there, on purpose.
-	if ( preg_match( '#(^|[^\\\\w])\\\\?Webauthn\\\\\\\\#', $source ) || false !== strpos( $source, "vendor/autoload.php" ) || false !== strpos( $source, 'ParagonIE\\' ) ) {
+	// those symbols exist under a private prefix there, on purpose. Only the names
+	// on the list above may be skipped for that reason — anything else runs, and
+	// fails if it cannot.
+	if ( in_array( $name, $expected_skips, true ) ) {
 		$skipped[] = $name;
 		continue;
 	}
@@ -153,19 +174,35 @@ foreach ( $files as $file ) {
 	$out  = array();
 	$code = 0;
 	exec( escapeshellarg( $php ) . ' ' . escapeshellarg( $file ) . ' 2>&1', $out, $code );
-	$last = '';
+
+	// The summary line is required, and it must say zero failures: an exit code of
+	// 0 alone would let a file that asserted nothing — or that died before its last
+	// line — count as a pass.
+	$summary = '';
+	$fails   = null;
 	foreach ( $out as $line ) {
 		if ( preg_match( '/(\d+) passed, (\d+) failed/', $line, $m ) ) {
-			$last = $m[0];
+			$summary = $m[0];
+			$fails   = (int) $m[2];
 		}
 	}
-	if ( 0 === $code ) {
+
+	$reason = '';
+	if ( 0 !== $code ) {
+		$reason = "exit code {$code}";
+	} elseif ( '' === $summary ) {
+		$reason = 'no assertion summary (the file asserted nothing, or stopped early)';
+	} elseif ( 0 !== $fails ) {
+		$reason = $summary;
+	}
+
+	if ( '' === $reason ) {
 		++$passed;
-		echo "  PASS  {$name}  ({$last})\n";
+		echo "  PASS  {$name}  ({$summary})\n";
 		continue;
 	}
 	++$failed;
-	echo "  FAIL  {$name}\n";
+	echo "  FAIL  {$name}  ({$reason})\n";
 	foreach ( array_slice( $out, -12 ) as $line ) {
 		echo '        ' . $line . "\n";
 	}
@@ -173,6 +210,24 @@ foreach ( $files as $file ) {
 
 echo "\n  {$passed} suites passed, {$failed} failed, " . count( $skipped ) . " skipped\n";
 if ( array() !== $skipped ) {
-	echo '  skipped (they name the bundled libraries, which are renamed in a build): ' . implode( ', ', $skipped ) . "\n";
+	echo '  skipped (named on the fixed list; they use the bundled libraries by their unprefixed names): ' . implode( ', ', $skipped ) . "\n";
 }
+
+// The skips must be EXACTLY the ones declared. A suite that was expected to be
+// skipped but is missing means the file is gone; anything skipped that is not on
+// the list cannot happen by construction, and is asserted anyway.
+sort( $skipped );
+$declared = $expected_skips;
+sort( $declared );
+if ( $skipped !== $declared ) {
+	echo '  UNEXPECTED SKIP SET: expected [' . implode( ', ', $declared ) . '], got [' . implode( ', ', $skipped ) . "]\n";
+	++$failed;
+}
+
+// And every file found must have been accounted for.
+if ( count( $files ) !== $passed + $failed + count( $skipped ) ) {
+	echo "  SUITE COUNT MISMATCH: " . count( $files ) . ' found, ' . ( $passed + $failed + count( $skipped ) ) . " accounted for\n";
+	++$failed;
+}
+
 exit( 0 === $failed ? 0 : 1 );

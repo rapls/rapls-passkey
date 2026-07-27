@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.37
+Stable tag: 0.13.38
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,8 +81,8 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
-= 0.13.37 =
-* Housekeeping only: no functional change from 0.13.36. This version exists so that one version number identifies exactly one package — the previous number had been used for two builds that differed only in their build stamp.
+= 0.13.38 =
+* Housekeeping only: no functional change since 0.13.36. Each of these numbers identifies exactly one package; a number is never reused for a second build.
 
 = 0.13.36 =
 * Sign-in options now answer with a proper error, rather than an unexpected one, when the record behind the ceremony could not be saved.

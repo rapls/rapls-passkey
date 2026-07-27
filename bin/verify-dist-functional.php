@@ -136,7 +136,11 @@ if ( '' !== $sibling && is_dir( $work . '/rapls-passkey' ) && ! is_dir( $work . 
  */
 $allowed_skips = array(
 	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php' ),
-	'rapls-passkey-pro' => array( 'smoke-mds.php' ),
+	// smoke-mds names the bundled library; the other two exercise operator tooling
+	// under tools/, which is deliberately NOT part of the plugin artifact — it is
+	// shipped in the verification bundle instead, where the source-tree run covers
+	// both. Skipping them here says that, rather than hiding it.
+	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 
@@ -210,7 +214,7 @@ foreach ( $files as $file ) {
 
 echo "\n  {$passed} suites passed, {$failed} failed, " . count( $skipped ) . " skipped\n";
 if ( array() !== $skipped ) {
-	echo '  skipped (named on the fixed list; they use the bundled libraries by their unprefixed names): ' . implode( ', ', $skipped ) . "\n";
+	echo '  skipped (named on the fixed list; they need the bundled libraries under their original names, or tooling the plugin artifact does not carry): ' . implode( ', ', $skipped ) . "\n";
 }
 
 // The skips must be EXACTLY the ones declared. A suite that was expected to be

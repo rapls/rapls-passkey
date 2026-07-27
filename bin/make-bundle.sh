@@ -79,16 +79,55 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	find "$CI_ARTIFACTS" -name '*.json' -exec cp {} "$STAGE/ci-artifacts/" \;
 fi
 
-# Refuse to ship anything that looks like machine-local editor state or a secret.
-BAD="$(find "$STAGE" \( -name 'settings.local.json' -o -name '.env' -o -name 'rpls-license-data.json' -o -name 'rpls-license-config.php' \) -print)"
+# Refuse to ship machine-local state or anything shaped like a credential. This
+# is a net, not a proof — a dedicated scanner (gitleaks and friends) is the tool
+# for that — but it catches the shapes that actually turn up in a tree like this,
+# and it fails the build rather than warning.
+# fido-mds-roots.pem is the FIDO Alliance's PUBLIC root certificates, shipped on
+# purpose; it is named here so the exception is visible rather than a hole in the
+# pattern.
+BAD="$(find "$STAGE" \( \
+	-name 'settings.local.json' -o -name '.env' -o -name '.env.*' \
+	-o -name 'rpls-license-data.json' -o -name 'rpls-license-config.php' \
+	-o -name 'auth.json' -o -name '.npmrc' -o -name '.netrc' \
+	-o -name 'id_rsa' -o -name 'id_ed25519' -o -name '*.p12' -o -name '*.pfx' \
+	-o \( -name '*.pem' ! -name 'fido-mds-roots.pem' \) \
+	-o -name 'credentials' -o -name 'credentials.json' -o -name '*.kdbx' \
+	\) -print)"
 if [ -n "$BAD" ]; then
-	echo "refusing to build: local or secret files in the bundle:" >&2
+	echo "refusing to build: local or secret-bearing files in the bundle:" >&2
 	echo "$BAD" >&2
 	exit 1
 fi
-if grep -rlE '[a-f0-9]{128}' "$STAGE" >/dev/null 2>&1; then
-	echo "refusing to build: something in the bundle looks like a secret key" >&2
-	grep -rlE '[a-f0-9]{128}' "$STAGE" >&2
+
+# Content shapes. Deliberately aimed at SECRETS, not at every long string: a
+# 64-character hex value is an Ed25519 PUBLIC key or a SHA-256 digest and appears
+# all over this tree legitimately, while 128 hex characters is the size of an
+# Ed25519 secret. Anything wider than this needs a real scanner (gitleaks or
+# similar); this is the last line of a checklist, not a substitute for one.
+PATTERNS=(
+	'[0-9a-fA-F]{128,}'
+	'-----BEGIN [A-Z ]*PRIVATE KEY-----'
+	'gh[pousr]_[A-Za-z0-9]{20,}'
+	'github_pat_[A-Za-z0-9_]{20,}'
+	'AKIA[0-9A-Z]{16}'
+	'aws_secret_access_key'
+	'xox[abprs]-[A-Za-z0-9-]{10,}'
+	'-----BEGIN PGP PRIVATE KEY BLOCK-----'
+)
+# Files that legitimately contain long hex or base64: dependency locks (integrity
+# hashes), our own manifest of digests, and the CI result JSON. Named here so the
+# allowlist is a decision rather than a silent exception.
+ALLOW='composer.lock|build-manifest.json|ci-artifacts/|SHA256SUMS|package-lock.json|fido-mds-roots.pem|make-bundle.sh'
+FOUND=""
+for pattern in "${PATTERNS[@]}"; do
+	HITS="$(grep -rlE "$pattern" "$STAGE" 2>/dev/null | grep -vE "$ALLOW" || true)"
+	[ -n "$HITS" ] && FOUND="$FOUND$HITS"$'\n'
+done
+if [ -n "$(printf '%s' "$FOUND" | tr -d '[:space:]')" ]; then
+	echo "refusing to build: something in the bundle is shaped like a credential:" >&2
+	printf '%s' "$FOUND" >&2
+	echo "  (if it is legitimate, add it to ALLOW in bin/make-bundle.sh — deliberately)" >&2
 	exit 1
 fi
 

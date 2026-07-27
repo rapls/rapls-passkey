@@ -96,7 +96,13 @@ fi
 # reviewer holding only the ZIP can match it against a commit in the repository.
 VERSION="$(sed -n 's/^ \* Version: *\(.*\)$/\1/p' "$ROOT/$SLUG.php" | head -1 | tr -d ' \r')"
 COMMIT="$SOURCE_COMMIT"
-DIRTY="$(test -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" && echo true || echo false)"
+# "false" must mean "checked and clean", not "could not check". Without git — a
+# build from an export — the honest answer is that we do not know.
+if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+	DIRTY="$(test -n "$(git -C "$ROOT" status --porcelain)" && echo '"true"' || echo '"false"')"
+else
+	DIRTY='"unknown"'
+fi
 
 # Everything that determined the bytes in this ZIP, so "which inputs produced
 # this artifact" can be answered from the artifact alone: the source tree as git
@@ -107,7 +113,7 @@ hash_of() { [ -f "$1" ] && shasum -a 256 "$1" | cut -d' ' -f1 || echo "absent"; 
 # output, so the build refuses one it does not recognise. Update this line
 # deliberately when moving to a new release.
 EXPECTED_SCOPER="ad8aa6987f062c2c981d876f17c8c51e68dd27505ae9d03fcb914545d2945e8e"
-ACTUAL_SCOPER="$(hash_of "$ROOT/bin/php-scoper.phar")"
+ACTUAL_SCOPER="$(hash_of "$SCOPER")"
 if [ "$ACTUAL_SCOPER" != "$EXPECTED_SCOPER" ]; then
 	echo "build-dist: unexpected php-scoper.phar" >&2
 	echo "  expected $EXPECTED_SCOPER" >&2
@@ -117,7 +123,7 @@ if [ "$ACTUAL_SCOPER" != "$EXPECTED_SCOPER" ]; then
 fi
 TREE_HASH="$SOURCE_TREE"
 LOCK_HASH="$(hash_of "$ROOT/composer.lock")"
-SCOPER_HASH="$(hash_of "$ROOT/bin/php-scoper.phar")"
+SCOPER_HASH="$ACTUAL_SCOPER"
 SCOPER_CONF_HASH="$(hash_of "$ROOT/scoper.inc.php")"
 BUILD_HASH="$(hash_of "$ROOT/bin/build-dist.sh")"
 

@@ -77,20 +77,45 @@ rsync -a --prune-empty-dirs \
 # entrypoint & uninstall — which carry no scoped `use` and require scoper-autoload).
 rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "$ROOT/." "$STAGE/"
 
+# Everything that goes INTO the artifact must be stated, never guessed: the same
+# inputs have to produce the same bytes on someone else's machine, and a silent
+# fallback to "now" would make that impossible to notice. Each of these can be
+# supplied from the environment (for a build from an export with no .git); when
+# neither git nor the environment can answer, the build stops.
+SOURCE_EPOCH="${SOURCE_DATE_EPOCH-$(git -C "$ROOT" log -1 --format=%ct 2>/dev/null || true)}"
+SOURCE_COMMIT="${SOURCE_COMMIT-$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)}"
+SOURCE_TREE="${SOURCE_TREE-$(git -C "$ROOT" rev-parse HEAD^{tree} 2>/dev/null || true)}"
+if [ -z "$SOURCE_EPOCH" ] || [ -z "$SOURCE_COMMIT" ] || [ -z "$SOURCE_TREE" ]; then
+	echo "build-dist: no git metadata here." >&2
+	echo "  Set SOURCE_DATE_EPOCH, SOURCE_COMMIT and SOURCE_TREE to build from an export." >&2
+	echo "  (Guessing them would produce an artifact nobody else can reproduce.)" >&2
+	exit 1
+fi
+
 # A manifest tying the artifact to the exact source it was built from, so a
 # reviewer holding only the ZIP can match it against a commit in the repository.
 VERSION="$(sed -n 's/^ \* Version: *\(.*\)$/\1/p' "$ROOT/$SLUG.php" | head -1 | tr -d ' \r')"
-COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+COMMIT="$SOURCE_COMMIT"
 DIRTY="$(test -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" && echo true || echo false)"
 
 # Everything that determined the bytes in this ZIP, so "which inputs produced
 # this artifact" can be answered from the artifact alone: the source tree as git
 # sees it, the dependency lock, the transformer, and the script doing the work.
 hash_of() { [ -f "$1" ] && shasum -a 256 "$1" | cut -d' ' -f1 || echo "absent"; }
-# The commit's own time, used for every timestamp in the artifact.
-SOURCE_EPOCH="$(git -C "$ROOT" log -1 --format=%ct 2>/dev/null || echo 0)"
-[ "$SOURCE_EPOCH" = "0" ] && SOURCE_EPOCH="$(date -u +%s)"
-TREE_HASH="$(git -C "$ROOT" rev-parse HEAD^{tree} 2>/dev/null || echo unknown)"
+
+# The transformer is part of the input: a different PHP-Scoper writes different
+# output, so the build refuses one it does not recognise. Update this line
+# deliberately when moving to a new release.
+EXPECTED_SCOPER="ad8aa6987f062c2c981d876f17c8c51e68dd27505ae9d03fcb914545d2945e8e"
+ACTUAL_SCOPER="$(hash_of "$ROOT/bin/php-scoper.phar")"
+if [ "$ACTUAL_SCOPER" != "$EXPECTED_SCOPER" ]; then
+	echo "build-dist: unexpected php-scoper.phar" >&2
+	echo "  expected $EXPECTED_SCOPER" >&2
+	echo "  found    $ACTUAL_SCOPER" >&2
+	echo "  Download 0.18.11 from https://github.com/humbug/php-scoper/releases, or update EXPECTED_SCOPER." >&2
+	exit 1
+fi
+TREE_HASH="$SOURCE_TREE"
 LOCK_HASH="$(hash_of "$ROOT/composer.lock")"
 SCOPER_HASH="$(hash_of "$ROOT/bin/php-scoper.phar")"
 SCOPER_CONF_HASH="$(hash_of "$ROOT/scoper.inc.php")"
@@ -108,7 +133,7 @@ cat > "$STAGE/build-manifest.json" <<JSON
     "scoper_config_sha256": "$SCOPER_CONF_HASH",
     "build_script_sha256": "$BUILD_HASH",
     "built_at": "$(date -u -r "$SOURCE_EPOCH" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d "@$SOURCE_EPOCH" +%Y-%m-%dT%H:%M:%SZ)",
-    "php": "$("$PHP_BIN" -r 'echo PHP_VERSION;')"
+    "php_requirement": "$(sed -n 's/^ \* Requires PHP: *\(.*\)$/\1/p' "$ROOT/$SLUG.php" | head -1 | tr -d ' \r')"
 }
 JSON
 
@@ -118,7 +143,8 @@ JSON
 # pinned here — every file gets the commit's own timestamp, and the entry list is
 # sorted — so rebuilding the same commit is a no-op rather than a second release
 # candidate. (built_at in the manifest is the commit time for the same reason.)
-find "$STAGE" -exec touch -h -t "$(date -u -r "$SOURCE_EPOCH" +%Y%m%d%H%M.%S 2>/dev/null || date -u -d "@$SOURCE_EPOCH" +%Y%m%d%H%M.%S)" {} + 2>/dev/null || true
+STAMP="$(date -u -r "$SOURCE_EPOCH" +%Y%m%d%H%M.%S 2>/dev/null || date -u -d "@$SOURCE_EPOCH" +%Y%m%d%H%M.%S)"
+find "$STAGE" -exec touch -h -t "$STAMP" {} +
 
 rm -f "$ZIP"
 ( cd "$TMP" && find "$SLUG" -print | LC_ALL=C sort | zip -qX "$ZIP" -@ )

@@ -140,7 +140,7 @@ $allowed_skips = array(
 	// under tools/, which is deliberately NOT part of the plugin artifact — it is
 	// shipped in the verification bundle instead, where the source-tree run covers
 	// both. Skipping them here says that, rather than hiding it.
-	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php' ),
+	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 

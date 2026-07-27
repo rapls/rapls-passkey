@@ -25,6 +25,10 @@ for t in "$ROOT"/tests/smoke-*.php; do
 	code=$?
 	name="$(basename "$t")"
 
+	# The FAIL marker is anchored to this runner's own output shape ("  FAIL  " at
+	# the start of a line). An unanchored match reads the word inside an assertion
+	# LABEL — "a read whose lock cannot be taken fails" — and fails a passing file.
+	#
 	# Three independent conditions, because any one of them alone can be fooled:
 	#   - a non-zero exit says the process itself failed (or the test called exit(1)
 	#     without printing anything we would recognise),
@@ -36,7 +40,7 @@ for t in "$ROOT"/tests/smoke-*.php; do
 	reason=""
 	if [ "$code" -ne 0 ]; then
 		reason="exit code ${code}"
-	elif printf '%s' "$out" | grep -qE 'FAIL|Fatal error|Parse error'; then
+	elif printf '%s' "$out" | grep -qE '^  FAIL |Fatal error|Parse error'; then
 		reason="reported a failure"
 	elif [ -z "$summary" ]; then
 		reason="no assertion summary (the file asserted nothing, or stopped early)"
@@ -47,7 +51,7 @@ for t in "$ROOT"/tests/smoke-*.php; do
 	if [ -n "$reason" ]; then
 		bad=$((bad+1))
 		echo "  FAIL  ${name}  (${reason})"
-		printf '%s\n' "$out" | grep -E 'FAIL|Fatal error|Parse error' | sed 's/^/          /' | head -5
+		printf '%s\n' "$out" | grep -E '^  FAIL |Fatal error|Parse error' | sed 's/^/          /' | head -5
 	else
 		ok=$((ok+1))
 		echo "  PASS  ${name}  (${summary})"

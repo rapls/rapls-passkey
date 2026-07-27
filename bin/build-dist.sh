@@ -82,12 +82,28 @@ rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "
 VERSION="$(sed -n 's/^ \* Version: *\(.*\)$/\1/p' "$ROOT/$SLUG.php" | head -1 | tr -d ' \r')"
 COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
 DIRTY="$(test -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" && echo true || echo false)"
+
+# Everything that determined the bytes in this ZIP, so "which inputs produced
+# this artifact" can be answered from the artifact alone: the source tree as git
+# sees it, the dependency lock, the transformer, and the script doing the work.
+hash_of() { [ -f "$1" ] && shasum -a 256 "$1" | cut -d' ' -f1 || echo "absent"; }
+TREE_HASH="$(git -C "$ROOT" rev-parse HEAD^{tree} 2>/dev/null || echo unknown)"
+LOCK_HASH="$(hash_of "$ROOT/composer.lock")"
+SCOPER_HASH="$(hash_of "$ROOT/bin/php-scoper.phar")"
+SCOPER_CONF_HASH="$(hash_of "$ROOT/scoper.inc.php")"
+BUILD_HASH="$(hash_of "$ROOT/bin/build-dist.sh")"
+
 cat > "$STAGE/build-manifest.json" <<JSON
 {
     "plugin": "$SLUG",
     "version": "$VERSION",
     "source_commit": "$COMMIT",
+    "source_tree": "$TREE_HASH",
     "source_dirty": $DIRTY,
+    "composer_lock_sha256": "$LOCK_HASH",
+    "scoper_phar_sha256": "$SCOPER_HASH",
+    "scoper_config_sha256": "$SCOPER_CONF_HASH",
+    "build_script_sha256": "$BUILD_HASH",
     "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
     "php": "$("$PHP_BIN" -r 'echo PHP_VERSION;')"
 }

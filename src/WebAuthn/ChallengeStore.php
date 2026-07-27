@@ -33,12 +33,22 @@ final class ChallengeStore {
 	/**
 	 * Persist ceremony options and return the opaque state id.
 	 *
+	 * The id is only worth anything if the ceremony behind it was actually stored:
+	 * handing one out regardless produces options the browser can act on and the
+	 * server can never verify — a registration whose credential is created on the
+	 * authenticator and then rejected here, leaving the user with a passkey that
+	 * belongs to nothing. So a store that says it failed makes this throw, and the
+	 * caller turns that into a refusal.
+	 *
 	 * @param string $payload Options JSON to retrieve later.
 	 * @return string State id handed to the browser.
+	 * @throws \RuntimeException When the ceremony could not be stored.
 	 */
 	public function put( string $payload ): string {
 		$state = Base64UrlSafe::encodeUnpadded( random_bytes( 32 ) );
-		set_transient( self::PREFIX . $state, $payload, self::TTL );
+		if ( ! set_transient( self::PREFIX . $state, $payload, self::TTL ) ) {
+			throw new \RuntimeException( 'ceremony_not_stored' );
+		}
 		return $state;
 	}
 

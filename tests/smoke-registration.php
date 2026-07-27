@@ -16,7 +16,12 @@ define( 'ABSPATH', __DIR__ . '/' );
 
 // --- WP stubs -------------------------------------------------------------
 $GLOBALS['__t'] = array();
-function set_transient( $k, $v, $ttl ) { $GLOBALS['__t'][ $k ] = $v; return true; }
+$GLOBALS['__store_fails'] = false;
+function set_transient( $k, $v, $ttl ) {
+	if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }   // a store that refuses
+	$GLOBALS['__t'][ $k ] = $v;
+	return true;
+}
 function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
 function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 
@@ -138,6 +143,27 @@ check( 'signup user.name is the requested name', ( $spk['user']['name'] ?? null 
 check( 'signup has a challenge', ! empty( $spk['challenge'] ) );
 check( 'signup excludes nothing (new account)', empty( $spk['excludeCredentials'] ) );
 check( 'signup user.id differs from the existing user handle', ( $spk['user']['id'] ?? '' ) !== ( $pk['user']['id'] ?? '' ) );
+
+// V26-02: options whose ceremony could not be stored must never be handed out.
+// The browser would create a credential on the authenticator that this server
+// can never verify — an orphan passkey the user has to find and delete.
+$GLOBALS['__store_fails'] = true;
+$threw_store = false;
+try {
+	$manager->create_options( 1, 'alice', 'Alice Example', array(), $handle );
+} catch ( \RuntimeException $e ) {
+	$threw_store = true;
+}
+check( 'a ceremony that could not be stored is refused, not returned (V26-02)', $threw_store );
+
+$threw_signup = false;
+try {
+	$manager->create_signup_options( 'newbie', 'newbie' );
+} catch ( \RuntimeException $e ) {
+	$threw_signup = true;
+}
+check( 'the same for a sign-up ceremony (V26-02)', $threw_signup );
+$GLOBALS['__store_fails'] = false;
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

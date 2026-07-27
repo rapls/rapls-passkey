@@ -51,7 +51,12 @@ function wp_unslash( $s ) { return $s; }
 function wp_salt( $s = 'auth' ) { return 'unit-test-salt'; }
 function is_ssl() { return true; }
 function get_transient( $k ) { return $GLOBALS['__transients'][ $k ] ?? false; }
-function set_transient( $k, $v, $ttl ) { $GLOBALS['__transients'][ $k ] = $v; return true; }
+$GLOBALS['__store_fails'] = false;
+function set_transient( $k, $v, $ttl ) {
+	if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }
+	$GLOBALS['__transients'][ $k ] = $v;
+	return true;
+}
 function delete_transient( $k ) { unset( $GLOBALS['__transients'][ $k ] ); return true; }
 function wp_login_url() { return 'https://example.test/wp-login.php'; }
 function admin_url( $p = '' ) { return 'https://example.test/wp-admin/' . $p; }
@@ -236,6 +241,17 @@ fake_2fa( true );
 
 define( 'RAPLS_PASSKEY_BYPASS', true );
 check( 'RAPLS_PASSKEY_BYPASS lifts the challenge (no lockout)', SecondFactor::required( $alice, 'recovery-code' ) === false );
+
+// V26-02: begin() parks the verified-but-incomplete login. The first factor has
+// already been spent by the time it runs — a magic link followed, a recovery code
+// used up — so a park that cannot be stored must be reported, not papered over
+// with a challenge URL that leads to a screen with nothing to complete.
+$challenge_url = SecondFactor::begin( $alice, 'magic-link', false );
+check( 'begin() returns a challenge URL when the park is stored', is_string( $challenge_url ) && '' !== $challenge_url );
+
+$GLOBALS['__store_fails'] = true;
+check( 'begin() returns nothing when the park cannot be stored (V26-02)', '' === SecondFactor::begin( $alice, 'magic-link', false ) );
+$GLOBALS['__store_fails'] = false;
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

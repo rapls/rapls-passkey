@@ -15,7 +15,12 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 define( 'ABSPATH', __DIR__ . '/' );
 
 $GLOBALS['__t'] = array();
-function set_transient( $k, $v, $ttl ) { $GLOBALS['__t'][ $k ] = $v; return true; }
+$GLOBALS['__store_fails'] = false;
+function set_transient( $k, $v, $ttl ) {
+	if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }   // a store that refuses
+	$GLOBALS['__t'][ $k ] = $v;
+	return true;
+}
 function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
 function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 function get_option( $k, $d = false ) {
@@ -103,6 +108,18 @@ check( 'record round-trips publicKeyCredentialId', $back->publicKeyCredentialId 
 check( 'record round-trips counter', $back->counter === 42 );
 check( 'record round-trips userHandle', $back->userHandle === 'user-handle-bytes' );
 check( 'record round-trips transports', $back->transports === array( 'internal', 'hybrid' ) );
+
+// V26-02: a login ceremony that could not be stored cannot be verified later, so
+// the options must not be handed to the browser at all.
+$GLOBALS['__store_fails'] = true;
+$threw_login = false;
+try {
+	$manager->create_options( array() );
+} catch ( \RuntimeException $e ) {
+	$threw_login = true;
+}
+check( 'login options are refused when the ceremony cannot be stored (V26-02)', $threw_login );
+$GLOBALS['__store_fails'] = false;
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

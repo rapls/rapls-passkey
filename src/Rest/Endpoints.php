@@ -252,13 +252,21 @@ final class Endpoints {
 			}
 		}
 
-		$result = $this->registration->create_options(
-			(int) $user->ID,
-			$user->user_login,
-			$user->display_name,
-			$records,
-			$handle
-		);
+		// The ceremony has to be STORED before its options are handed out. If it is
+		// not, the browser creates a credential on the authenticator that this
+		// server can never verify — an orphan passkey the user must find and delete
+		// themselves. Refusing costs one retry; not refusing costs that.
+		try {
+			$result = $this->registration->create_options(
+				(int) $user->ID,
+				$user->user_login,
+				$user->display_name,
+				$records,
+				$handle
+			);
+		} catch ( \Throwable $e ) {
+			return $this->fail( 'rapls_passkey_register_failed', __( 'Failed to register the passkey.', 'rapls-passkey' ), 503, 'ceremony_not_stored: ' . $e->getMessage() );
+		}
 
 		return rest_ensure_response( $result );
 	}
@@ -453,7 +461,21 @@ final class Endpoints {
 			$uv = 'required';
 		}
 
-		return rest_ensure_response( $this->assertion->create_options( $records, $uv, $decoys ) );
+		// Same rule as registration: options whose ceremony was not stored cannot be
+		// verified afterwards, so the browser would run a sign-in that must fail.
+		try {
+			$options = $this->assertion->create_options( $records, $uv, $decoys );
+		} catch ( \Throwable $e ) {
+			return new WP_REST_Response(
+				array(
+					'code'    => 'rapls_passkey_login_unavailable',
+					'message' => __( 'Sign-in is temporarily unavailable. Please try again.', 'rapls-passkey' ),
+				),
+				503
+			);
+		}
+
+		return rest_ensure_response( $options );
 	}
 
 	/**

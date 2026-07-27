@@ -10,7 +10,8 @@
 #   1. verifies the SHA-256 of the two submitted plugin ZIPs
 #   2. runs the smoke suites against the SOURCE tree bundled here (this is what
 #      produced the submitted log)
-#   3. runs bin/verify-dist.php against the submitted ZIPs — that is the check
+#   3. runs the same suites INSIDE the submitted ZIPs (bin/verify-dist-functional.php)
+#   4. runs bin/verify-dist.php against the submitted ZIPs — that is the check
 #      that validates the shipped artifact (prefixing, class map, licences)
 #   4. runs the real-database tests, if database options are given
 #
@@ -109,6 +110,20 @@ echo "== smoke suites (source tree) + distribution checks (submitted ZIPs) =="
 for slug in rapls-passkey rapls-passkey-pro; do
 	[ -d "$WORK/$slug" ] || continue
 	( cd "$WORK/$slug" && PHP="$PHP_BIN" bash bin/run-tests.sh ) || FAILED=1
+done
+echo
+
+# The same suites again, but executed INSIDE the submitted ZIP: the artifact is
+# extracted and the tests are run against the code it actually contains, after
+# PHP-Scoper has rewritten the bundled libraries. This is what shows the shipped
+# build behaves like the source it was built from, rather than merely having the
+# right shape. Suites that name those libraries by their original names are
+# skipped and listed — they cannot run in a scoped build by construction.
+echo "== the SHIPPED code, exercised (submitted ZIPs) =="
+for slug in rapls-passkey rapls-passkey-pro; do
+	[ -d "$WORK/$slug" ] || continue
+	"$PHP_BIN" "$WORK/rapls-passkey/bin/verify-dist-functional.php" "$WORK/$slug.zip" \
+		--tests "$WORK/$slug/tests" --sibling "$WORK/rapls-passkey.zip" || FAILED=1
 done
 echo
 

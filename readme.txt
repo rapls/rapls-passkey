@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.34
+Stable tag: 0.13.35
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,11 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.35 =
+* Sign-in and registration now stop if the short-lived record behind them could not be saved, instead of handing the browser a challenge that can never be completed. Previously a failing cache or database could leave a passkey created on your device that this site would then refuse — one you would have to find and delete yourself.
+* The two-factor hand-off does the same: if the half-finished sign-in cannot be saved, you are told, rather than sent to a code screen that has nothing to check against.
+* The distribution package is now itself put through the test suite as part of the build checks, so what is shipped is exercised rather than only inspected. Each package also records the exact inputs it was built from.
 
 = 0.13.34 =
 * The plugin update now corrects an account's stored identity even when the two copies differ only in capitalisation — these identifiers are case-sensitive, while the database compares text without regard to case by default, so such a pair was previously left alone. The correction that happens as each account is used compares them byte for byte and is what guarantees this; the bulk pass is only there to get it over with sooner.

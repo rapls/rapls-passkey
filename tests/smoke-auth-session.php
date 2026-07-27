@@ -28,7 +28,11 @@ namespace {
 	function wp_set_current_user( $uid ) {}
 	function wp_set_auth_cookie( $uid, $remember = false ) { $GLOBALS['cookie'] = array( (int) $uid, (bool) $remember ); }
 	function do_action( $hook, ...$args ) { $GLOBALS['fired'][] = $hook; }
+	$GLOBALS['provider_filter'] = null;
 	function apply_filters( $tag, $value, ...$args ) {
+		if ( 'rapls_passkey/second_factor_providers' === $tag && is_callable( $GLOBALS['provider_filter'] ) ) {
+			return call_user_func( $GLOBALS['provider_filter'], $value );
+		}
 		if ( 'rapls_passkey/allow_login' === $tag && is_callable( $GLOBALS['login_filter'] ) ) {
 			return call_user_func( $GLOBALS['login_filter'], $value, ...$args );
 		}
@@ -39,7 +43,35 @@ namespace {
 	}
 
 	class WP_User { public $ID; public $user_login; public function __construct( $id ) { $this->ID = $id; $this->user_login = 'u' . $id; } }
-	class WP_Error { public $code; public function __construct( $code = '', $m = '', $d = array() ) { $this->code = $code; } }
+	class WP_Error {
+		public $code; public $data;
+		public function __construct( $code = '', $m = '', $d = array() ) { $this->code = $code; $this->data = $d; }
+	}
+	// The parked-login store, with a switch for "the store refuses".
+	$GLOBALS['__transients']  = array();
+	$GLOBALS['__store_fails'] = false;
+	function set_transient( $k, $v, $ttl = 0 ) {
+		if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }
+		$GLOBALS['__transients'][ $k ] = $v;
+		return true;
+	}
+	function get_transient( $k ) { return $GLOBALS['__transients'][ $k ] ?? false; }
+	function delete_transient( $k ) { unset( $GLOBALS['__transients'][ $k ] ); return true; }
+	function wp_login_url( $redirect = '' ) { return 'https://example.test/wp-login.php'; }
+	function add_query_arg( ...$a ) {
+		$url = array_pop( $a );
+		$q   = is_array( $a[0] ?? null ) ? $a[0] : array( $a[0] => $a[1] );
+		return $url . ( false === strpos( $url, '?' ) ? '?' : '&' ) . http_build_query( $q );
+	}
+	function wp_unslash( $v ) { return $v; }
+	function sanitize_text_field( $v ) { return is_string( $v ) ? trim( $v ) : ''; }
+	function esc_url_raw( $u ) { return $u; }
+	function wp_validate_redirect( $u, $f = '' ) { return $f; }
+	function is_ssl() { return true; }
+	function wp_salt( $scheme = 'auth' ) { return 'unit-test-salt'; }
+	function admin_url( $p = '' ) { return 'https://example.test/wp-admin/' . ltrim( (string) $p, '/' ); }
+	function site_url( $p = '' ) { return 'https://example.test/' . ltrim( (string) $p, '/' ); }
+	function home_url( $p = '' ) { return 'https://example.test/' . ltrim( (string) $p, '/' ); }
 
 	require dirname( __DIR__ ) . '/src/Support/Settings.php';
 	require dirname( __DIR__ ) . '/src/Security/LoginGate.php';
@@ -97,6 +129,38 @@ namespace {
 	AuthSession::login( $user, 'qr-channel', false );
 	check( 'remember filter can force persistence', $GLOBALS['cookie'] === array( 5, true ) );
 	$GLOBALS['remember_filter'] = null;
+
+	// --- V26-02: a 2FA challenge that could not be parked ------------------------
+	// A weak login (magic link, recovery code) owes a second factor. The first
+	// factor is already spent by the time we get here, so if the parked login
+	// cannot be stored the user must be told — not redirected to a screen with
+	// nothing to complete against.
+	$GLOBALS['__opt']['rapls_passkey_settings'] = array( 'alt_login_second_factor' => true );
+	$GLOBALS['provider_filter'] = static function ( $providers ) {
+		return array(
+			new class() implements \RaplsPasskey\Integrations\SecondFactor\Provider {
+				public function is_available(): bool { return true; }
+				public function label(): string { return 'Test 2FA'; }
+				public function enabled_for( \WP_User $user ): bool { return true; }
+				public function render( \WP_User $user ): void {}
+				public function validate( \WP_User $user ): bool { return true; }
+			},
+		);
+	};
+
+	reset_state();
+	$r = AuthSession::login( new WP_User( 5 ), 'magic-link', false );
+	check( 'a weak login owing a second factor is held', $r instanceof WP_Error && 'rapls_passkey_2fa_required' === $r->code );
+	check( 'and no cookie is set for it', null === $GLOBALS['cookie'] );
+
+	reset_state();
+	$GLOBALS['__store_fails'] = true;
+	$r = AuthSession::login( new WP_User( 5 ), 'magic-link', false );
+	$GLOBALS['__store_fails'] = false;
+	check( 'a challenge that could not be parked is refused, not redirected (V26-02)', $r instanceof WP_Error && 'rapls_passkey_2fa_unavailable' === $r->code );
+	check( 'and still no cookie is set', null === $GLOBALS['cookie'] );
+	$GLOBALS['provider_filter'] = null;
+	$GLOBALS['__opt']['rapls_passkey_settings'] = array();
 
 	echo "\n  {$pass} passed, {$failc} failed\n";
 	exit( $failc === 0 ? 0 : 1 );

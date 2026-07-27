@@ -80,12 +80,23 @@ final class AuthSession {
 		if ( ! $second_factor ) {
 			$gate = SecondFactor::evaluate( $user, $context, $user_verified );
 			if ( SecondFactor::GATE_CHALLENGE === $gate ) {
+				$challenge = SecondFactor::begin( $user, $context, $remember );
+				if ( '' === $challenge ) {
+					// The parked login could not be stored, so the challenge screen
+					// would have nothing to complete against. Say so plainly instead of
+					// sending the user to a dead end.
+					return new WP_Error(
+						'rapls_passkey_2fa_unavailable',
+						__( 'Two-factor authentication cannot be started right now. Please try again.', 'rapls-passkey' ),
+						array( 'status' => 503 )
+					);
+				}
 				return new WP_Error(
 					'rapls_passkey_2fa_required',
 					__( 'Enter your two-factor authentication code to finish signing in.', 'rapls-passkey' ),
 					array(
 						'status'   => 403,
-						'redirect' => SecondFactor::begin( $user, $context, $remember ),
+						'redirect' => $challenge,
 					)
 				);
 			}

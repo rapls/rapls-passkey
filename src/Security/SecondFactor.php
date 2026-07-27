@@ -221,12 +221,14 @@ final class SecondFactor {
 	 * @param WP_User $user     The user signing in.
 	 * @param string  $context  Login context.
 	 * @param bool    $remember Whether the session should be persistent.
-	 * @return string URL of the challenge screen.
+	 * @return string URL of the challenge screen, or '' when the parked login could
+	 *                not be stored — the caller must then refuse the sign-in rather
+	 *                than send the user to a challenge that can never be answered.
 	 */
 	public static function begin( WP_User $user, string $context, bool $remember ): string {
 		$token = bin2hex( random_bytes( 32 ) );
 
-		set_transient(
+		$stored = set_transient(
 			self::TRANSIENT . self::hash( $token ),
 			array(
 				'user_id'  => (int) $user->ID,
@@ -236,6 +238,13 @@ final class SecondFactor {
 			),
 			self::TTL
 		);
+		if ( ! $stored ) {
+			// Nothing to answer the challenge against. The first factor has already
+			// been spent by now (a magic link consumed, a recovery code used up), so
+			// sending the user onward would strand them on a screen that cannot
+			// complete — and the code they spent is gone either way.
+			return '';
+		}
 
 		if ( ! headers_sent() ) {
 			setcookie(

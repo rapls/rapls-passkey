@@ -87,6 +87,9 @@ DIRTY="$(test -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" && echo true
 # this artifact" can be answered from the artifact alone: the source tree as git
 # sees it, the dependency lock, the transformer, and the script doing the work.
 hash_of() { [ -f "$1" ] && shasum -a 256 "$1" | cut -d' ' -f1 || echo "absent"; }
+# The commit's own time, used for every timestamp in the artifact.
+SOURCE_EPOCH="$(git -C "$ROOT" log -1 --format=%ct 2>/dev/null || echo 0)"
+[ "$SOURCE_EPOCH" = "0" ] && SOURCE_EPOCH="$(date -u +%s)"
 TREE_HASH="$(git -C "$ROOT" rev-parse HEAD^{tree} 2>/dev/null || echo unknown)"
 LOCK_HASH="$(hash_of "$ROOT/composer.lock")"
 SCOPER_HASH="$(hash_of "$ROOT/bin/php-scoper.phar")"
@@ -104,13 +107,21 @@ cat > "$STAGE/build-manifest.json" <<JSON
     "scoper_phar_sha256": "$SCOPER_HASH",
     "scoper_config_sha256": "$SCOPER_CONF_HASH",
     "build_script_sha256": "$BUILD_HASH",
-    "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "built_at": "$(date -u -r "$SOURCE_EPOCH" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d "@$SOURCE_EPOCH" +%Y-%m-%dT%H:%M:%SZ)",
     "php": "$("$PHP_BIN" -r 'echo PHP_VERSION;')"
 }
 JSON
 
+# A build of the same commit must produce the same bytes, so that one version
+# number can only ever mean one artifact. Two things otherwise vary: the file
+# timestamps the archive records, and the order entries are added in. Both are
+# pinned here — every file gets the commit's own timestamp, and the entry list is
+# sorted — so rebuilding the same commit is a no-op rather than a second release
+# candidate. (built_at in the manifest is the commit time for the same reason.)
+find "$STAGE" -exec touch -h -t "$(date -u -r "$SOURCE_EPOCH" +%Y%m%d%H%M.%S 2>/dev/null || date -u -d "@$SOURCE_EPOCH" +%Y%m%d%H%M.%S)" {} + 2>/dev/null || true
+
 rm -f "$ZIP"
-( cd "$TMP" && zip -rqX "$ZIP" "$SLUG" )
+( cd "$TMP" && find "$SLUG" -print | LC_ALL=C sort | zip -qX "$ZIP" -@ )
 
 echo "Built (scoped): $ZIP"
 echo "  source commit: $COMMIT (dirty: $DIRTY)"

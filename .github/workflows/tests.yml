@@ -152,6 +152,18 @@ jobs:
             https://github.com/humbug/php-scoper/releases/download/0.18.11/php-scoper.phar
           bash bin/build-dist.sh
 
+          # One version, one artifact: building the same commit again must produce
+          # the same bytes. If it does not, a release could exist twice under one
+          # number, which is what this check exists to prevent.
+          FIRST="$(shasum -a 256 ../rapls-passkey.zip | cut -d' ' -f1)"
+          bash bin/build-dist.sh
+          SECOND="$(shasum -a 256 ../rapls-passkey.zip | cut -d' ' -f1)"
+          if [ "$FIRST" != "$SECOND" ]; then
+            echo "NOT REPRODUCIBLE: $FIRST != $SECOND" >&2
+            exit 1
+          fi
+          echo "reproducible build ok: $FIRST"
+
           PRO_ARGS=""
           if [ -d pro-src ]; then
             # Build the Pro ZIP from its own checkout, alongside Free the way both
@@ -161,6 +173,14 @@ jobs:
               && composer install --no-interaction --prefer-dist --no-progress \
               && cp ../rapls-passkey/bin/php-scoper.phar bin/php-scoper.phar \
               && bash bin/build-dist.sh )
+            PRO_FIRST="$(shasum -a 256 ../rapls-passkey-pro.zip | cut -d' ' -f1)"
+            ( cd ../rapls-passkey-pro && bash bin/build-dist.sh )
+            PRO_SECOND="$(shasum -a 256 ../rapls-passkey-pro.zip | cut -d' ' -f1)"
+            if [ "$PRO_FIRST" != "$PRO_SECOND" ]; then
+              echo "NOT REPRODUCIBLE (pro): $PRO_FIRST != $PRO_SECOND" >&2
+              exit 1
+            fi
+            echo "reproducible build ok (pro): $PRO_FIRST"
             PRO_ARGS="--pro ../rapls-passkey-pro.zip"
             echo "Pro included: running the full two-plugin procedure."
           else

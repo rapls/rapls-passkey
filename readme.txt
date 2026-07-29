@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.41
+Stable tag: 0.13.42
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,11 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.42 =
+* **A successful sign-in no longer cancels attempts that other requests are still making.** Signing in cleared the whole attempt counter for the address, including slots held by requests that were on their way to being checked — so the next arrival re-used them and more than the limit could be verified in one window. On a shared address, one person signing in repeatedly erased everyone else's failed attempts with it. A success now gives back only the attempts it made itself.
+* **A second-factor challenge is no longer issued when the browser cannot be given the token for it.** The cookie's result was ignored, so the token looked present for the rest of that request and nowhere else: the first factor was already spent — a magic link consumed, a recovery code used up — and the user was sent to a screen they could not complete. The sign-in is refused instead, with nothing left half-made.
+* **Two-factor answers are counted before they are checked, not after.** Counting afterwards limited how many wrong answers were recorded rather than how many were checked, so simultaneous submissions all had their code validated first.
 
 = 0.13.41 =
 * Build and packaging only: the package now records "unknown" rather than "clean" when it cannot check whether the source was modified, an alternative packaging tool passed on the command line is checked against the pinned one, and the verification bundle refuses to be built if anything shaped like a credential is in it.

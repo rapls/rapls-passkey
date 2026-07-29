@@ -160,11 +160,13 @@ final class Endpoints {
 	/**
 	 * Shared login gate: same-origin (optionally strict) plus a per-IP rate limit.
 	 *
-	 * The rate limit is only consulted here, advisorily. A slot is only *claimed* on
-	 * a failed assertion (see {@see login_verify}) — never on /login/options, which
-	 * the browser legitimately calls several times per page (autofill / conditional
-	 * UI). Charging option requests would otherwise exhaust a small budget before
-	 * the user even submits a passkey. A successful login releases the slots.
+	 * The rate limit is only consulted here, advisorily. A slot is CLAIMED in
+	 * login_verify(), before the assertion is verified — not only on failure, and
+	 * never on /login/options, which the browser legitimately calls several times
+	 * per page (autofill / conditional UI). Charging option requests would exhaust
+	 * a small budget before the user even submits a passkey. A successful login
+	 * gives back the slots THAT REQUEST claimed, and no others: clearing every row
+	 * for the key also cancelled slots held by requests still running (V49-A02).
 	 *
 	 * The reading here can be stale and is not what enforces anything: refusal is
 	 * decided where the slot is claimed, by the unique index on the row.
@@ -1081,25 +1083,45 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return null;
 		}
+		$this->rate_slots[ $bucket ] = 0;
 		// admit() claims one of exactly $max slots, enforced by the unique index on
 		// the row it inserts. Nothing is decided from a value that was read, so a
 		// replica serving a stale count (or a window boundary) cannot let a batch
 		// through; being unable to confirm the claim returns 0, which blocks.
-		if ( 0 === RateLimit::admit( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window(), $max ) ) {
+		$slot = RateLimit::admit( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window(), $max );
+		if ( 0 === $slot ) {
 			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
+		// Remembered so a success gives back THIS request's attempts and no others.
+		$this->rate_slots[ $bucket ] = $slot;
 		return null;
 	}
 
 	/**
-	 * Clear the per-IP counter for a bucket (called after a successful login so
-	 * successes do not accumulate toward the attempt limit).
+	 * Give back the attempts THIS request spent, after it succeeded.
+	 *
+	 * Not the whole counter. Clearing every row for the key also cancelled slots
+	 * held by requests still running — a wrong password arriving alongside a
+	 * success had its slot deleted, the next arrival re-used it, and more than the
+	 * limit could be verified in one window. On a shared address one user
+	 * succeeding repeatedly erased everyone else's failures with it.
 	 *
 	 * @param string $bucket Action bucket.
 	 */
 	private function rate_clear( string $bucket ): void {
-		RateLimit::clear( $this->rate_logical_key( $bucket ) );
+		$slot = (int) ( $this->rate_slots[ $bucket ] ?? 0 );
+		if ( $slot < 1 ) {
+			return;
+		}
+		RateLimit::forgive( $this->rate_logical_key( $bucket ), $slot, (int) Settings::login_rate_window() );
 	}
+
+	/**
+	 * The attempt slot each bucket claimed in THIS request.
+	 *
+	 * @var array<string,int>
+	 */
+	private $rate_slots = array();
 
 	/**
 	 * Logical key for a per-IP rate-limit bucket, passed to the shared {@see

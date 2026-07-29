@@ -118,13 +118,52 @@ final class RateLimit {
 	}
 
 	/**
-	 * Give $key its full budget back — e.g. a successful login should not leave
-	 * the user's failed attempts counting against them. Removes this key's slots
-	 * in every window, both attempt and reservation rows.
+	 * Give back the attempts this request is entitled to give back, and no others.
+	 *
+	 * A successful login should not leave the user's own failed attempts counting
+	 * against them — but it must not cancel attempts belonging to requests that
+	 * are STILL RUNNING. The old form deleted every row for the key, in every
+	 * window, attempts and reservations alike: a success and a wrong password
+	 * arriving together meant the success wiped the wrong password's slot, the
+	 * next arrival re-used it, and more attempts than the limit allows could be
+	 * checked in one window. On a shared address one user succeeding repeatedly
+	 * erased everyone else's failures with it.
+	 *
+	 * So only slots up to and including this request's own are removed, and only
+	 * in this request's own window. Anything claimed after it is somebody else's
+	 * and is left alone. Reservation rows are not touched at all: those are given
+	 * back by release(), which is already token-scoped.
+	 *
+	 * @param string $key    Logical key.
+	 * @param int    $slot   The slot this request holds (from admit()); 0 is a no-op.
+	 * @param int    $window Window length in seconds — the same one admit() used.
+	 */
+	public static function forgive( string $key, int $slot, int $window ): void {
+		global $wpdb;
+		if ( $slot < 1 ) {
+			return;
+		}
+		$end = self::window_end( max( 1, $window ) );
+		for ( $i = 1; $i <= $slot; $i++ ) {
+			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->options} WHERE option_name = %s",
+					self::slot_name( self::ATTEMPT_PREFIX, $key, $end, $i )
+				)
+			);
+		}
+	}
+
+	/**
+	 * Remove every trace of $key — attempts AND reservations, in every window.
+	 *
+	 * For teardown only: uninstall, a deleted user, a channel that has been
+	 * destroyed. NOT for a successful login, which must give back its own
+	 * attempts and leave concurrent ones alone — see forgive().
 	 *
 	 * @param string $key Logical key.
 	 */
-	public static function clear( string $key ): void {
+	public static function purge( string $key ): void {
 		global $wpdb;
 		foreach ( array( self::ATTEMPT_PREFIX, self::RESERVE_PREFIX ) as $prefix ) {
 			$like = $wpdb->esc_like( $prefix . md5( $key ) . '_' ) . '%';

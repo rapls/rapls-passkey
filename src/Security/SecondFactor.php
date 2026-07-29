@@ -246,19 +246,29 @@ final class SecondFactor {
 			return '';
 		}
 
-		if ( ! headers_sent() ) {
-			setcookie(
-				self::COOKIE,
-				$token,
-				array(
-					'expires'  => time() + self::TTL,
-					'path'     => defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/',
-					'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
-					'secure'   => is_ssl(),
-					'httponly' => true,
-					'samesite' => 'Lax',
-				)
-			);
+		// THE COOKIE HAS TO ACTUALLY GO OUT.
+		//
+		// Writing $_COOKIE only makes it look present to the rest of THIS request;
+		// the browser gets nothing, so the challenge screen has no token to
+		// recognise. The first factor is already spent by this point — a magic link
+		// consumed, a recovery code used up — so the user would be sent to a screen
+		// they cannot complete, with the code they spent gone. Refuse instead, and
+		// take the pending record with it so nothing is left half-made.
+		$sent = ! headers_sent() && setcookie(
+			self::COOKIE,
+			$token,
+			array(
+				'expires'  => time() + self::TTL,
+				'path'     => defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/',
+				'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
+				'secure'   => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Lax',
+			)
+		);
+		if ( ! $sent ) {
+			delete_transient( self::TRANSIENT . self::hash( $token ) );
+			return '';
 		}
 		$_COOKIE[ self::COOKIE ] = $token;
 
@@ -284,35 +294,57 @@ final class SecondFactor {
 	}
 
 	/**
-	 * Record a wrong answer. Returns false once the pending login has been spent,
-	 * so a recovery code cannot be paired with a brute-forced TOTP code.
+	 * Claim one attempt at the second factor, BEFORE the answer is checked.
 	 *
-	 * @return bool Whether the visitor may try again.
+	 * The provider used to be asked first and the failure counted afterwards, so
+	 * simultaneous submissions all had their code validated and only then queued
+	 * up to be counted: the five-attempt budget bounded how many wrong answers
+	 * were recorded, not how many were checked (V49-A04).
+	 *
+	 * The claim is a uniquely-indexed row, so the budget is decided by the write
+	 * and not by a total that was read. A claim that cannot be confirmed returns
+	 * 0, which discards the pending login — fail closed. Keyed by the
+	 * pending-login token, so it follows that login and nothing else.
+	 *
+	 * @return int The slot claimed, or 0 when there is nothing left to claim
+	 *             (the pending login has been discarded).
 	 */
-	public static function count_failure(): bool {
+	public static function claim_attempt(): int {
 		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
 		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
-			return false;
+			return 0;
 		}
 
 		$key     = self::TRANSIENT . self::hash( $token );
 		$pending = get_transient( $key );
 		if ( ! is_array( $pending ) ) {
-			return false;
+			return 0;
 		}
 
-		// Claim this wrong attempt's slot. The slot number is our own position in
-		// the budget, taken from a row the database guarantees only we hold, so
-		// concurrent tries can neither share a slot nor read a stale total and slip
-		// past MAX_ATTEMPTS. A claim that cannot be confirmed returns 0, which
-		// discards the pending login (fail closed). Keyed by the pending-login token.
 		$attempt = RateLimit::admit( '2fa_attempts|' . self::hash( $token ), self::TTL, self::MAX_ATTEMPTS );
 		if ( 0 === $attempt || $attempt >= self::MAX_ATTEMPTS ) {
+			// The last attempt is still checked — it is the fifth try, not a sixth —
+			// but the parked login does not survive it either way.
 			self::forget();
-			return false;
 		}
+		return $attempt;
+	}
 
-		return true;
+	/**
+	 * Give back an attempt that turned out to be right.
+	 *
+	 * Only this submission's own: the pending login is discarded on success
+	 * anyway, but a wrong answer being checked alongside it must keep its slot.
+	 *
+	 * @param int $slot The slot from claim_attempt().
+	 * @return void
+	 */
+	public static function forgive_attempt( int $slot ): void {
+		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
+		if ( $slot < 1 || 1 !== preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
+			return;
+		}
+		RateLimit::forgive( '2fa_attempts|' . self::hash( $token ), $slot, self::TTL );
 	}
 
 	/**
@@ -322,7 +354,8 @@ final class SecondFactor {
 		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
 		if ( 1 === preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
 			delete_transient( self::TRANSIENT . self::hash( $token ) );
-			RateLimit::clear( '2fa_attempts|' . self::hash( $token ) );
+			// The pending login is being discarded outright, so every row for it goes.
+			RateLimit::purge( '2fa_attempts|' . self::hash( $token ) );
 		}
 
 		unset( $_COOKIE[ self::COOKIE ] );

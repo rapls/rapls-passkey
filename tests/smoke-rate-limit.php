@@ -93,7 +93,14 @@ class FakeWpdb {
 			}
 			return 0;
 		}
-		// clear(): DELETE ... WHERE option_name LIKE '<key prefix>%'
+		// forgive(): DELETE of exactly one named row.
+		if ( 0 === strpos( ltrim( $q ), 'DELETE' ) && preg_match( "/option_name = '([^']*)'\s*$/", trim( $q ), $m ) ) {
+			$gone = 0;
+			if ( array_key_exists( $m[1], $this->store ) ) { unset( $this->store[ $m[1] ] ); $gone = 1; }
+			$this->rows_affected = $gone;
+			return $gone;
+		}
+		// purge(): DELETE ... WHERE option_name LIKE '<key prefix>%'
 		if ( 0 === strpos( ltrim( $q ), 'DELETE' ) && preg_match( "/option_name LIKE '([^']*)%'$/", trim( $q ), $m ) ) {
 			$gone = 0;
 			foreach ( array_keys( $this->store ) as $name ) {
@@ -239,10 +246,47 @@ $slots = array();
 for ( $i = 0; $i < 7; $i++ ) { $slots[] = $RL::admit( 'a|k', 3600, 4 ); }
 check( 'admit() hands out 1,2,3,4 then refuses with 0', array( 1, 2, 3, 4, 0, 0, 0 ) === $slots );
 check( 'used() reports the slots held (advisory)', $RL::used( 'a|k', 3600 ) === 4 );
-check( 'clear() gives the whole budget back', ( function () use ( $RL ) {
-	$RL::clear( 'a|k' );
+check( 'purge() gives the whole budget back', ( function () use ( $RL ) {
+	$RL::purge( 'a|k' );
 	return 0 === $RL::used( 'a|k', 3600 ) && 1 === $RL::admit( 'a|k', 3600, 4 );
 } )() );
+
+// --- V49-A02: a success gives back its own attempts, not everyone else's -----
+// clear() removed every row for the key. A success and a wrong password arriving
+// together therefore meant the success deleted the wrong password's slot, the
+// next arrival re-used it, and more attempts than the limit allows could be
+// checked in one window. On a shared address one user succeeding repeatedly
+// erased everybody else's failures with it.
+$GLOBALS['wpdb']->store = array();
+$s1 = $RL::admit( 'f|k', 3600, 4 );          // the request that will succeed
+$w1 = $RL::admit( 'f|k', 3600, 4 );          // a wrong password, still running
+$w2 = $RL::admit( 'f|k', 3600, 4 );          // and another
+check( 'three requests hold slots 1,2,3 (V49-A02)', array( 1, 2, 3 ) === array( $s1, $w1, $w2 ) );
+
+$RL::forgive( 'f|k', $s1, 3600 );
+check( 'the success gives back only its own slot (V49-A02)', 2 === $RL::used( 'f|k', 3600 ) );
+// Exactly ONE slot came back, so exactly one more attempt fits before the
+// budget is spent again — the two still running are still counted.
+check( 'exactly one more attempt fits (V49-A02)', 1 === $RL::admit( 'f|k', 3600, 4 ) );
+check( 'and then the last free slot', 4 === $RL::admit( 'f|k', 3600, 4 ) );
+check( 'and then the budget is spent', 0 === $RL::admit( 'f|k', 3600, 4 ) );
+
+// A success that had already spent two attempts gets both back — that is the
+// point of forgiving at all — but nothing beyond its own.
+$GLOBALS['wpdb']->store = array();
+$RL::admit( 'g|k', 3600, 5 );                 // a mistype
+$RL::admit( 'g|k', 3600, 5 );                 // another
+$mine  = $RL::admit( 'g|k', 3600, 5 );        // then the one that works
+$other = $RL::admit( 'g|k', 3600, 5 );        // somebody else, in flight
+$RL::forgive( 'g|k', $mine, 3600 );
+check( 'forgiving covers this request and its own earlier mistypes (V49-A02)', 1 === $RL::used( 'g|k', 3600 ) );
+check( 'and leaves the later one alone', 4 === $other && 4 === (int) ( $RL::used( 'g|k', 3600 ) + 3 ) );
+
+// forgive() with no slot is a no-op — it must never fall back to clearing.
+$GLOBALS['wpdb']->store = array();
+$RL::admit( 'h|k', 3600, 3 );
+$RL::forgive( 'h|k', 0, 3600 );
+check( 'forgiving nothing removes nothing (V49-A02)', 1 === $RL::used( 'h|k', 3600 ) );
 
 // V15-02: the window boundary must not be a hole. A window ending exactly at
 // "now" has already passed, so admissions land in the NEXT window — and every

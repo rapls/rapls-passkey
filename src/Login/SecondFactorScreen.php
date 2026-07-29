@@ -74,16 +74,28 @@ final class SecondFactorScreen {
 			return __( 'Your session is invalid. Please try again.', 'rapls-passkey' );
 		}
 
+		// The attempt is CLAIMED FIRST. Asking the provider and counting the
+		// failure afterwards meant simultaneous submissions all had their code
+		// validated and only then queued up to be counted, so the budget bounded
+		// what was recorded rather than what was checked (V49-A04).
+		$slot = SecondFactor::claim_attempt();
+		if ( 0 === $slot ) {
+			// Out of attempts: the parked login is gone, so the recovery code /
+			// magic link has to be presented again from the start.
+			wp_safe_redirect( wp_login_url() );
+			exit;
+		}
+
 		if ( ! $provider->validate( $user ) ) {
-			if ( ! SecondFactor::count_failure() ) {
-				// Out of attempts: the parked login is gone, so the recovery code /
-				// magic link has to be presented again from the start.
+			if ( ! SecondFactor::pending() ) {
+				// That was the last attempt; the parked login has been discarded.
 				wp_safe_redirect( wp_login_url() );
 				exit;
 			}
 			return __( 'The two-factor authentication code is not correct.', 'rapls-passkey' );
 		}
 
+		SecondFactor::forgive_attempt( $slot );
 		SecondFactor::forget();
 
 		// Second factor done — complete the login the caller had to leave pending.

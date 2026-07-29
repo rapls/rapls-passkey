@@ -12,6 +12,19 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 
 define( 'ABSPATH', __DIR__ . '/' );
 
+// SecondFactor lives in RaplsPasskey\Security, so PHP resolves an unqualified
+// setcookie()/headers_sent() in that namespace before the global one. Declared
+// through eval() because a namespace block cannot follow the definitions above.
+// What is under test is what the caller does with the ANSWER (V49-A06): on the
+// CLI the real setcookie() has nowhere to send anything.
+eval( 'namespace RaplsPasskey\\Security;
+	function headers_sent( &$f = null, &$l = null ) { return ! empty( $GLOBALS["__headers_sent"] ); }
+	function setcookie( $name, $value = "", $options = array() ) {
+		if ( ! empty( $GLOBALS["__cookie_fails"] ) ) { return false; }
+		$GLOBALS["__cookies"][ $name ] = $value;
+		return true;
+	}' );
+
 class WP_Error {
 	private $code;
 	private $message;
@@ -188,12 +201,16 @@ check( 'the token is stored only as a hash', false === strpos( $stored_keys, $_C
 
 // --- Wrong answers are capped, then the parked login is destroyed. ---------
 
-for ( $i = 1; $i <= 4; $i++ ) {
-	$more = SecondFactor::count_failure();
+// The attempt is CLAIMED BEFORE the provider is asked (V49-A04): counting the
+// failure afterwards bounded how many wrong answers were RECORDED, not how many
+// were checked, so simultaneous submissions all had their code validated first.
+$slots = array();
+for ( $i = 1; $i <= 5; $i++ ) {
+	$slots[] = SecondFactor::claim_attempt();
 }
-check( 'four wrong answers still leave a retry', true === $more );
-check( 'the fifth wrong answer spends the parked login', false === SecondFactor::count_failure() );
-check( 'nothing is left to replay', SecondFactor::pending() === null );
+check( 'each attempt claims its own slot, in order (V49-A04)', array( 1, 2, 3, 4, 5 ) === $slots );
+check( 'the fifth spends the parked login', SecondFactor::pending() === null );
+check( 'and there is nothing left to claim', 0 === SecondFactor::claim_attempt() );
 
 // --- Answering the challenge completes the login. -------------------------
 
@@ -253,5 +270,26 @@ $GLOBALS['__store_fails'] = true;
 check( 'begin() returns nothing when the park cannot be stored (V26-02)', '' === SecondFactor::begin( $alice, 'magic-link', false ) );
 $GLOBALS['__store_fails'] = false;
 
+// --- V49-A06: a challenge the browser cannot answer is not issued ------------
+// The cookie's result was ignored and $_COOKIE written regardless, so the token
+// looked present for the rest of THAT request only. By this point the first
+// factor is already spent — a magic link consumed, a recovery code used up — so
+// the user was sent to a screen they could not complete, with the code gone.
+$GLOBALS['__cookie_fails'] = true;
+$_COOKIE                   = array();
+$GLOBALS['__transients']   = array();
+$url = SecondFactor::begin( new WP_User( 21 ), 'login', false );
+check( 'a challenge whose cookie cannot be sent is not issued (V49-A06)', '' === $url );
+check( 'and no pending record is left behind', array() === $GLOBALS['__transients'] );
+check( 'and nothing pretends the browser holds a token', ! isset( $_COOKIE[ SecondFactor::COOKIE ] ) );
+
+// With the cookie going out, the same call works.
+$GLOBALS['__cookie_fails'] = false;
+$_COOKIE                   = array();
+$GLOBALS['__transients']   = array();
+$url2 = SecondFactor::begin( new WP_User( 21 ), 'login', false );
+check( 'and with a cookie that does go out, the challenge is issued', '' !== $url2 && isset( $_COOKIE[ SecondFactor::COOKIE ] ) );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );
+

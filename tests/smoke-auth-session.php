@@ -11,20 +11,20 @@
 
 // phpcs:disable
 
-// SecondFactor::begin() now refuses when its cookie cannot be sent (V49-A06),
-// and on the CLI the real setcookie() has nowhere to send one.
-namespace RaplsPasskey\Security {
-	function headers_sent( &$f = null, &$l = null ) { return ! empty( $GLOBALS['__headers_sent'] ); }
-	function setcookie( $name, $value = '', $options = array() ) {
-		if ( ! empty( $GLOBALS['__cookie_fails'] ) ) { return false; }
-		$GLOBALS['__cookies'][ $name ] = $value;
-		return true;
-	}
-}
-
 namespace {
 	if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only file; excluded from the distributed plugin.
 	define( 'ABSPATH', __DIR__ . '/' );
+
+// A stub for the cookie seam: on the CLI the real setcookie() has nowhere to
+// send anything, and the code now cares what it answers (V49-A06).
+eval( 'namespace RaplsPasskey\\Support; class Cookies {
+	public static function set( string $name, string $value, array $options ): bool {
+		if ( ! empty( $GLOBALS["__cookie_fails"] ) ) { return false; }
+		$GLOBALS["__cookies"][ $name ] = $value;
+		return true;
+	}
+}' );
+
 
 	$GLOBALS['login_filter']  = null;
 	$GLOBALS['remember_filter'] = null;

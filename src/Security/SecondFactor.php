@@ -254,7 +254,7 @@ final class SecondFactor {
 		// consumed, a recovery code used up — so the user would be sent to a screen
 		// they cannot complete, with the code they spent gone. Refuse instead, and
 		// take the pending record with it so nothing is left half-made.
-		$sent = ! headers_sent() && setcookie(
+		$sent = \RaplsPasskey\Support\Cookies::set(
 			self::COOKIE,
 			$token,
 			array(

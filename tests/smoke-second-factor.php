@@ -12,18 +12,17 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-// SecondFactor lives in RaplsPasskey\Security, so PHP resolves an unqualified
-// setcookie()/headers_sent() in that namespace before the global one. Declared
-// through eval() because a namespace block cannot follow the definitions above.
-// What is under test is what the caller does with the ANSWER (V49-A06): on the
-// CLI the real setcookie() has nowhere to send anything.
-eval( 'namespace RaplsPasskey\\Security;
-	function headers_sent( &$f = null, &$l = null ) { return ! empty( $GLOBALS["__headers_sent"] ); }
-	function setcookie( $name, $value = "", $options = array() ) {
+// A stub for the cookie seam: on the CLI the real setcookie() has nowhere to
+// send anything, and the code now cares what it answers (V49-A06).
+eval( 'namespace RaplsPasskey\\Support; class Cookies {
+	public static function set( string $name, string $value, array $options ): bool {
 		if ( ! empty( $GLOBALS["__cookie_fails"] ) ) { return false; }
 		$GLOBALS["__cookies"][ $name ] = $value;
 		return true;
-	}' );
+	}
+}' );
+
+
 
 class WP_Error {
 	private $code;

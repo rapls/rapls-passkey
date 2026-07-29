@@ -17,11 +17,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGINS="$(cd "$ROOT/.." && pwd)"
 CI_ARTIFACTS=""
+CI_RUN=""
 
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--out) PLUGINS="$2"; shift 2 ;;
 		--ci-artifacts) CI_ARTIFACTS="$2"; shift 2 ;;
+		--ci-run) CI_RUN="$2"; shift 2 ;;
 		*) echo "unknown option: $1" >&2; exit 2 ;;
 	esac
 done
@@ -77,6 +79,16 @@ cp "$PLUGINS/E2E-TESTING.md" "$STAGE/" 2>/dev/null || true
 if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	mkdir -p "$STAGE/ci-artifacts"
 	find "$CI_ARTIFACTS" -name '*.json' -exec cp {} "$STAGE/ci-artifacts/" \;
+	# Where they came from, written here rather than described in a README that
+	# outlives the run it names (V50-07). The result files carry no run id of
+	# their own, so this is the only place the association is recorded.
+	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "free_commit": "%s",\n  "pro_commit": "%s",\n  "files": %s,\n  "bundled_at": "%s"\n}\n' \
+		"${CI_RUN:-unknown}" "${CI_RUN:-unknown}" \
+		"$( cd "$FREE" && git rev-parse HEAD )" \
+		"$( cd "$PRO" && git rev-parse HEAD 2>/dev/null || echo unknown )" \
+		"$( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' )" \
+		"$( date -u +%Y-%m-%dT%H:%M:%SZ )" \
+		> "$STAGE/ci-artifacts/PROVENANCE.json"
 fi
 
 # Refuse to ship machine-local state or anything shaped like a credential. This

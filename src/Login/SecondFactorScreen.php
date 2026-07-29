@@ -78,8 +78,8 @@ final class SecondFactorScreen {
 		// failure afterwards meant simultaneous submissions all had their code
 		// validated and only then queued up to be counted, so the budget bounded
 		// what was recorded rather than what was checked (V49-A04).
-		$slot = SecondFactor::claim_attempt();
-		if ( 0 === $slot ) {
+		$claim = SecondFactor::claim_attempt();
+		if ( '' === $claim ) {
 			// Out of attempts: the parked login is gone, so the recovery code /
 			// magic link has to be presented again from the start.
 			wp_safe_redirect( wp_login_url() );
@@ -87,15 +87,18 @@ final class SecondFactorScreen {
 		}
 
 		if ( ! $provider->validate( $user ) ) {
-			if ( ! SecondFactor::pending() ) {
-				// That was the last attempt; the parked login has been discarded.
+			// The parked login is discarded only AFTER the answer has been checked:
+			// discarding it as the attempt was claimed made a correct fifth answer
+			// impossible (the same shape as V50-03 on the QR side).
+			if ( SecondFactor::was_last_attempt( $claim ) ) {
+				SecondFactor::forget();
 				wp_safe_redirect( wp_login_url() );
 				exit;
 			}
 			return __( 'The two-factor authentication code is not correct.', 'rapls-passkey' );
 		}
 
-		SecondFactor::forgive_attempt( $slot );
+		SecondFactor::forgive_attempt( $claim );
 		SecondFactor::forget();
 
 		// Second factor done — complete the login the caller had to leave pending.

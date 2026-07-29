@@ -203,13 +203,19 @@ check( 'the token is stored only as a hash', false === strpos( $stored_keys, $_C
 // The attempt is CLAIMED BEFORE the provider is asked (V49-A04): counting the
 // failure afterwards bounded how many wrong answers were RECORDED, not how many
 // were checked, so simultaneous submissions all had their code validated first.
-$slots = array();
+$claims = array();
 for ( $i = 1; $i <= 5; $i++ ) {
-	$slots[] = SecondFactor::claim_attempt();
+	$claims[] = SecondFactor::claim_attempt();
 }
+$slots = array_map( static fn( $c ) => (int) ( explode( '|', $c )[1] ?? 0 ), $claims );
 check( 'each attempt claims its own slot, in order (V49-A04)', array( 1, 2, 3, 4, 5 ) === $slots );
-check( 'the fifth spends the parked login', SecondFactor::pending() === null );
-check( 'and there is nothing left to claim', 0 === SecondFactor::claim_attempt() );
+// The fifth is CHECKED before the parked login is discarded (V50-03's shape):
+// discarding it as the attempt was claimed made a correct fifth answer
+// impossible, because there was nothing left to answer against.
+check( 'the parked login survives the fifth claim, to be answered', SecondFactor::pending() !== null );
+check( 'and the caller is told it was the last', SecondFactor::was_last_attempt( $claims[4] ) );
+check( 'a sixth claim finds nothing left', '' === SecondFactor::claim_attempt() );
+check( 'and that discards the parked login', SecondFactor::pending() === null );
 
 // --- Answering the challenge completes the login. -------------------------
 

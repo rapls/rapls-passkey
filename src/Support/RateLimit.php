@@ -71,6 +71,23 @@ final class RateLimit {
 	}
 
 	/**
+	 * Claim an attempt and keep proof of WHICH one.
+	 *
+	 * admit() answers with a slot number, which is a position and not a claim: two
+	 * requests in different windows get the same number, and a number cannot be
+	 * shown to belong to the request holding it. forgive() needs to prove
+	 * ownership, so it needs this instead.
+	 *
+	 * @param string $key    Logical key.
+	 * @param int    $window Window length in seconds.
+	 * @param int    $max    Attempts allowed within the window.
+	 * @return array{slot:int,token:string} slot 0 / token '' when refused.
+	 */
+	public static function admit_claim( string $key, int $window, int $max ): array {
+		return self::claim( self::ATTEMPT_PREFIX, $key, $window, $max );
+	}
+
+	/**
 	 * Reserve one slot from a $max-sized quota for $key in the current window.
 	 *
 	 * Unlike admit(), a reservation can be handed back with release() when the work
@@ -118,40 +135,49 @@ final class RateLimit {
 	}
 
 	/**
-	 * Give back the attempts this request is entitled to give back, and no others.
+	 * Give back the attempt THIS request claimed. One row, proved by its token.
 	 *
-	 * A successful login should not leave the user's own failed attempts counting
-	 * against them — but it must not cancel attempts belonging to requests that
-	 * are STILL RUNNING. The old form deleted every row for the key, in every
-	 * window, attempts and reservations alike: a success and a wrong password
-	 * arriving together meant the success wiped the wrong password's slot, the
-	 * next arrival re-used it, and more attempts than the limit allows could be
-	 * checked in one window. On a shared address one user succeeding repeatedly
-	 * erased everyone else's failures with it.
+	 * Deleting slots 1..n was wrong twice over, and the second way was worse than
+	 * the first. A slot number is a POSITION: it does not say who holds it, and it
+	 * repeats in the next window. So "give back everything up to mine" deleted
+	 * rows belonging to requests still being checked — with a limit of two, a
+	 * success holding slot 2 freed slot 1 as well, two more arrivals took them
+	 * both, and four requests reached a comparison the limit allows two of. A
+	 * claim finishing in a later window deleted that window's rows outright.
 	 *
-	 * So only slots up to and including this request's own are removed, and only
-	 * in this request's own window. Anything claimed after it is somebody else's
-	 * and is left alone. Reservation rows are not touched at all: those are given
-	 * back by release(), which is already token-scoped.
+	 * What is deleted here is the row whose name AND value both match the token
+	 * this request was given — the same shape as release(), and for the same
+	 * reason. It cannot touch anybody else's slot, a double call is a no-op, and
+	 * it needs no serialisation with a concurrent admit().
 	 *
-	 * @param string $key    Logical key.
-	 * @param int    $slot   The slot this request holds (from admit()); 0 is a no-op.
-	 * @param int    $window Window length in seconds — the same one admit() used.
+	 * NOT GIVEN BACK: attempts this caller made EARLIER and got wrong. Those rows
+	 * are indistinguishable from ones a request still running holds, and guessing
+	 * which is which is what produced the bug above. A user who mistypes twice and
+	 * then succeeds carries those two for the rest of the window; that costs them
+	 * nothing they will notice, and it is the difference between a limit that
+	 * holds and one that does not.
+	 *
+	 * @param string $key   Logical key (the one passed to admit_claim()).
+	 * @param string $token The token from admit_claim() ('' = no-op).
 	 */
-	public static function forgive( string $key, int $slot, int $window ): void {
-		global $wpdb;
-		if ( $slot < 1 ) {
+	public static function forgive( string $key, string $token ): void {
+		if ( '' === $token ) {
 			return;
 		}
-		$end = self::window_end( max( 1, $window ) );
-		for ( $i = 1; $i <= $slot; $i++ ) {
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$wpdb->prepare(
-					"DELETE FROM {$wpdb->options} WHERE option_name = %s",
-					self::slot_name( self::ATTEMPT_PREFIX, $key, $end, $i )
-				)
-			);
+		$parts = explode( '|', $token );
+		if ( 3 !== count( $parts ) ) {
+			return;
 		}
+		list( $end, $slot, $nonce ) = $parts;
+
+		global $wpdb;
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name = %s AND option_value = %s",
+				self::slot_name( self::ATTEMPT_PREFIX, $key, (int) $end, (int) $slot ),
+				( (int) $end ) . ':' . $nonce
+			)
+		);
 	}
 
 	/**

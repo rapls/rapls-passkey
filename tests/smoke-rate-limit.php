@@ -251,41 +251,45 @@ check( 'purge() gives the whole budget back', ( function () use ( $RL ) {
 	return 0 === $RL::used( 'a|k', 3600 ) && 1 === $RL::admit( 'a|k', 3600, 4 );
 } )() );
 
-// --- V49-A02: a success gives back its own attempts, not everyone else's -----
-// clear() removed every row for the key. A success and a wrong password arriving
-// together therefore meant the success deleted the wrong password's slot, the
-// next arrival re-used it, and more attempts than the limit allows could be
-// checked in one window. On a shared address one user succeeding repeatedly
-// erased everybody else's failures with it.
+// --- V49-A02 / V50-01: a success gives back ITS OWN attempt, proved by token --
+// clear() removed every row for the key; forgiving "slots 1..mine" then removed
+// rows belonging to requests still being checked, because a slot NUMBER is a
+// position and does not say who holds it. With a limit of two, a success holding
+// slot 2 freed slot 1 as well, two more arrivals took them both, and four
+// requests reached a comparison the limit allows two of.
 $GLOBALS['wpdb']->store = array();
-$s1 = $RL::admit( 'f|k', 3600, 4 );          // the request that will succeed
-$w1 = $RL::admit( 'f|k', 3600, 4 );          // a wrong password, still running
-$w2 = $RL::admit( 'f|k', 3600, 4 );          // and another
-check( 'three requests hold slots 1,2,3 (V49-A02)', array( 1, 2, 3 ) === array( $s1, $w1, $w2 ) );
+$w1 = $RL::admit_claim( 'f|k', 3600, 2 );     // wrong password, still being checked
+$s1 = $RL::admit_claim( 'f|k', 3600, 2 );     // the one that succeeds
+check( 'two requests hold slots 1 and 2 (V50-01)', 1 === $w1['slot'] && 2 === $s1['slot'] );
+check( 'and the budget is spent', 0 === $RL::admit( 'f|k', 3600, 2 ) );
 
-$RL::forgive( 'f|k', $s1, 3600 );
-check( 'the success gives back only its own slot (V49-A02)', 2 === $RL::used( 'f|k', 3600 ) );
-// Exactly ONE slot came back, so exactly one more attempt fits before the
-// budget is spent again — the two still running are still counted.
-check( 'exactly one more attempt fits (V49-A02)', 1 === $RL::admit( 'f|k', 3600, 4 ) );
-check( 'and then the last free slot', 4 === $RL::admit( 'f|k', 3600, 4 ) );
-check( 'and then the budget is spent', 0 === $RL::admit( 'f|k', 3600, 4 ) );
+$RL::forgive( 'f|k', $s1['token'] );
+check( 'the success gives back exactly one slot (V50-01)', 1 === $RL::used( 'f|k', 3600 ) );
+check( 'and it is its OWN — the one still being checked survives', 2 === $RL::admit( 'f|k', 3600, 2 ) );
+check( 'so the budget is spent again after one more', 0 === $RL::admit( 'f|k', 3600, 2 ) );
 
-// A success that had already spent two attempts gets both back — that is the
-// point of forgiving at all — but nothing beyond its own.
+// A token cannot give back somebody else's slot, even with the same number.
 $GLOBALS['wpdb']->store = array();
-$RL::admit( 'g|k', 3600, 5 );                 // a mistype
-$RL::admit( 'g|k', 3600, 5 );                 // another
-$mine  = $RL::admit( 'g|k', 3600, 5 );        // then the one that works
-$other = $RL::admit( 'g|k', 3600, 5 );        // somebody else, in flight
-$RL::forgive( 'g|k', $mine, 3600 );
-check( 'forgiving covers this request and its own earlier mistypes (V49-A02)', 1 === $RL::used( 'g|k', 3600 ) );
-check( 'and leaves the later one alone', 4 === $other && 4 === (int) ( $RL::used( 'g|k', 3600 ) + 3 ) );
+$a1 = $RL::admit_claim( 'i|k', 3600, 3 );
+$forged = implode( '|', array( explode( '|', $a1['token'] )[0], '1', 'not-the-nonce' ) );
+$RL::forgive( 'i|k', $forged );
+check( 'a token with the wrong nonce forgives nothing (V50-01)', 1 === $RL::used( 'i|k', 3600 ) );
+$RL::forgive( 'i|k', $a1['token'] );
+check( 'and the real one forgives exactly its own row', 0 === $RL::used( 'i|k', 3600 ) );
 
-// forgive() with no slot is a no-op — it must never fall back to clearing.
+// A claim finishing in a LATER window must not touch that window's rows.
+$GLOBALS['wpdb']->store = array();
+$old = $RL::admit_claim( 'j|k', 1, 3 );        // a one-second window
+$GLOBALS['__now'] = time() + 5;                 // …which has since turned over
+$new = $RL::admit_claim( 'j|k', 1, 3 );
+$RL::forgive( 'j|k', $old['token'] );
+check( "a claim from an earlier window does not free this window's slot (V50-01)", 1 === $RL::used( 'j|k', 1 ) );
+unset( $GLOBALS['__now'] );
+
+// forgive() with no token is a no-op — it must never fall back to clearing.
 $GLOBALS['wpdb']->store = array();
 $RL::admit( 'h|k', 3600, 3 );
-$RL::forgive( 'h|k', 0, 3600 );
+$RL::forgive( 'h|k', '' );
 check( 'forgiving nothing removes nothing (V49-A02)', 1 === $RL::used( 'h|k', 3600 ) );
 
 // V15-02: the window boundary must not be a hole. A window ending exactly at

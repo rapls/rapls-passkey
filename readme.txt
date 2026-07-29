@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.42
+Stable tag: 0.13.43
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,10 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.43 =
+* **Giving an attempt back now proves which one.** The previous release gave back "every attempt up to mine", which was still wrong: an attempt number is a position, it does not say who holds it, and it repeats in the next window — so a sign-in could cancel attempts belonging to requests that were still being checked, and more than the limit could be verified. A request now gives back only the one attempt it holds, proved by a token. Earlier mistakes stay counted for the rest of the window.
+* A two-factor answer is checked before the pending sign-in is discarded, so a correct fifth answer works.
 
 = 0.13.42 =
 * **A successful sign-in no longer cancels attempts that other requests are still making.** Signing in cleared the whole attempt counter for the address, including slots held by requests that were on their way to being checked — so the next arrival re-used them and more than the limit could be verified in one window. On a shared address, one person signing in repeatedly erased everyone else's failed attempts with it. A success now gives back only the attempts it made itself.

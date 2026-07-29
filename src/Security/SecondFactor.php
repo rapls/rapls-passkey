@@ -306,28 +306,31 @@ final class SecondFactor {
 	 * 0, which discards the pending login — fail closed. Keyed by the
 	 * pending-login token, so it follows that login and nothing else.
 	 *
-	 * @return int The slot claimed, or 0 when there is nothing left to claim
-	 *             (the pending login has been discarded).
+	 * @return string The claim token, or '' when there is nothing left to claim
+	 *                (the pending login has been discarded).
 	 */
-	public static function claim_attempt(): int {
+	public static function claim_attempt(): string {
 		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
 		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
-			return 0;
+			return '';
 		}
 
 		$key     = self::TRANSIENT . self::hash( $token );
 		$pending = get_transient( $key );
 		if ( ! is_array( $pending ) ) {
-			return 0;
+			return '';
 		}
 
-		$attempt = RateLimit::admit( '2fa_attempts|' . self::hash( $token ), self::TTL, self::MAX_ATTEMPTS );
-		if ( 0 === $attempt || $attempt >= self::MAX_ATTEMPTS ) {
-			// The last attempt is still checked — it is the fifth try, not a sixth —
-			// but the parked login does not survive it either way.
+		$claim = RateLimit::admit_claim( '2fa_attempts|' . self::hash( $token ), self::TTL, self::MAX_ATTEMPTS );
+		if ( 0 === $claim['slot'] ) {
 			self::forget();
+			return '';
 		}
-		return $attempt;
+		if ( $claim['slot'] >= self::MAX_ATTEMPTS ) {
+			// The last attempt is still checked — it is the fifth try, not a sixth.
+			// The parked login is discarded by the caller once it has been checked.
+		}
+		return $claim['token'];
 	}
 
 	/**
@@ -336,15 +339,26 @@ final class SecondFactor {
 	 * Only this submission's own: the pending login is discarded on success
 	 * anyway, but a wrong answer being checked alongside it must keep its slot.
 	 *
-	 * @param int $slot The slot from claim_attempt().
+	 * @param string $claim The token from claim_attempt().
 	 * @return void
 	 */
-	public static function forgive_attempt( int $slot ): void {
+	public static function forgive_attempt( string $claim ): void {
 		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
-		if ( $slot < 1 || 1 !== preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
+		if ( '' === $claim || 1 !== preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
 			return;
 		}
-		RateLimit::forgive( '2fa_attempts|' . self::hash( $token ), $slot, self::TTL );
+		RateLimit::forgive( '2fa_attempts|' . self::hash( $token ), $claim );
+	}
+
+	/**
+	 * Was the claim just taken the last attempt this login allows?
+	 *
+	 * @param string $claim The token from claim_attempt().
+	 * @return bool
+	 */
+	public static function was_last_attempt( string $claim ): bool {
+		$parts = explode( '|', $claim );
+		return 3 === count( $parts ) && (int) $parts[1] >= self::MAX_ATTEMPTS;
 	}
 
 	/**

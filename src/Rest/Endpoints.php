@@ -1083,17 +1083,18 @@ final class Endpoints {
 		if ( $max <= 0 ) {
 			return null;
 		}
-		$this->rate_slots[ $bucket ] = 0;
+		$this->rate_tokens[ $bucket ] = '';
 		// admit() claims one of exactly $max slots, enforced by the unique index on
 		// the row it inserts. Nothing is decided from a value that was read, so a
 		// replica serving a stale count (or a window boundary) cannot let a batch
 		// through; being unable to confirm the claim returns 0, which blocks.
-		$slot = RateLimit::admit( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window(), $max );
-		if ( 0 === $slot ) {
+		$claim = RateLimit::admit_claim( $this->rate_logical_key( $bucket ), (int) Settings::login_rate_window(), $max );
+		if ( 0 === $claim['slot'] ) {
 			return new WP_Error( 'rapls_passkey_rate_limited', __( 'Too many attempts. Please try again later.', 'rapls-passkey' ), array( 'status' => 429 ) );
 		}
-		// Remembered so a success gives back THIS request's attempts and no others.
-		$this->rate_slots[ $bucket ] = $slot;
+		// The TOKEN, not the slot number: a number is a position and does not say
+		// who holds it, so it cannot be used to prove ownership when giving it back.
+		$this->rate_tokens[ $bucket ] = $claim['token'];
 		return null;
 	}
 
@@ -1109,19 +1110,19 @@ final class Endpoints {
 	 * @param string $bucket Action bucket.
 	 */
 	private function rate_clear( string $bucket ): void {
-		$slot = (int) ( $this->rate_slots[ $bucket ] ?? 0 );
-		if ( $slot < 1 ) {
+		$token = (string) ( $this->rate_tokens[ $bucket ] ?? '' );
+		if ( '' === $token ) {
 			return;
 		}
-		RateLimit::forgive( $this->rate_logical_key( $bucket ), $slot, (int) Settings::login_rate_window() );
+		RateLimit::forgive( $this->rate_logical_key( $bucket ), $token );
 	}
 
 	/**
-	 * The attempt slot each bucket claimed in THIS request.
+	 * The attempt token each bucket claimed in THIS request.
 	 *
-	 * @var array<string,int>
+	 * @var array<string,string>
 	 */
-	private $rate_slots = array();
+	private $rate_tokens = array();
 
 	/**
 	 * Logical key for a per-IP rate-limit bucket, passed to the shared {@see

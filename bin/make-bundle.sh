@@ -82,8 +82,19 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	# Where they came from, written here rather than described in a README that
 	# outlives the run it names (V50-07). The result files carry no run id of
 	# their own, so this is the only place the association is recorded.
-	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "free_commit": "%s",\n  "pro_commit": "%s",\n  "files": %s,\n  "bundled_at": "%s"\n}\n' \
+	# Two different commits, and conflating them is how a bundle claims to have
+	# tested code it did not ship. The ZIP's commit is read out of the artifact
+	# itself (build-manifest.json) because that is what a reproducer must check
+	# out; the repository head is what CI ran. A release-metadata commit made
+	# after the build makes the two differ legitimately.
+	zip_commit() {
+		unzip -p "$1" "$2/build-manifest.json" 2>/dev/null |
+			sed -n 's/.*"source_commit"[^"]*"\([0-9a-f]*\)".*/\1/p' | head -1
+	}
+	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "free_zip_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "files": %s,\n  "bundled_at": "%s"\n}\n' \
 		"${CI_RUN:-unknown}" "${CI_RUN:-unknown}" \
+		"$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" \
+		"$( zip_commit "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro )" \
 		"$( cd "$FREE" && git rev-parse HEAD )" \
 		"$( cd "$PRO" && git rev-parse HEAD 2>/dev/null || echo unknown )" \
 		"$( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' )" \

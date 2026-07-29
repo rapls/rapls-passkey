@@ -68,6 +68,10 @@ foreach ( array_slice( $argv, 1 ) as $a ) {
 $opts['workers'] = max( 2, (int) $opts['workers'] );
 
 define( 'ABSPATH', __DIR__ . '/' );
+// How long the controller waits for one worker before treating it as failed.
+// Generous: these workers do a handful of queries after a 1.5 s barrier.
+// Overridable so the timeout path itself can be exercised (set it to 1).
+define( 'WORKER_TIMEOUT', (float) ( getenv( 'RAPLS_WORKER_TIMEOUT' ) ?: 120 ) );
 if ( ! defined( 'ARRAY_A' ) ) { define( 'ARRAY_A', 'ARRAY_A' ); }
 
 // --- The WordPress surface the classes under test touch ---------------------
@@ -237,9 +241,32 @@ function run( string $mode, string $arg, int $n, string $php, string $self, stri
 		$p = proc_open( $cmd, array( 1 => array( 'pipe', 'w' ), 2 => array( 'pipe', 'w' ) ), $pp );
 		if ( is_resource( $p ) ) { $procs[ $i ] = $p; $pipes[ $i ] = $pp; }
 	}
-	$out = array();
+	// Collect with a deadline. A worker that never answers used to block this
+	// loop for as long as the machine stayed up: the suite printed nothing more
+	// and the run looked slow rather than broken. A wedged worker is now a
+	// FAILED assertion — "NO timeout" is not "OK", so the count comes out wrong
+	// and the test says so — instead of an answer that never arrives.
+	$out      = array();
+	$deadline = microtime( true ) + WORKER_TIMEOUT;
 	foreach ( $procs as $i => $p ) {
-		$out[] = trim( (string) stream_get_contents( $pipes[ $i ][1] ) );
+		$fh = $pipes[ $i ][1];
+		stream_set_blocking( $fh, false );
+		$buf = '';
+		while ( ! feof( $fh ) ) {
+			$left = $deadline - microtime( true );
+			if ( $left <= 0 ) {
+				proc_terminate( $p, 9 );
+				$buf .= "\nNO timeout";
+				break;
+			}
+			$r = array( $fh );
+			$w = null;
+			$e = null;
+			if ( stream_select( $r, $w, $e, 0, 200000 ) > 0 ) {
+				$buf .= (string) fread( $fh, 8192 );
+			}
+		}
+		$out[] = trim( $buf );
 		fclose( $pipes[ $i ][1] );
 		fclose( $pipes[ $i ][2] );
 		proc_close( $p );

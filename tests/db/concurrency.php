@@ -194,6 +194,46 @@ if ( '' !== $opts['worker'] ) {
 		exit( 0 );
 	}
 
+	if ( 'lock' === $opts['worker'] ) {
+		// A SINGLE-HOLDER lock on the options table, and its takeover.
+		//
+		// The obvious way to write this in WordPress is add_option(), and
+		// add_option() is not it: it calls get_option() first and then INSERTs
+		// ON DUPLICATE KEY UPDATE, so two callers can both find nothing there and
+		// both come away believing they hold the lock. What settles it is the bare
+		// INSERT — one row, one winner, decided by the unique index — and, for a
+		// lock whose holder died, a compare-and-set on the exact value found.
+		list( $name, $mode ) = explode( ':', $opts['arg'] );
+		$n    = $c->real_escape_string( $name );
+		$mine = bin2hex( random_bytes( 8 ) );
+		$v    = $c->real_escape_string( $mine );
+
+		if ( 'take' === $mode ) {
+			if ( $c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('{$n}', '{$v}')" ) ) {
+				echo "OK held\n";
+				exit( 0 );
+			}
+			echo "NO busy:{$c->errno}\n";
+			exit( 0 );
+		}
+
+		// Takeover. Whatever is read here, only one UPDATE can match it.
+		$res  = $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = '{$n}'" );
+		$held = $res ? (string) ( $res->fetch_row()[0] ?? '' ) : '';
+		if ( '' === $held ) {
+			echo "NO no-lock\n";
+			exit( 0 );
+		}
+		$h = $c->real_escape_string( $held );
+		$c->query( 'UPDATE ' . OPT_TABLE . " SET option_value = '{$v}' WHERE option_name = '{$n}' AND option_value = '{$h}'" );
+		if ( 1 === $c->affected_rows ) {
+			echo "OK stole\n";
+			exit( 0 );
+		}
+		echo "NO lost\n";
+		exit( 0 );
+	}
+
 	echo "NO unknown-worker\n";
 	exit( 0 );
 }
@@ -353,6 +393,23 @@ report( 'reconnect replay stores exactly one row', 1 === $rows, array( 'rows' =>
 $c4  = db( $opts );
 $ok4 = $c4->query( 'INSERT INTO ' . CRED_TABLE . " (user_id, slot_no, credential_id) VALUES (103, 1, 'other-conn')" );
 report( 'a different connection cannot take a claimed slot', ! $ok4 && 1062 === $c4->errno, array( 'errno' => $c4->errno ), $results, $failed );
+
+// 8. A single-holder lock: N workers, exactly one may hold it, one row exists.
+//    This is the primitive behind any "one at a time on this site" guard, and
+//    the one add_option() cannot give — it reads before it writes.
+$out  = run( 'lock', 'lk_a:take', $opts['workers'], $php, $self, $conn );
+$held = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
+$rows = (int) $c->query( 'SELECT COUNT(*) FROM ' . OPT_TABLE . " WHERE option_name = 'lk_a'" )->fetch_row()[0];
+report( 'single-holder lock: exactly 1 of N holds it, exactly 1 row', 1 === $held && 1 === $rows, array( 'workers' => $opts['workers'], 'held' => $held, 'rows' => $rows ), $results, $failed );
+
+// 9. Taking over an abandoned lock: N workers all find the same stale value, and
+//    exactly one compare-and-set matches it. Reading it is not taking it.
+$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('lk_b', 'stale-holder')" );
+$out  = run( 'lock', 'lk_b:steal', $opts['workers'], $php, $self, $conn );
+$won  = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
+$rows = (int) $c->query( 'SELECT COUNT(*) FROM ' . OPT_TABLE . " WHERE option_name = 'lk_b'" )->fetch_row()[0];
+$left = (string) $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = 'lk_b'" )->fetch_row()[0];
+report( 'abandoned lock: exactly 1 of N takes it over, and the stale value is gone', 1 === $won && 1 === $rows && 'stale-holder' !== $left, array( 'workers' => $opts['workers'], 'won' => $won, 'rows' => $rows ), $results, $failed );
 
 $c->query( 'DROP TABLE IF EXISTS ' . CRED_TABLE );
 $c->query( 'DROP TABLE IF EXISTS ' . OPT_TABLE );

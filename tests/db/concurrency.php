@@ -203,9 +203,12 @@ if ( '' !== $opts['worker'] ) {
 		// both come away believing they hold the lock. What settles it is the bare
 		// INSERT — one row, one winner, decided by the unique index — and, for a
 		// lock whose holder died, a compare-and-set on the exact value found.
-		list( $name, $mode ) = explode( ':', $opts['arg'] );
+		// The value is "<unix time>:<random>", as the shipped lock stores it: the
+		// time is what makes an abandoned lock recoverable, and the random half is
+		// what a would-be stealer compares against.
+		list( $name, $mode, $ttl ) = array_pad( explode( ':', $opts['arg'] ), 3, '120' );
 		$n    = $c->real_escape_string( $name );
-		$mine = bin2hex( random_bytes( 8 ) );
+		$mine = time() . ':' . bin2hex( random_bytes( 8 ) );
 		$v    = $c->real_escape_string( $mine );
 
 		if ( 'take' === $mode ) {
@@ -217,11 +220,20 @@ if ( '' !== $opts['worker'] ) {
 			exit( 0 );
 		}
 
-		// Takeover. Whatever is read here, only one UPDATE can match it.
+		// Takeover, in full. Reading a lock is not taking one, and the STALENESS
+		// CHECK is half of it: without it this is not a race between claimants but
+		// a chain of them — each worker reads whatever the last one wrote and
+		// steals that, so most of a hundred come away holding it in turn. (That is
+		// not hypothetical: the first version of this worker omitted the check and
+		// 65 to 79 of 100 reported success, which is what put this comment here.)
 		$res  = $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = '{$n}'" );
 		$held = $res ? (string) ( $res->fetch_row()[0] ?? '' ) : '';
 		if ( '' === $held ) {
 			echo "NO no-lock\n";
+			exit( 0 );
+		}
+		if ( time() - (int) strtok( $held, ':' ) < (int) $ttl ) {
+			echo "NO busy\n";     // a fresh holder — including one that just won below
 			exit( 0 );
 		}
 		$h = $c->real_escape_string( $held );
@@ -402,14 +414,24 @@ $held = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
 $rows = (int) $c->query( 'SELECT COUNT(*) FROM ' . OPT_TABLE . " WHERE option_name = 'lk_a'" )->fetch_row()[0];
 report( 'single-holder lock: exactly 1 of N holds it, exactly 1 row', 1 === $held && 1 === $rows, array( 'workers' => $opts['workers'], 'held' => $held, 'rows' => $rows ), $results, $failed );
 
-// 9. Taking over an abandoned lock: N workers all find the same stale value, and
-//    exactly one compare-and-set matches it. Reading it is not taking it.
-$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('lk_b', 'stale-holder')" );
-$out  = run( 'lock', 'lk_b:steal', $opts['workers'], $php, $self, $conn );
+// 9. Taking over an abandoned lock. Two things have to hold at once: of the
+//    workers that see the SAME stale value, only one compare-and-set can match
+//    it; and a worker arriving after that one must see a fresh timestamp and
+//    stand down rather than steal in turn.
+$stale = ( time() - 3600 ) . ':abandoned';
+$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('lk_b', '{$stale}')" );
+$out  = run( 'lock', 'lk_b:steal:120', $opts['workers'], $php, $self, $conn );
 $won  = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
 $rows = (int) $c->query( 'SELECT COUNT(*) FROM ' . OPT_TABLE . " WHERE option_name = 'lk_b'" )->fetch_row()[0];
 $left = (string) $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = 'lk_b'" )->fetch_row()[0];
-report( 'abandoned lock: exactly 1 of N takes it over, and the stale value is gone', 1 === $won && 1 === $rows && 'stale-holder' !== $left, array( 'workers' => $opts['workers'], 'won' => $won, 'rows' => $rows ), $results, $failed );
+report( 'abandoned lock: exactly 1 of N takes it over, and the stale value is gone', 1 === $won && 1 === $rows && $stale !== $left, array( 'workers' => $opts['workers'], 'won' => $won, 'rows' => $rows ), $results, $failed );
+
+// 10. And a lock whose holder is alive is not taken over at all.
+$c->query( 'INSERT INTO ' . OPT_TABLE . " (option_name, option_value) VALUES ('lk_c', '" . time() . ":alive')" );
+$out  = run( 'lock', 'lk_c:steal:120', $opts['workers'], $php, $self, $conn );
+$won  = count( array_filter( $out, fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
+$left = (string) $c->query( 'SELECT option_value FROM ' . OPT_TABLE . " WHERE option_name = 'lk_c'" )->fetch_row()[0];
+report( 'a live lock is taken over by none of N', 0 === $won && str_ends_with( $left, ':alive' ), array( 'workers' => $opts['workers'], 'won' => $won ), $results, $failed );
 
 $c->query( 'DROP TABLE IF EXISTS ' . CRED_TABLE );
 $c->query( 'DROP TABLE IF EXISTS ' . OPT_TABLE );

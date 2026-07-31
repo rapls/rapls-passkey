@@ -15,7 +15,12 @@ on:
       - '**.md'
       - 'docs/**'
       - '.gitignore'
-      - '.distignore'
+      # NOT .distignore. It was on this list and should never have been: it is
+      # not repository housekeeping, it is INPUT TO THE BUILD — bin/build-dist.sh
+      # passes it to rsync as --exclude-from, twice. A change to it can drop a
+      # required file from the ZIP, sweep a development file into it, or alter
+      # what is kept out on purpose, and every one of those is exactly what the
+      # distribution checks exist to catch (V67-03).
   pull_request:
   workflow_dispatch:
 

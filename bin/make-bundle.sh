@@ -79,6 +79,13 @@ PRO_SHA="$(shasum -a 256 "$PLUGINS/rapls-passkey-pro.zip" | cut -d' ' -f1)"
 # a different artifact by design. Here is the one place where the digest IS a
 # release property: this bundle is the thing being submitted, and the metadata
 # has to describe the ZIP inside it.
+# MISSING IS A FAILURE (V62-09). This used to run only when both files existed,
+# so a misplaced update-info.json skipped the check that exists to catch a
+# misplaced update-info.json.
+if [ -f "$PLUGINS/rapls-passkey-pro.zip" ] && [ ! -f "$PRO/tools/license-server/update-info.json" ]; then
+	echo "refusing to build: a Pro ZIP is being bundled but tools/license-server/update-info.json is missing (V62-09)" >&2
+	exit 1
+fi
 if [ -f "$PRO/tools/license-server/update-info.json" ] && [ -f "$PLUGINS/rapls-passkey-pro.zip" ]; then
 	PRO_ZIP_VER="$(unzip -p "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro/rapls-passkey-pro.php 2>/dev/null |
 		sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)"

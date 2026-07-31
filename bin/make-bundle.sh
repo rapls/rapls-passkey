@@ -69,6 +69,34 @@ stage_plugin "$PRO" rapls-passkey-pro
 # The reproduction script, with the digests of the ZIPs it is meant to check.
 FREE_SHA="$(shasum -a 256 "$PLUGINS/rapls-passkey.zip" | cut -d' ' -f1)"
 PRO_SHA="$(shasum -a 256 "$PLUGINS/rapls-passkey-pro.zip" | cut -d' ' -f1)"
+
+# THE RELEASE METADATA MUST NAME THE ARTIFACT GOING INTO THIS BUNDLE (V61-01).
+#
+# update-info.json is written by hand after the build, and a release once went
+# out announcing 0.14.63 over a 0.14.62 ZIP because a shell chain silently
+# skipped the version bump. bin/verify-dist.php compares the version and the
+# sequence; it deliberately does NOT compare the digest, because any rebuild is
+# a different artifact by design. Here is the one place where the digest IS a
+# release property: this bundle is the thing being submitted, and the metadata
+# has to describe the ZIP inside it.
+if [ -f "$PRO/tools/license-server/update-info.json" ] && [ -f "$PLUGINS/rapls-passkey-pro.zip" ]; then
+	PRO_ZIP_VER="$(unzip -p "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro/rapls-passkey-pro.php 2>/dev/null |
+		sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -1)"
+	PRO_ZIP_SEQ="$(unzip -p "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro/rapls-passkey-pro.php 2>/dev/null |
+		sed -n "s/.*RAPLS_PASSKEY_PRO_RELEASE_SEQUENCE'[[:space:]]*,[[:space:]]*\([0-9]*\).*/\1/p" | head -1)"
+	INFO="$PRO/tools/license-server/update-info.json"
+	INFO_VER="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$INFO" | head -1)"
+	INFO_SEQ="$(sed -n 's/.*"release_sequence"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$INFO" | head -1)"
+	INFO_SHA="$(sed -n 's/.*"sha256"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$INFO" | head -1)"
+
+	if [ "$INFO_VER" != "$PRO_ZIP_VER" ] || [ "$INFO_SEQ" != "$PRO_ZIP_SEQ" ] || [ "$INFO_SHA" != "$PRO_SHA" ]; then
+		echo "refusing to build: update-info.json does not describe the Pro ZIP (V61-01)" >&2
+		echo "  ZIP:          version $PRO_ZIP_VER, sequence $PRO_ZIP_SEQ, sha $PRO_SHA" >&2
+		echo "  update-info:  version $INFO_VER, sequence $INFO_SEQ, sha $INFO_SHA" >&2
+		exit 1
+	fi
+	echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA"
+fi
 sed -e "s/__FREE_SHA__/$FREE_SHA/" -e "s/__PRO_SHA__/$PRO_SHA/" \
 	"$FREE/tests/db/verify-bundle.sh" > "$STAGE/verify.sh"
 chmod +x "$STAGE/verify.sh"

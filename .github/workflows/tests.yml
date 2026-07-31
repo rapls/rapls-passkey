@@ -8,8 +8,22 @@ name: tests
 on:
   push:
     branches: [ main ]
+    # A commit that changes only prose cannot change a test result, and each run
+    # of this file costs about eleven runner-minutes. Documentation rounds were a
+    # steady share of the bill.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.distignore'
   pull_request:
   workflow_dispatch:
+
+# One run per branch. A dispatch started while a push run is still going now
+# cancels it instead of paying for both — they would be testing the same commit.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   smoke:
@@ -26,6 +40,12 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mbstring, sodium, gmp, mysqli
           coverage: none
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-
       # A few smoke files exercise the real WebAuthn ceremony code, so the
       # bundled libraries have to be installed first.
       - name: Install dependencies
@@ -55,6 +75,14 @@ jobs:
           php-version: '8.2'
           extensions: mysqli
           coverage: none
+
+      - name: Cache Composer downloads
+        if: ${{ matrix.db.name == 'mysql-8.0' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-
 
       # Started with `docker run` rather than as a `services:` container so we can
       # pass SERVER flags: --max-connections for the 100 workers, and
@@ -135,8 +163,13 @@ jobs:
       # covers BOTH plugins, exactly as the submitted bundle does. Without the
       # secret the step runs Free only and says so — it never silently claims more
       # than it ran.
+      # ONCE, NOT FOUR TIMES. This step builds four distribution ZIPs and runs
+      # both suites, and it did exactly the same work in all four database jobs —
+      # the only thing the database changes is the concurrency and integration
+      # runs above, which is what the matrix exists for. Doing it in one job
+      # takes about six runner-minutes off every run.
       - name: Check out Pro (needs RAPLS_PRO_REPO_TOKEN)
-        if: ${{ env.PRO_TOKEN != '' }}
+        if: ${{ matrix.db.name == 'mysql-8.0' && env.PRO_TOKEN != '' }}
         env:
           PRO_TOKEN: ${{ secrets.RAPLS_PRO_REPO_TOKEN }}
         uses: actions/checkout@v4
@@ -146,6 +179,7 @@ jobs:
           path: pro-src
 
       - name: Reproduction procedure (verify-bundle.sh) end to end
+        if: ${{ matrix.db.name == 'mysql-8.0' }}
         run: |
           composer install --no-interaction --prefer-dist --no-progress
           curl -sSL -o bin/php-scoper.phar \

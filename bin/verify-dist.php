@@ -25,18 +25,32 @@ if ( '' === $zip || ! is_file( $zip ) ) {
 	exit( 2 );
 }
 
-$tmp = sys_get_temp_dir() . '/rapls-verify-' . substr( md5( $zip . filemtime( $zip ) ), 0, 8 );
-$rm  = static function ( string $d ) use ( &$rm ) {
+// A DIRECTORY NOBODY CAN PREDICT, AND A DELETE THAT DOES NOT FOLLOW LINKS
+// (V62-08, and this copy was missed the first time — V63-07). The name used to
+// be md5( path . mtime ), which anyone on the host can compute, and the first
+// thing this did was recursively delete whatever was already there. is_dir() and
+// scandir() follow symlinks, so a link planted at that path pointed the delete
+// at its target.
+//
+// Random name, created exclusively, private mode, and the recursion unlinks a
+// link instead of walking through it. Kept byte-identical to the Pro copy so the
+// two cannot drift again.
+$rm = static function ( string $d ) use ( &$rm ) {
+	if ( is_link( $d ) ) { @unlink( $d ); return; }
 	if ( ! is_dir( $d ) ) { return; }
 	foreach ( scandir( $d ) as $e ) {
 		if ( '.' === $e || '..' === $e ) { continue; }
 		$p = $d . '/' . $e;
+		if ( is_link( $p ) ) { @unlink( $p ); continue; }
 		is_dir( $p ) ? $rm( $p ) : @unlink( $p );
 	}
 	@rmdir( $d );
 };
-$rm( $tmp );
-mkdir( $tmp, 0777, true );
+$tmp = rtrim( sys_get_temp_dir(), '/' ) . '/rapls-verify-' . bin2hex( random_bytes( 12 ) );
+if ( file_exists( $tmp ) || ! @mkdir( $tmp, 0700 ) ) {
+	fwrite( STDERR, "cannot create a private working directory\n" );
+	exit( 2 );
+}
 
 $za = new ZipArchive();
 if ( true !== $za->open( $zip ) ) { fwrite( STDERR, "cannot open zip\n" ); exit( 2 ); }

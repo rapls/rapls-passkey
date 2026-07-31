@@ -108,7 +108,23 @@ sed -e "s/__FREE_SHA__/$FREE_SHA/" -e "s/__PRO_SHA__/$PRO_SHA/" \
 	"$FREE/tests/db/verify-bundle.sh" > "$STAGE/verify.sh"
 chmod +x "$STAGE/verify.sh"
 
-cp "$PLUGINS/E2E-TESTING.md" "$STAGE/" 2>/dev/null || true
+# THE RUNBOOK EXISTS TWICE AND MUST NOT DIFFER (V68-03). One copy ships in this
+# bundle, one lives in the free plugin's docs, and the test that compares them
+# SKIPS wherever only one is present — which is every path except a full source
+# checkout. This is the gate that always runs: no bundle is built from a
+# document that has drifted, or from a missing one.
+E2E_TOP="$PLUGINS/E2E-TESTING.md"
+E2E_DOC="$FREE/docs/E2E-TESTING.md"
+for f in "$E2E_TOP" "$E2E_DOC"; do
+	[ -f "$f" ] || { echo "refusing to build: $f is missing (V68-03)" >&2; exit 1; }
+done
+if [ "$(shasum -a 256 "$E2E_TOP" | cut -d' ' -f1)" != "$(shasum -a 256 "$E2E_DOC" | cut -d' ' -f1)" ]; then
+	echo "refusing to build: the two copies of E2E-TESTING.md differ (V68-03)" >&2
+	diff -u "$E2E_DOC" "$E2E_TOP" | head -40 >&2
+	exit 1
+fi
+echo "runbook ok: both copies of E2E-TESTING.md agree"
+cp "$E2E_TOP" "$STAGE/"
 [ -f "$PLUGINS/BUNDLE-README.md" ] && cp "$PLUGINS/BUNDLE-README.md" "$STAGE/README.md"
 
 if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then

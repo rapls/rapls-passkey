@@ -90,6 +90,18 @@ stage_plugin() {          # slug, zip, expected-sha
 	cp -R "$BUNDLE/$slug" "$WORK/$slug" || return 1
 	# bin/run-tests.sh looks for ../<slug>.zip to run those distribution checks.
 	cp "$zip" "$WORK/$slug.zip"
+	# And the runbook goes with them (V68-03). smoke-docs-endpoints.php reads
+	# E2E-TESTING.md from beside the plugin directories; staging only the plugins
+	# meant that test SKIPPED here — a documentation check that never ran in the
+	# one place a reviewer runs everything.
+	# In the bundle it sits beside the plugin directories; in a plain checkout
+	# the copy that exists is the free plugin's docs/ one.
+	for candidate in "$BUNDLE/E2E-TESTING.md" "$BUNDLE/rapls-passkey/docs/E2E-TESTING.md"; do
+		if [ -f "$candidate" ]; then
+			cp "$candidate" "$WORK/E2E-TESTING.md"
+			break
+		fi
+	done
 	return 0
 }
 

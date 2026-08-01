@@ -186,6 +186,13 @@ jobs:
       - name: Reproduction procedure (verify-bundle.sh) end to end
         if: ${{ matrix.db.name == 'mysql-8.0' }}
         run: |
+          # OUT OF THE WORKING TREE FIRST. actions/checkout can only place a
+          # second repository inside the workspace, and an untracked directory
+          # there makes this one dirty — which build-dist.sh now refuses to
+          # build from, correctly (V69-01). It has to move before anything is
+          # built, not after the free plugin is done with.
+          if [ -d pro-src ]; then mv pro-src ../rapls-passkey-pro; fi
+
           composer install --no-interaction --prefer-dist --no-progress
           curl -sSL -o bin/php-scoper.phar \
             https://github.com/humbug/php-scoper/releases/download/0.18.11/php-scoper.phar
@@ -204,10 +211,9 @@ jobs:
           echo "reproducible build ok: $FIRST"
 
           PRO_ARGS=""
-          if [ -d pro-src ]; then
-            # Build the Pro ZIP from its own checkout, alongside Free the way both
-            # plugins are laid out on a real site.
-            mv pro-src ../rapls-passkey-pro
+          if [ -d ../rapls-passkey-pro ]; then
+            # Already moved out of the working tree above; built here, alongside
+            # Free, the way both plugins are laid out on a real site.
             ( cd ../rapls-passkey-pro \
               && composer install --no-interaction --prefer-dist --no-progress \
               && cp ../rapls-passkey/bin/php-scoper.phar bin/php-scoper.phar \

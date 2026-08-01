@@ -14,7 +14,10 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
-      - '.gitignore'
+      # NOT .gitignore either (V70-03). The clean-tree gate reads git status,
+      # so .gitignore decides WHICH files that gate can see: adding a pattern
+      # there hides a whole path from it. It is build-safety input now, exactly
+      # as .distignore is.
       # NOT .distignore. It was on this list and should never have been: it is
       # not repository housekeeping, it is INPUT TO THE BUILD — bin/build-dist.sh
       # passes it to rsync as --exclude-from, twice. A change to it can drop a

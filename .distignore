@@ -25,3 +25,12 @@ README.md
 
 .DS_Store
 *.log
+
+# Local-only paths that .gitignore also excludes (V70-02). Staging is driven by
+# git ls-files now, so these cannot reach the package in any case — they are
+# listed so the two files agree, and so a build from an export (no git, the
+# fallback path) is safe too.
+/.ci
+/.idea
+/.vscode
+Thumbs.db

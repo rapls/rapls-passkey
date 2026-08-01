@@ -96,7 +96,25 @@ rsync -a --prune-empty-dirs \
 	--exclude='*' "$ROOT/vendor/" "$STAGE/vendor/"
 # The plugin's own non-src/vendor tree (data/, assets/, languages/, readme, the
 # entrypoint & uninstall — which carry no scoped `use` and require scoper-autoload).
-rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "$ROOT/." "$STAGE/"
+#
+# FROM git ls-files, NOT FROM THE DIRECTORY (V70-02). Copying $ROOT/. swept in
+# whatever happened to be lying there, and `git status --porcelain` — the clean-
+# tree gate added in V69-01 — says nothing about files git has been told to
+# ignore. So .ci/, .idea/, an editor's scratch file: invisible to the gate,
+# copied by rsync, shipped in a package whose manifest says source_dirty false.
+# The new promise is that the recorded commit reproduces the ZIP, and only
+# tracked files can keep it. .distignore still applies on top, and a build from
+# an export (no git) falls back to the old behaviour rather than shipping
+# nothing.
+if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+	git -C "$ROOT" ls-files -z |
+		rsync -a --from0 --files-from=- \
+			--exclude-from="$ROOT/.distignore" --exclude 'src/**' --exclude 'vendor/**' \
+			"$ROOT/" "$STAGE/"
+else
+	echo "build-dist: no git here — staging from the directory instead" >&2
+	rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "$ROOT/." "$STAGE/"
+fi
 
 # Everything that goes INTO the artifact must be stated, never guessed: the same
 # inputs have to produce the same bytes on someone else's machine, and a silent

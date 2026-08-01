@@ -178,12 +178,12 @@ function claim_credential( CredentialRepository $repo, int $user_id, string $cre
 	$ep  = ( new ReflectionClass( Endpoints::class ) )->newInstanceWithoutConstructor();
 	$ref = new ReflectionClass( Endpoints::class );
 	foreach ( array( 'repository' => $repo, 'codec' => new RaplsPasskey\WebAuthn\Codec() ) as $prop => $value ) {
+		// setAccessible() is a no-op since PHP 8.1 and deprecated in 8.5, where the
+		// notice lands on a worker's stdout ahead of its answer — see ok_count().
 		$p = $ref->getProperty( $prop );
-		$p->setAccessible( true );
 		$p->setValue( $ep, $value );
 	}
 	$m = $ref->getMethod( 'store_credential' );
-	$m->setAccessible( true );
 
 	$record = new stdClass();
 	$record->counter = 0;
@@ -281,8 +281,49 @@ function report( string $name, bool $ok, array $detail, array &$results, int &$f
 	$results[] = array( 'scenario' => $name, 'pass' => $ok ) + $detail;
 	if ( ! $ok ) { ++$failed; }
 }
+/**
+ * How many workers were admitted.
+ *
+ * PER LINE, NOT PER BLOB. A worker's answer is one line, and anything the
+ * runtime printed ahead of it — under PHP 8.5, a deprecation notice from
+ * ReflectionProperty::setAccessible() — used to push it off the front of the
+ * blob. `strpos($blob, 'OK') === 0` was then false for every one of them and
+ * the suite reported "admitted: 0, rows: 1": a cap that had worked perfectly,
+ * shown as a cap that admitted nobody. A number that comes out wrong because
+ * the answer was never read is the failure mode this whole run exists to catch.
+ */
 function ok_count( array $out ): int {
-	return count( array_filter( $out, static fn( $l ) => 0 === strpos( $l, 'OK' ) ) );
+	$n = 0;
+	foreach ( $out as $blob ) {
+		foreach ( explode( "\n", (string) $blob ) as $line ) {
+			if ( 0 === strpos( trim( $line ), 'OK' ) ) {
+				++$n;
+				break;
+			}
+		}
+	}
+	return $n;
+}
+
+/**
+ * Workers that printed anything besides their one answer.
+ *
+ * Reading around the noise is not the same as being entitled to ignore it: a
+ * diagnostic in a worker means something in the code under test is emitting
+ * output, and the run must say so rather than absorb it.
+ */
+function noisy_workers( array $out ): array {
+	$noise = array();
+	foreach ( $out as $blob ) {
+		foreach ( explode( "\n", (string) $blob ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line || 0 === strpos( $line, 'OK' ) || 0 === strpos( $line, 'NO' ) ) {
+				continue;
+			}
+			$noise[] = substr( $line, 0, 120 );
+		}
+	}
+	return array_values( array_unique( $noise ) );
 }
 
 $server = $wpdb->get_var( 'SELECT VERSION()' );
@@ -361,6 +402,9 @@ $wpdb->query( "DELETE FROM {$table}" );
 $out = run( 'register', '101:1:c1-{i}', $opts['workers'], $php, $self, $conn );
 $n   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 101" );
 report( 'cap=1: exactly one registration succeeds', 1 === ok_count( $out ) && 1 === $n, array( 'workers' => $opts['workers'], 'admitted' => ok_count( $out ), 'rows' => $n ), $results, $failed );
+// Said once, on a real run: the workers answered and nothing else did.
+$noise = noisy_workers( $out );
+report( 'and the workers printed nothing but their answers', array() === $noise, array( 'noise' => $noise ), $results, $failed );
 
 $out = run( 'register', '102:3:c3-{i}', $opts['workers'], $php, $self, $conn );
 $n   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 102" );
@@ -416,7 +460,6 @@ report(
 //       check that hides a failing database.
 $wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
 $probe_dirty = new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' );
-$probe_dirty->setAccessible( true );
 
 // The fault stays ON for everything in this block.
 $wpdb->fail_probe_cleanup = true;
@@ -471,7 +514,6 @@ Schema::flush_cap_cache();
 //     performing its two inserts and the database refusing the second.
 $wpdb->query( "ALTER TABLE {$table} ADD UNIQUE INDEX user_slot (user_id, slot_no)" );
 $probe = new ReflectionMethod( Schema::class, 'writer_rejects_duplicate_slot' );
-$probe->setAccessible( true );
 
 $probe_rows     = static function () use ( $wpdb, $table ) {
 	return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );

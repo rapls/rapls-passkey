@@ -44,6 +44,27 @@ fi
 
 cd "$ROOT"
 
+# A RELEASE IS BUILT FROM A COMMIT, OR IT IS NOT A RELEASE (V69-01).
+#
+# The manifest records source_commit and source_dirty, and a reviewer holding
+# the ZIP is expected to check out that commit and rebuild it. If the tree was
+# dirty, that cannot work: source_commit describes what was committed and the
+# ZIP contains something else. It happened — the same version was published
+# twice with different bytes, because the build ran before the last commit.
+#
+# Checked BEFORE Composer runs, so the answer is about the source and not about
+# anything this script did to it. Explicit override for local experiments; the
+# release path never sets it, and make-bundle.sh refuses a dirty manifest too.
+if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+	if [ -n "$(git -C "$ROOT" status --porcelain)" ] && [ "${ALLOW_DIRTY_BUILD:-}" != "1" ]; then
+		echo "refusing to build: the working tree has uncommitted changes (V69-01)." >&2
+		echo "  A release ZIP records source_commit, and this one could not be rebuilt from it." >&2
+		echo "  Commit first, or set ALLOW_DIRTY_BUILD=1 for a throwaway build." >&2
+		git -C "$ROOT" status --short >&2
+		exit 1
+	fi
+fi
+
 # Runtime deps ONLY — dev tooling must never end up in the shipped, scoped vendor.
 "$COMPOSER_BIN" install --no-dev --optimize-autoloader
 

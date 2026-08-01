@@ -140,7 +140,12 @@ $allowed_skips = array(
 	// under tools/, which is deliberately NOT part of the plugin artifact — it is
 	// shipped in the verification bundle instead, where the source-tree run covers
 	// both. Skipping them here says that, rather than hiding it.
-	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php' ),
+	// smoke-docs-endpoints reads the licence server's router and E2E-TESTING.md,
+	// neither of which is in a plugin artifact — it is a SOURCE-ONLY suite, and
+	// it said so by asserting nothing here. Counted honestly as a skip now
+	// (V69-04): "0 passed, 0 failed" is not a pass, and letting one through is
+	// the same "green because it never ran" the doc checks were added to stop.
+	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 
@@ -182,12 +187,16 @@ foreach ( $files as $file ) {
 	// The summary line is required, and it must say zero failures: an exit code of
 	// 0 alone would let a file that asserted nothing — or that died before its last
 	// line — count as a pass.
-	$summary = '';
-	$fails   = null;
+	$summary      = '';
+	$fails        = null;
+	$asserts      = null;
+	$self_skipped = 0;
 	foreach ( $out as $line ) {
-		if ( preg_match( '/(\d+) passed, (\d+) failed/', $line, $m ) ) {
-			$summary = $m[0];
-			$fails   = (int) $m[2];
+		if ( preg_match( '/(\d+) passed, (\d+) failed(?:, (\d+) skipped)?/', $line, $m ) ) {
+			$summary      = $m[0];
+			$asserts      = (int) $m[1];
+			$fails        = (int) $m[2];
+			$self_skipped = isset( $m[3] ) ? (int) $m[3] : 0;
 		}
 	}
 
@@ -198,6 +207,17 @@ foreach ( $files as $file ) {
 		$reason = 'no assertion summary (the file asserted nothing, or stopped early)';
 	} elseif ( 0 !== $fails ) {
 		$reason = $summary;
+	} elseif ( 0 === $asserts ) {
+		// A FILE THAT ASSERTED NOTHING IS NOT A FILE THAT PASSED (V69-04). The
+		// summary was read for FAILURES only, so a suite that skipped itself —
+		// because what it tests is not in a plugin artifact — was counted as a
+		// passing suite on the strength of "0 failed". That is the same "green
+		// because it never ran" the documentation checks were added to stop. A
+		// suite that cannot run here belongs on the fixed list above, where
+		// adding it is a deliberate act and an unexpected skip still fails.
+		$reason = 'asserted nothing'
+			. ( $self_skipped > 0 ? " ({$self_skipped} skipped inside)" : '' )
+			. ' — put it on the fixed skip list if it cannot run here';
 	}
 
 	if ( '' === $reason ) {

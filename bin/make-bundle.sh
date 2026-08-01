@@ -108,6 +108,23 @@ sed -e "s/__FREE_SHA__/$FREE_SHA/" -e "s/__PRO_SHA__/$PRO_SHA/" \
 	"$FREE/tests/db/verify-bundle.sh" > "$STAGE/verify.sh"
 chmod +x "$STAGE/verify.sh"
 
+# NEITHER ZIP MAY COME FROM A DIRTY TREE (V69-01). build-dist.sh refuses to make
+# one now, but the bundle is what goes out, and it must not be possible to put a
+# ZIP in it that no commit can reproduce — including one built before that check
+# existed, or with ALLOW_DIRTY_BUILD set.
+for z in "$PLUGINS/rapls-passkey.zip" "$PLUGINS/rapls-passkey-pro.zip"; do
+	[ -f "$z" ] || continue
+	slug="$(basename "$z" .zip)"
+	dirty="$(unzip -p "$z" "$slug/build-manifest.json" 2>/dev/null |
+		sed -n 's/.*"source_dirty": *"\([a-z]*\)".*/\1/p' | head -1)"
+	if [ "$dirty" != "false" ]; then
+		echo "refusing to build: $slug.zip was built from a tree that is not clean (source_dirty: ${dirty:-absent}) — V69-01" >&2
+		echo "  Commit the source and rebuild; a ZIP that cannot be reproduced from its own commit is not a release." >&2
+		exit 1
+	fi
+done
+echo "provenance ok: both ZIPs were built from a clean tree"
+
 # THE RUNBOOK EXISTS TWICE AND MUST NOT DIFFER (V68-03). One copy ships in this
 # bundle, one lives in the free plugin's docs, and the test that compares them
 # SKIPS wherever only one is present — which is every path except a full source

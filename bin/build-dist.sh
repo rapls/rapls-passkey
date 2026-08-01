@@ -86,8 +86,32 @@ STAGE="$TMP/$SLUG"
 mkdir -p "$STAGE"
 # Scoped tree (src + vendor .php, plus scoper-autoload.php / composer autoloader).
 rsync -a --exclude-from="$ROOT/.distignore" "$BUILD/" "$STAGE/"
+# THE TRACKED TREE, AS THE COMMIT HAS IT (V71-01, V71-02).
+#
+# Two things have to be true at once: nothing untracked may reach the package,
+# and .distignore must decide what of the tracked material is shipped. The
+# previous attempt did the first by feeding `git ls-files` to `rsync
+# --files-from` — and rsync does NOT apply exclude rules to files named
+# explicitly that way, so .distignore stopped working entirely and the package
+# gained tests/, bin/, .github/, composer.json and (on Pro) the whole licence
+# server. Reproducible, and reproducibly wrong.
+#
+# So: materialise the commit into a temporary tree with `git archive`, and copy
+# from THAT with .distignore applied normally. The exclude rules work because
+# they are back to filtering a directory walk; the untracked file is gone
+# because git archive never had it. src/'s non-PHP assets come from the same
+# snapshot for the same reason.
+TRACKED="$TMP/tracked"
+mkdir -p "$TRACKED"
+if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+	git -C "$ROOT" archive HEAD | tar -x -C "$TRACKED"
+else
+	echo "build-dist: no git here — snapshotting the directory instead" >&2
+	rsync -a --exclude '.git' "$ROOT/" "$TRACKED/"
+fi
+
 # Non-PHP assets bundled under src/ (e.g. FIDO MDS root certs, data files).
-rsync -a --exclude='*.php' "$ROOT/src/" "$STAGE/src/"
+rsync -a --exclude='*.php' "$TRACKED/src/" "$STAGE/src/"
 # Third-party LICENSE / NOTICE files in vendor/ (MIT / BSD notice retention).
 rsync -a --prune-empty-dirs \
 	--include='*/' \
@@ -106,15 +130,7 @@ rsync -a --prune-empty-dirs \
 # tracked files can keep it. .distignore still applies on top, and a build from
 # an export (no git) falls back to the old behaviour rather than shipping
 # nothing.
-if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-	git -C "$ROOT" ls-files -z |
-		rsync -a --from0 --files-from=- \
-			--exclude-from="$ROOT/.distignore" --exclude 'src/**' --exclude 'vendor/**' \
-			"$ROOT/" "$STAGE/"
-else
-	echo "build-dist: no git here — staging from the directory instead" >&2
-	rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "$ROOT/." "$STAGE/"
-fi
+rsync -a --exclude-from="$ROOT/.distignore" --exclude 'src' --exclude 'vendor' "$TRACKED/" "$STAGE/"
 
 # Everything that goes INTO the artifact must be stated, never guessed: the same
 # inputs have to produce the same bytes on someone else's machine, and a silent

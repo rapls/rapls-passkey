@@ -53,9 +53,19 @@ $script     = (string) file_get_contents( $build );
 $gitignore  = (string) file_get_contents( $root . '/.gitignore' );
 $distignore = (string) file_get_contents( $root . '/.distignore' );
 
-// --- 1. Staging is driven by the index --------------------------------------
-check( 'the build stages the plugin tree from git ls-files (V70-02)', false !== strpos( $script, 'ls-files -z' ) && false !== strpos( $script, '--files-from=-' ) );
-check( 'and the old copy-the-whole-directory form is only the no-git fallback', 1 === substr_count( $script, 'rsync -a --exclude-from="$ROOT/.distignore" --exclude \'src\' --exclude \'vendor\' "$ROOT/." "$STAGE/"' ) );
+// --- 1. Staging is driven by a snapshot of the commit ------------------------
+//
+// THESE ARE NOT THE POINT OF THIS FILE ANY MORE. The first version of it
+// asserted that the script CONTAINED `ls-files` and `--files-from`, and it did —
+// while rsync silently ignored .distignore for files named that way and the
+// package shipped tests/, bin/ and the licence server. A string in a script is
+// not a property of an artifact, and the property is asserted where it belongs:
+// bin/verify-dist.php now opens the finished ZIP and refuses those paths
+// (V71-01). What is left here is the input side.
+check( 'the build snapshots the commit with git archive (V71-01)', false !== strpos( $script, 'archive HEAD | tar -x' ) );
+check( 'and stages the plugin tree from that snapshot, with .distignore applied', false !== strpos( $script, '--exclude-from="$ROOT/.distignore" --exclude \'src\' --exclude \'vendor\' "$TRACKED/" "$STAGE/"' ) );
+check( 'src/ assets come from the snapshot too, not the working directory (V71-02)', false !== strpos( $script, '"$TRACKED/src/" "$STAGE/src/"' ) );
+check( 'and nothing stages from $ROOT any more', false === strpos( $script, '"$ROOT/src/" "$STAGE/src/"' ) && false === strpos( $script, '"$ROOT/." "$STAGE/"' ) );
 
 // --- 2. The fallback would not ship an ignored file either -------------------
 //

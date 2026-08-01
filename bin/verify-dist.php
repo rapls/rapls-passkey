@@ -71,6 +71,50 @@ function check( string $label, bool $cond ): void {
 
 echo "Verifying: {$slug}\n";
 
+// 0) NOTHING THAT .distignore EXCLUDES IS IN HERE (V71-01).
+//
+// This is asserted against the FINISHED PACKAGE, because the check that was
+// supposed to cover it read the build script's text instead — it confirmed that
+// the script said `git ls-files` and `--files-from`, which it did, while rsync
+// quietly ignored .distignore for files named that way and the package shipped
+// tests/, bin/, .github/, composer.json and, on Pro, the entire licence server.
+// A string in a script is not a property of an artifact.
+//
+// The list is not derived from .distignore: it is written out, so that a
+// mistake in .distignore cannot excuse itself here.
+$forbidden = array(
+	'.github', '.gitignore', '.distignore', '.claude', 'CLAUDE.md', 'README.md',
+	'docs', 'tests', 'bin', 'tools', 'node_modules', 'build',
+	'composer.json', 'composer.lock', 'scoper.inc.php', 'build-manifest.json.bak',
+	'.ci', '.idea', '.vscode', 'Thumbs.db', '.DS_Store',
+);
+$shipped = array();
+foreach ( $forbidden as $name ) {
+	if ( file_exists( $root . '/' . $name ) ) {
+		$shipped[] = $name;
+	}
+}
+// And anything ANYWHERE in the tree that is obviously not runtime.
+$walk = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ) );
+foreach ( $walk as $path ) {
+	$rel = ltrim( str_replace( $root, '', (string) $path ), '/' );
+	if ( 0 === strpos( $rel, 'vendor/' ) ) {
+		continue;   // third-party trees carry their own tests and docs; not ours to prune.
+	}
+	if ( preg_match( '#(^|/)(\.DS_Store|Thumbs\.db|\.gitignore|\.distignore)$#', $rel )
+		|| preg_match( '#(^|/)(tests|\.github|\.ci|\.idea|\.vscode)/#', $rel ) ) {
+		$shipped[] = $rel;
+	}
+}
+$shipped = array_values( array_unique( $shipped ) );
+check( 'the package contains nothing .distignore excludes (V71-01)', array() === $shipped );
+foreach ( array_slice( $shipped, 0, 12 ) as $s ) {
+	echo "          shipped but must not be: {$s}\n";
+}
+if ( count( $shipped ) > 12 ) {
+	echo '          … and ' . ( count( $shipped ) - 12 ) . " more\n";
+}
+
 // 1) Autoloader present, prefixed bundled classes resolve (F-43).
 $autoload = $root . '/vendor/scoper-autoload.php';
 check( 'vendor/scoper-autoload.php present', is_file( $autoload ) );

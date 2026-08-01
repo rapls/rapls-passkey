@@ -66,8 +66,6 @@ jobs:
     # working tree with untracked files in it, correctly: the staging rsync
     # copies the repository root, so anything sitting there can end up in the
     # package (V69-01).
-    env:
-      RESULTS: ${{ runner.temp }}/results
     strategy:
       fail-fast: false
       matrix:
@@ -118,8 +116,13 @@ jobs:
             fwrite(STDERR, "database did not become ready\n"); exit(1);' \
             || { docker logs db; exit 1; }
 
+      # RESULTS is set here rather than in a job-level env: the runner context
+      # is not available there, and a workflow that will not parse runs nothing at
+      # all — which is how this was found.
       - name: Somewhere to put the results
-        run: mkdir -p "$RESULTS"
+        run: |
+          echo "RESULTS=$RUNNER_TEMP/results" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/results"
 
       - name: Server identity
         run: |

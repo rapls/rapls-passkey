@@ -135,7 +135,9 @@ if ( '' !== $sibling && is_dir( $work . '/rapls-passkey' ) && ! is_dir( $work . 
  * should. Adding a name here is a deliberate act, and an unexpected skip fails.
  */
 $allowed_skips = array(
-	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php' ),
+	// smoke-dist-inputs reads the build script and the ignore files, none of which
+	// is in a plugin artifact — source-only, like smoke-docs-endpoints (V71-01).
+	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php', 'smoke-dist-inputs.php' ),
 	// smoke-mds names the bundled library; the other two exercise operator tooling
 	// under tools/, which is deliberately NOT part of the plugin artifact — it is
 	// shipped in the verification bundle instead, where the source-tree run covers
@@ -145,7 +147,7 @@ $allowed_skips = array(
 	// it said so by asserting nothing here. Counted honestly as a skip now
 	// (V69-04): "0 passed, 0 failed" is not a pass, and letting one through is
 	// the same "green because it never ran" the doc checks were added to stop.
-	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php' ),
+	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 

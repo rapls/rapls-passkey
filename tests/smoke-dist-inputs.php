@@ -65,6 +65,17 @@ check( 'and the old copy-the-whole-directory form is only the no-git fallback', 
 // about the paths this repository REALLY ignores right now — the fallback path
 // verbatim, as a dry run.
 if ( is_dir( $root . '/.git' ) && function_exists( 'shell_exec' ) ) {
+	// PLANTED, NOT FOUND. A fresh checkout has nothing ignored lying about
+	// except vendor/, so a check that waits for one has nothing to say there —
+	// which is how the first version of this failed CI honestly: it asserted
+	// that it had work to do, and on a clean runner it did not. It brings its
+	// own now, so it says the same thing everywhere.
+	$sentinel_dir = $root . '/.ci';
+	$planted      = $sentinel_dir . '/smoke-dist-inputs.sentinel';
+	$made_dir     = ! is_dir( $sentinel_dir );
+	@mkdir( $sentinel_dir, 0777, true );
+	file_put_contents( $planted, "LOCAL_SECRET=should-not-ship\n" );
+
 	$ignored = array_values( array_filter( array_map(
 		static function ( $line ) {
 			// "!! path/" — the space after the marker has to go too, or every
@@ -83,7 +94,13 @@ if ( is_dir( $root . '/.git' ) && function_exists( 'shell_exec' ) ) {
 			return '' !== $p && 0 !== strpos( $p, 'vendor/' );
 		}
 	) );
-	check( 'the repository does ignore some paths, so this check has something to say', count( $ignored ) > 0 );
+	$sees_sentinel = false;
+	foreach ( $ignored as $p ) {
+		if ( 0 === strpos( $p, '.ci' ) ) {
+			$sees_sentinel = true;
+		}
+	}
+	check( 'the planted local file is one git ignores, so there is something to check', $sees_sentinel );
 
 	$dry = (string) shell_exec(
 		'cd ' . escapeshellarg( $root )
@@ -102,25 +119,21 @@ if ( is_dir( $root . '/.git' ) && function_exists( 'shell_exec' ) ) {
 		'nothing this repository ignores would be copied into the package' . ( $would_ship ? ' — would ship: ' . implode( ', ', $would_ship ) : '' ),
 		array() === $would_ship
 	);
+
+	// --- 3. And the index does not carry it either ---------------------------
+	$listed = (string) shell_exec( 'cd ' . escapeshellarg( $root ) . ' && git ls-files | grep -c "smoke-dist-inputs.sentinel" 2>/dev/null' );
+	$status = (string) shell_exec( 'cd ' . escapeshellarg( $root ) . ' && git status --porcelain | grep -c "smoke-dist-inputs.sentinel" 2>/dev/null' );
+	check( 'the planted file is not in git ls-files, so staging cannot copy it (V70-02)', 0 === (int) trim( $listed ) );
+	check( 'and the clean-tree gate cannot see it either — which is why staging had to change', 0 === (int) trim( $status ) );
+
+	@unlink( $planted );
+	if ( $made_dir ) {
+		@rmdir( $sentinel_dir );
+	}
 } else {
 	skip( 'no git checkout here, so what is ignored cannot be asked' );
 }
 check( 'the .distignore names the local-only paths as well', false !== strpos( $distignore, '/.ci' ) );
-
-// --- 3. An ignored file is not in the index ---------------------------------
-$sentinel = $root . '/.ci/smoke-dist-inputs.sentinel';
-if ( is_dir( $root . '/.git' ) && function_exists( 'shell_exec' ) ) {
-	@mkdir( dirname( $sentinel ), 0777, true );
-	file_put_contents( $sentinel, "LOCAL_SECRET=should-not-ship\n" );
-	$listed = (string) shell_exec( 'cd ' . escapeshellarg( $root ) . ' && git ls-files | grep -c "smoke-dist-inputs.sentinel" 2>/dev/null' );
-	$status = (string) shell_exec( 'cd ' . escapeshellarg( $root ) . ' && git status --porcelain | grep -c "smoke-dist-inputs.sentinel" 2>/dev/null' );
-	@unlink( $sentinel );
-	@rmdir( dirname( $sentinel ) );
-	check( 'a file this repository ignores is not in git ls-files, so staging cannot copy it (V70-02)', 0 === (int) trim( $listed ) );
-	check( 'and the clean-tree gate cannot see it either — which is why staging had to change', 0 === (int) trim( $status ) );
-} else {
-	skip( 'no git checkout here, so the sentinel cannot be placed' );
-}
 
 // --- 4. The clean-tree gate is intact ---------------------------------------
 $gate_at     = strpos( $script, 'refusing to build: the working tree has uncommitted changes' );

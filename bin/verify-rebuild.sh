@@ -115,12 +115,17 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 	}
 	sort( $differ );
 
+	// AT MOST these two, not EXACTLY these two. Requiring equality made a tree
+	// that matched COMPLETELY a failure — which is how this first behaved in CI,
+	// where the two packages differed only in ZIP metadata and not in a single
+	// file. "No more than these may differ" is the claim; fewer is better.
 	$allowed = array( "$slug/build-manifest.json", "$slug/vendor/composer/installed.php" );
 	sort( $allowed );
-	if ( $differ !== $allowed ) {
-		fwrite( STDERR, "  {$slug}: the set of differing paths is not the one this claim allows\n" );
+	$extra = array_values( array_diff( $differ, $allowed ) );
+	if ( $extra ) {
+		fwrite( STDERR, "  {$slug}: paths differ that this claim does not allow\n" );
 		fwrite( STDERR, "    allowed: " . implode( ", ", $allowed ) . "\n" );
-		foreach ( $differ as $rel ) {
+		foreach ( $extra as $rel ) {
 			$what = ! isset( $ma[ $rel ] ) ? "only in the shipped ZIP"
 				: ( ! isset( $mb[ $rel ] ) ? "only in the rebuild"
 				: ( explode( ":", $ma[ $rel ] )[0] !== explode( ":", $mb[ $rel ] )[0]
@@ -133,7 +138,11 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 
 	$bad = array();
 
+	// Only files that actually differ are examined — a file that matches has
+	// nothing to allow or refuse, and reading one that is not there is how this
+	// reported "not JSON on one side" for two identical trees.
 	// build-manifest.json: source_dirty only, and only false <-> unknown.
+	if ( in_array( "$slug/build-manifest.json", $differ, true ) ) {
 	$ja = json_decode( (string) file_get_contents( "$a/$slug/build-manifest.json" ), true );
 	$jb = json_decode( (string) file_get_contents( "$b/$slug/build-manifest.json" ), true );
 	if ( ! is_array( $ja ) || ! is_array( $jb ) ) {
@@ -146,6 +155,7 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 			sort( $pair );
 			if ( array( "false", "unknown" ) !== $pair ) { $bad[] = "build-manifest.json: source_dirty is " . implode( " vs ", $pair ) . ", not false vs unknown"; }
 		}
+	}
 	}
 
 	// installed.php: the ROOT package s three values, in both places it is
@@ -173,7 +183,8 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 		}
 		return $body;
 	};
-	if ( $norm( (string) file_get_contents( "$a/$slug/vendor/composer/installed.php" ) )
+	if ( in_array( "$slug/vendor/composer/installed.php", $differ, true )
+		&& $norm( (string) file_get_contents( "$a/$slug/vendor/composer/installed.php" ) )
 		!== $norm( (string) file_get_contents( "$b/$slug/vendor/composer/installed.php" ) ) ) {
 		$bad[] = "installed.php differs in more than the root package version and reference";
 	}

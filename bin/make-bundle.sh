@@ -5,11 +5,12 @@
 #
 #   bin/make-bundle.sh [--out /path/to/plugins-dir] [--ci-artifacts /path/to/json-dir]
 #
-# The bundle is built from an ALLOWLIST — `git ls-files` plus `vendor/`, which is
-# generated rather than tracked. Copying the working directory instead is how a
-# local editor's settings file, with machine paths and database credentials in it,
-# ended up in a bundle sent for review (V34-05). Nothing untracked is included
-# unless it is named here.
+# The bundle is built from the TESTED COMMIT — `git archive`, plus `vendor/`,
+# which is generated rather than tracked and is checked against
+# vendor-manifest.json before it is copied (V83-01, V84-01). Reading the working
+# directory instead is how a local editor's settings file, with machine paths and
+# database credentials in it, ended up in a bundle sent for review (V34-05).
+# Nothing untracked is included unless it is named here.
 #
 # Lives in bin/ (never shipped).
 set -euo pipefail
@@ -83,19 +84,33 @@ stage_plugin() {
 		rm -f "$dest/$secret"
 	done
 
-	# vendor/ is generated, not tracked, and the suites need it. It is BOUND TO
-	# THE LOCK FILE (V83-01): the digest of composer.lock as committed is recorded
-	# beside it, so a reproducer can tell which dependency set this is, and a
-	# vendor/ built from some other lock file is visible rather than assumed.
+	# vendor/ is generated, not tracked, and the suites need it — so it is the one
+	# thing here that does not come out of the commit, and it is the thing that
+	# runs on a reviewer's machine when they execute verify.sh.
+	#
+	# CHECKED AGAINST THE RECORDED TREE, NOT DESCRIBED (V84-01). The previous
+	# version wrote the digests of composer.lock and installed.json into
+	# VENDOR-PROVENANCE.json — neither of which changes when vendor/autoload.php
+	# does. Nothing read that file afterwards either. bin/vendor-digest.php
+	# compares every path, type, executable bit and content against
+	# vendor-manifest.json as committed, and this refuses on any difference. The
+	# provenance file stays, now recording the tree digest that was verified
+	# rather than two numbers that were not.
 	if [ -d "$src/vendor" ]; then
-		rsync -a --exclude '.git' "$src/vendor/" "$dest/vendor/"
-		if [ -f "$dest/composer.lock" ]; then
-			printf '{\n  "composer_lock_sha256": "%s",\n  "installed_sha256": "%s",\n  "from_commit": "%s"\n}\n' \
-				"$( shasum -a 256 "$dest/composer.lock" | cut -d' ' -f1 )" \
-				"$( [ -f "$dest/vendor/composer/installed.json" ] && shasum -a 256 "$dest/vendor/composer/installed.json" | cut -d' ' -f1 || echo 'absent' )" \
-				"$commit" \
-				> "$dest/vendor/VENDOR-PROVENANCE.json"
+		if [ ! -f "$src/bin/vendor-digest.php" ]; then
+			echo "refusing to build: $slug has a vendor/ and no bin/vendor-digest.php to check it" >&2
+			exit 1
 		fi
+		( cd "$src" && "$PHP_BIN" bin/vendor-digest.php --check ) || {
+			echo "refusing to build: $slug's vendor/ is not the dependency tree it recorded" >&2
+			exit 1
+		}
+		rsync -a --exclude '.git' "$src/vendor/" "$dest/vendor/"
+		printf '{\n  "vendor_tree_sha256": "%s",\n  "verified_against": "vendor-manifest.json",\n  "composer_lock_sha256": "%s",\n  "from_commit": "%s"\n}\n' \
+			"$( cd "$src" && "$PHP_BIN" bin/vendor-digest.php --print )" \
+			"$( [ -f "$dest/composer.lock" ] && shasum -a 256 "$dest/composer.lock" | cut -d' ' -f1 || echo 'absent' )" \
+			"$commit" \
+			> "$dest/vendor/VENDOR-PROVENANCE.json"
 	fi
 
 	# The scoper PHAR is 8 MB of third-party binary; the build script fetches it.
@@ -145,8 +160,8 @@ if [ -f "$PRO/tools/license-server/update-info.json" ] && [ -f "$PLUGINS/rapls-p
 	# against the ZIP; last_updated is not, and it is the one that drifted. Pro's
 	# own stamper re-derives all four and reports any it would have to change, so
 	# wiring it in here is what makes "generated, not typed" a property of the
-	# bundle rather than of whoever remembered to run it.
-	# A MISSING GENERATOR IS A FAILURE, NOT A SKIP (V82-04). This was written as
+	# bundle rather than of whoever remembered to run it. A MISSING GENERATOR IS A
+	# FAILURE, NOT A SKIP (V82-04). This was written as
 	# "run it if it is there", which meant the whole last_updated invariant could
 	# be removed from the release by deleting one file — and its absence would
 	# have printed the same reassuring line as its success.
@@ -541,7 +556,8 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	fi
 
 	# AND THE TREE THE BUNDLE IS STAGED FROM (V82-02). stage_plugin() copies every
-	# tracked file from Pro's CURRENT working tree into rapls-passkey-tests.zip —
+	# tracked file of Pro into rapls-passkey-tests.zip — from the commit since
+	# V83-01, and only after the checkout is proved clean —
 	# the whole licence server included — and only the tested and built COMMITS
 	# were being compared. A change committed after CI finished therefore shipped
 	# as source with nothing testing it, and "it is not in the plugin ZIP" is no

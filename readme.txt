@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.53
+Stable tag: 0.13.54
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,9 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.54 =
+* No change to the plugin itself. The build now verifies the bundled dependency tree file by file against a recorded manifest before packaging it — the manifest is not part of this package — and the build records which commit it came from, so this package is a different file from 0.13.53.
 
 = 0.13.53 =
 * **Audit CSV export: a formula hidden behind leading whitespace is now neutralised too.** The check looked at the first byte, so a username beginning with a space, a tab, a non-breaking space or a byte-order mark before `=`, `+`, `-` or `@` was written to the file unguarded — and a spreadsheet skips that whitespace before deciding whether a cell is a formula.

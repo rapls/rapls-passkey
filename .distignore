@@ -18,6 +18,10 @@ README.md
 /node_modules
 *.zip
 
+# Build metadata: the recorded dependency tree (V84-01). It describes the
+# package, it is not part of it.
+/vendor-manifest.json
+
 /composer.json
 /composer.lock
 /scoper.inc.php

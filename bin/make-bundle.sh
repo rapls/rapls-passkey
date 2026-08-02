@@ -272,7 +272,7 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			done
 		done | sort | paste -sd, -
 	}
-	jobs_from() {       # the seven jobs a complete run has: 3 smoke + 4 database
+	jobs_from() {       # the eight jobs a complete run has: 3 smoke + 4 database + release-gate
 		local wf phps dbs
 		wf="$( cat )"
 		phps="$( printf '%s' "$wf" | sed -nE "s/^[[:space:]]*php:[[:space:]]*\[([^]]*)\].*/\1/p" | tr -d " '" | tr ',' '\n' | grep -v '^$' | sort -u )"

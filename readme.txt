@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.51
+Stable tag: 0.13.52
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,8 +81,8 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
-= 0.13.51 =
-* No change to the plugin itself. CI gained a final job that requires every other job in the run to have succeeded, and the release tooling was tightened further — neither is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.50.
+= 0.13.52 =
+* No change to the plugin itself. CI gained a final job that requires every other job in the run to have succeeded, the release tooling was tightened further, and the provenance record now counts test results and job attestations separately — none of it is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.50.
 
 = 0.13.50 =
 * No change to the plugin itself. CI now attests to the outcome of every job and the release tooling verifies it — neither is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.49 and carries its own version.

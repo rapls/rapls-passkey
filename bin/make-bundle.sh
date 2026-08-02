@@ -520,21 +520,29 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		exit 1
 	fi
 
-	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "run_attempt": "%s",\n  "repository": "%s",\n  "run_sha": "%s",\n  "free_zip_commit": "%s",\n  "tested_pro_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "results": %s,\n  "bundled_at": "%s",\n  "artifacts": %s\n}\n' \
+	# COUNTED AND NAMED FOR WHAT THEY ARE (V82-05). One field called "results"
+	# held the number of every JSON in the directory — results and job
+	# attestations together — and the reply built on it said "23 files (16 + 7 +
+	# PROVENANCE)" for a directory of 24. Three counts, each of one kind of thing.
+	N_RESULTS="$( ls -1 "$STAGE/ci-artifacts" | grep -cE '^(concurrency|integration)-' )"
+	N_JOBS="$( ls -1 "$STAGE/ci-artifacts" | grep -c '^job-' )"
+	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "run_attempt": "%s",\n  "repository": "%s",\n  "workflow": "%s",\n  "run_sha": "%s",\n  "free_zip_commit": "%s",\n  "tested_pro_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "test_results": %s,\n  "job_attestations": %s,\n  "evidence_files": %s,\n  "jobs": %s,\n  "bundled_at": "%s",\n  "artifacts": %s\n}\n' \
 		"$RUN_ID" "$RUN_ID" \
 		"$( get run_attempt )" \
 		"$( get repository )" \
+		"$( get workflow )" \
 		"$( get run_sha )" \
 		"$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" \
 		"$TESTED_PRO" \
 		"$PRO_ZIP_COMMIT" \
 		"$( cd "$FREE" && git rev-parse HEAD )" \
 		"$( cd "$PRO" && git rev-parse HEAD 2>/dev/null || echo unknown )" \
-		"$( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' )" \
+		"$N_RESULTS" "$N_JOBS" "$(( N_RESULTS + N_JOBS ))" \
+		"$( printf '%s' "$PROV" | "$PHP_BIN" -r 'echo json_encode(json_decode(stream_get_contents(STDIN), true)["jobs"]);' )" \
 		"$( date -u +%Y-%m-%dT%H:%M:%SZ )" \
 		"$( printf '%s' "$PROV" | "$PHP_BIN" -r 'echo json_encode(json_decode(stream_get_contents(STDIN), true)["artifacts"], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);' )" \
 		> "$STAGE/ci-artifacts/PROVENANCE.json"
-	echo "ci provenance ok: run $RUN_ID at $( get run_sha ), all $( ls -1 "$STAGE/ci-artifacts" | grep -c '^\(concurrency\|integration\)' ) expected results present, agreeing and passing"
+	echo "ci provenance ok: run $RUN_ID at $( get run_sha ) — $N_RESULTS results, $N_JOBS job attestations, all present, agreeing and passing"
 fi
 
 # Refuse to ship machine-local state or anything shaped like a credential. This

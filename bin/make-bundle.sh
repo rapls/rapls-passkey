@@ -230,7 +230,8 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		"$( date -u +%Y-%m-%dT%H:%M:%SZ )" \
 		"$( printf '%s' "$PROV" | "$PHP_BIN" -r 'echo json_encode(json_decode(stream_get_contents(STDIN), true)["artifacts"], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);' )" \
 		> "$STAGE/ci-artifacts/PROVENANCE.json"
-	echo "ci provenance ok: run $RUN_ID, $( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' ) files, each naming it"
+	# Counted BEFORE PROVENANCE.json joined them — it is the record, not a result.
+	echo "ci provenance ok: run $RUN_ID, $( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' ) files in the directory, $( ls -1 "$STAGE/ci-artifacts" | grep -c '^\(concurrency\|integration\)' ) results, each naming that run"
 fi
 
 # Refuse to ship machine-local state or anything shaped like a credential. This

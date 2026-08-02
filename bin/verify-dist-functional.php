@@ -147,7 +147,10 @@ $allowed_skips = array(
 	// it said so by asserting nothing here. Counted honestly as a skip now
 	// (V69-04): "0 passed, 0 failed" is not a pass, and letting one through is
 	// the same "green because it never ran" the doc checks were added to stop.
-	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php' ),
+	// smoke-runbook-rq runs the runbook's own helper against a loopback (V79-01);
+	// the document is not in a plugin artifact either, so it is source-only for
+	// the same reason and named here for the same reason.
+	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php', 'smoke-runbook-rq.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 

@@ -18,6 +18,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGINS="$(cd "$ROOT/.." && pwd)"
 CI_ARTIFACTS=""
 CI_RUN=""
+# Reading the artifacts' provenance needs a JSON parser; php is already required
+# to build a package at all. Override with PHP=/path/to/php, as the other scripts do.
+PHP_BIN="${PHP:-php}"
 
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -148,8 +151,17 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	mkdir -p "$STAGE/ci-artifacts"
 	find "$CI_ARTIFACTS" -name '*.json' -exec cp {} "$STAGE/ci-artifacts/" \;
 	# Where they came from, written here rather than described in a README that
-	# outlives the run it names (V50-07). The result files carry no run id of
-	# their own, so this is the only place the association is recorded.
+	# outlives the run it names (V50-07).
+	#
+	# READ OUT OF THE ARTIFACTS, NOT ASSERTED OVER THEM (V79-04). This used to
+	# write "${CI_RUN:-unknown}" — and with no --ci-run given it shipped
+	# run_id "unknown" beside a reply that named a specific run, so the one
+	# association the bundle exists to record was the one thing in it nobody
+	# could check. The workflow stamps each result file with the run that wrote
+	# it; this reads them back, requires every file to name the SAME run, and
+	# refuses to build if any of them cannot say. An operator-supplied --ci-run
+	# is now a cross-check, not the source.
+	#
 	# Two different commits, and conflating them is how a bundle claims to have
 	# tested code it did not ship. The ZIP's commit is read out of the artifact
 	# itself (build-manifest.json) because that is what a reproducer must check
@@ -159,15 +171,66 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		unzip -p "$1" "$2/build-manifest.json" 2>/dev/null |
 			sed -n 's/.*"source_commit"[^"]*"\([0-9a-f]*\)".*/\1/p' | head -1
 	}
-	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "free_zip_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "files": %s,\n  "bundled_at": "%s"\n}\n' \
-		"${CI_RUN:-unknown}" "${CI_RUN:-unknown}" \
+
+	PROV="$( "$PHP_BIN" -r '
+		$dir = $argv[1];
+		$claimed = isset($argv[2]) ? trim($argv[2]) : "";
+		$files = glob($dir . "/*.json");
+		sort($files);
+		$runs = array();
+		$shas = array();
+		$rows = array();
+		$mute = array();
+		foreach ($files as $f) {
+			if ("PROVENANCE.json" === basename($f)) { continue; }
+			$d  = json_decode((string) file_get_contents($f), true);
+			$ci = is_array($d) && isset($d["ci"]) && is_array($d["ci"]) ? $d["ci"] : array();
+			$id = isset($ci["run_id"]) ? (string) $ci["run_id"] : "";
+			if ("" === $id || "unknown" === $id) { $mute[] = basename($f); }
+			else { $runs[$id] = true; $shas[(string) ($ci["sha"] ?? "")] = true; }
+			$rows[] = array(
+				"file"    => basename($f),
+				"sha256"  => hash_file("sha256", $f),
+				"job"     => (string) ($ci["job"] ?? ""),
+				"matrix"  => (string) ($ci["matrix"] ?? ""),
+				"attempt" => (string) ($ci["run_attempt"] ?? ""),
+				"passed"  => (bool) (is_array($d) && ! empty($d["passed"])),
+			);
+		}
+		if ($mute) {
+			fwrite(STDERR, "refusing to build: these CI results do not say which run produced them: " . implode(", ", $mute) . "\n");
+			fwrite(STDERR, "  (re-download them from a run of the workflow that stamps them — see .github/workflows/tests.yml)\n");
+			exit(1);
+		}
+		if (1 !== count($runs)) {
+			fwrite(STDERR, "refusing to build: the CI results come from more than one run: " . implode(", ", array_keys($runs)) . "\n");
+			exit(1);
+		}
+		$run = (string) array_key_first($runs);
+		if ("" !== $claimed && $claimed !== $run) {
+			fwrite(STDERR, "refusing to build: --ci-run says {$claimed}, the results say {$run}\n");
+			exit(1);
+		}
+		echo json_encode(array(
+			"run_id"    => $run,
+			"run_sha"   => (string) array_key_first($shas),
+			"artifacts" => $rows,
+		));
+	' "$STAGE/ci-artifacts" "${CI_RUN:-}" )" || exit 1
+
+	RUN_ID="$( printf '%s' "$PROV" | sed -n 's/.*"run_id":"\([0-9]*\)".*/\1/p' )"
+	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "run_sha": %s,\n  "free_zip_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "files": %s,\n  "bundled_at": "%s",\n  "artifacts": %s\n}\n' \
+		"$RUN_ID" "$RUN_ID" \
+		"$( printf '%s' "$PROV" | sed -n 's/.*\("run_sha":"[0-9a-f]*"\).*/\1/p' | sed 's/"run_sha"://' )" \
 		"$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" \
 		"$( zip_commit "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro )" \
 		"$( cd "$FREE" && git rev-parse HEAD )" \
 		"$( cd "$PRO" && git rev-parse HEAD 2>/dev/null || echo unknown )" \
 		"$( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' )" \
 		"$( date -u +%Y-%m-%dT%H:%M:%SZ )" \
+		"$( printf '%s' "$PROV" | "$PHP_BIN" -r 'echo json_encode(json_decode(stream_get_contents(STDIN), true)["artifacts"], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);' )" \
 		> "$STAGE/ci-artifacts/PROVENANCE.json"
+	echo "ci provenance ok: run $RUN_ID, $( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' ) files, each naming it"
 fi
 
 # Refuse to ship machine-local state or anything shaped like a credential. This

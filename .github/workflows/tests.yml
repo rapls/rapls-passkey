@@ -253,6 +253,35 @@ jobs:
             --db-host 127.0.0.1 --db-port 3306 --db-name rapls_test \
             --db-user root --db-pass rootpw --workers 50
 
+      # WHICH RUN PRODUCED THIS (V79-04). The result files said only whether the
+      # scenarios passed, so a bundle could name a run and there was nothing in
+      # the artifacts to agree or disagree with it — the provenance was an
+      # assertion by whoever assembled the bundle. Each file now carries the run
+      # that wrote it, and bin/make-bundle.sh reads the run id back out of them
+      # rather than being told.
+      - name: Stamp the results with the run that produced them
+        if: always()
+        run: |
+          shopt -s nullglob
+          for f in "$RESULTS"/*.json; do
+            php -r '
+              $f = $argv[1];
+              $d = json_decode((string) file_get_contents($f), true);
+              if (!is_array($d)) { $d = array("unparsed" => true); }
+              $d["ci"] = array(
+                  "run_id"      => getenv("GITHUB_RUN_ID"),
+                  "run_attempt" => getenv("GITHUB_RUN_ATTEMPT"),
+                  "run_number"  => getenv("GITHUB_RUN_NUMBER"),
+                  "repository"  => getenv("GITHUB_REPOSITORY"),
+                  "sha"         => getenv("GITHUB_SHA"),
+                  "workflow"    => getenv("GITHUB_WORKFLOW"),
+                  "job"         => getenv("GITHUB_JOB"),
+                  "matrix"      => basename($f, ".json"),
+              );
+              file_put_contents($f, json_encode($d, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+            ' "$f"
+          done
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4

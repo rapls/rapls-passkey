@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.57
+Stable tag: 0.13.58
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,8 +83,8 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
-= 0.13.57 =
-* No change to the plugin itself. The source shipped for review can now rebuild itself: the bundle no longer writes its dependency-tree record into the directory that record fixes, and the recorded tree is satisfiable by an export without a .git directory. None of it is part of this package.
+= 0.13.58 =
+* No change to the plugin itself. The source shipped for review can now rebuild itself: the bundle no longer writes its dependency-tree record into the directory that record fixes, and the recorded tree is satisfiable by an export without a .git directory. The build record also carries the timestamp a reproducer needs, which the rebuild instructions had always named but the artifact never contained. None of it is part of this package.
 
 = 0.13.56 =
 * No change to the plugin itself. The verification bundle no longer writes a record into the dependency directory it records — which had made the bundled source fail its own rebuild — and the bundle documentation was brought back in line with the scripts. None of it is part of this package; the build records which commit it came from, so this package is a different file from 0.13.55.

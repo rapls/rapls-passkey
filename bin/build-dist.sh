@@ -206,6 +206,7 @@ cat > "$STAGE/build-manifest.json" <<JSON
     "version": "$VERSION",
     "source_commit": "$COMMIT",
     "source_tree": "$TREE_HASH",
+    "source_date_epoch": "$SOURCE_EPOCH",
     "source_dirty": $DIRTY,
     "composer_lock_sha256": "$LOCK_HASH",
     "scoper_phar_sha256": "$SCOPER_HASH",

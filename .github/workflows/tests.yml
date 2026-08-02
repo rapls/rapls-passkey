@@ -367,3 +367,80 @@ jobs:
             ${{ runner.temp }}/results/concurrency-*.json
             ${{ runner.temp }}/results/integration-*.json
             ${{ runner.temp }}/results/job-*.json
+
+  # EVERY JOB, NOT THE ONES SOMEBODY REMEMBERED (V82-03). The bundle's expected
+  # job set was derived from two matrices — the php list and the database list —
+  # so a job added to this workflow later would not be in it, and a run that went
+  # red because THAT job failed would still assemble. This one asks the API which
+  # jobs the run actually has and requires every one of them (except itself) to
+  # have succeeded, so a new job is covered the day it is added and nobody has to
+  # update a list.
+  release-gate:
+    name: release gate (every job green)
+    needs: [ smoke, concurrency ]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Every job in this run must have succeeded
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/status"
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}/jobs" \
+            > "$RUNNER_TEMP/jobs.json"
+          php -r '
+            $raw = json_decode((string) file_get_contents($argv[1]), true);
+            $jobs = array();
+            // --paginate concatenates objects; take every "jobs" array it has.
+            foreach ((array) (isset($raw["jobs"]) ? array($raw) : $raw) as $page) {
+                foreach ((array) ($page["jobs"] ?? array()) as $j) { $jobs[] = $j; }
+            }
+            $self = getenv("GITHUB_JOB");
+            $seen = array();
+            $bad  = array();
+            foreach ($jobs as $j) {
+                $name = (string) ($j["name"] ?? "");
+                if ("" === $name) { continue; }
+                // This job is still running; it cannot report its own outcome.
+                if (false !== strpos($name, "release gate")) { continue; }
+                $c = (string) ($j["conclusion"] ?? "");
+                $seen[$name] = $c;
+                if ("success" !== $c) { $bad[] = $name . " => " . ($c ?: "(still running)"); }
+            }
+            if (count($seen) < 2) {
+                fwrite(STDERR, "the run reports fewer jobs than it has; refusing to call it green\n");
+                exit(1);
+            }
+            if ($bad) {
+                fwrite(STDERR, "these jobs did not succeed:\n  " . implode("\n  ", $bad) . "\n");
+                exit(1);
+            }
+            ksort($seen);
+            file_put_contents($argv[2], json_encode(array(
+                "attestation" => "job-status",
+                "job_key"     => "release-gate",
+                "status"      => "success",
+                "jobs_seen"   => $seen,
+                "ci"          => array(
+                    "run_id"      => getenv("GITHUB_RUN_ID"),
+                    "run_attempt" => getenv("GITHUB_RUN_ATTEMPT"),
+                    "repository"  => getenv("GITHUB_REPOSITORY"),
+                    "sha"         => getenv("GITHUB_SHA"),
+                    "workflow"    => getenv("GITHUB_WORKFLOW"),
+                    "job"         => getenv("GITHUB_JOB"),
+                ),
+            ), JSON_PRETTY_PRINT) . "\n");
+            echo "every job green: ", implode(", ", array_keys($seen)), "\n";
+          ' "$RUNNER_TEMP/jobs.json" "$RUNNER_TEMP/status/job-release-gate.json"
+
+      - name: Upload the gate's attestation
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-release-gate
+          path: ${{ runner.temp }}/status/*.json

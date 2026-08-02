@@ -110,18 +110,22 @@ if [ -f "$PRO/tools/license-server/update-info.json" ] && [ -f "$PLUGINS/rapls-p
 	# own stamper re-derives all four and reports any it would have to change, so
 	# wiring it in here is what makes "generated, not typed" a property of the
 	# bundle rather than of whoever remembered to run it.
-	if [ -f "$PRO/bin/stamp-release.php" ]; then
-		if ! "$PHP_BIN" "$PRO/bin/stamp-release.php" --check "$PLUGINS/rapls-passkey-pro.zip" >/dev/null 2>"$STAGE/.stamp-err"; then
-			echo "refusing to build: Pro's release metadata is not what the release generates" >&2
-			cat "$STAGE/.stamp-err" >&2
-			echo "  (run: php bin/stamp-release.php ../rapls-passkey-pro.zip)" >&2
-			exit 1
-		fi
-		rm -f "$STAGE/.stamp-err"
-		echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA (regenerating it changes nothing)"
-	else
-		echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA"
+	# A MISSING GENERATOR IS A FAILURE, NOT A SKIP (V82-04). This was written as
+	# "run it if it is there", which meant the whole last_updated invariant could
+	# be removed from the release by deleting one file — and its absence would
+	# have printed the same reassuring line as its success.
+	if [ ! -f "$PRO/bin/stamp-release.php" ]; then
+		echo "refusing to build: $PRO/bin/stamp-release.php is missing; the release metadata cannot be checked against what the release generates" >&2
+		exit 1
 	fi
+	if ! "$PHP_BIN" "$PRO/bin/stamp-release.php" --check "$PLUGINS/rapls-passkey-pro.zip" >/dev/null 2>"$STAGE/.stamp-err"; then
+		echo "refusing to build: Pro's release metadata is not what the release generates" >&2
+		cat "$STAGE/.stamp-err" >&2
+		echo "  (run: php bin/stamp-release.php ../rapls-passkey-pro.zip)" >&2
+		exit 1
+	fi
+	rm -f "$STAGE/.stamp-err"
+	echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA (regenerating it changes nothing)"
 fi
 sed -e "s/__FREE_SHA__/$FREE_SHA/" -e "s/__PRO_SHA__/$PRO_SHA/" \
 	"$FREE/tests/db/verify-bundle.sh" > "$STAGE/verify.sh"
@@ -200,6 +204,13 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		[ -n "$phps" ] && [ -n "$dbs" ] || return 1
 		{ for p in $phps; do printf 'smoke-php-%s\n' "$p"; done
 		  for d in $dbs;  do printf 'concurrency-%s\n' "$d"; done
+		  # THE GATE ITSELF (V82-03). Two matrices are not "every job": a job
+		  # added to this workflow later would not appear here, and a run that
+		  # went red because THAT job failed would still assemble. The gate job
+		  # asks the API which jobs the run really had and requires all of them,
+		  # so it covers additions the day they are made; requiring its
+		  # attestation here is what makes that binding.
+		  printf 'release-gate\n'
 		} | sort | paste -sd, -
 	}
 
@@ -276,7 +287,7 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		// results all naming the same made-up repository agreed perfectly.
 		$WANT_REPO     = "rapls/rapls-passkey";
 		$WANT_WORKFLOW = "tests";
-		$WANT_JOBS     = array("smoke", "concurrency");   // the workflow ids
+		$WANT_JOBS     = array("smoke", "concurrency", "release-gate");   // the workflow ids
 
 		$refuse = function ($why) { fwrite(STDERR, "refusing to build: " . $why . "\n"); exit(1); };
 
@@ -325,6 +336,16 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 					$refuse("job {$key} ended \"" . ($d["status"] ?? "") . "\", not success");
 				}
 				$jobs[$key] = true;
+				// The gate reports every job the API listed; each of those must
+				// have succeeded too, so a job outside the two matrices cannot be
+				// red while the seven this bundle knows about are green.
+				if ("release-gate" === $key) {
+					$seen_jobs = isset($d["jobs_seen"]) && is_array($d["jobs_seen"]) ? $d["jobs_seen"] : array();
+					if (count($seen_jobs) < 2) { $refuse("the release gate reports fewer than two jobs; it cannot have seen the run"); }
+					foreach ($seen_jobs as $name => $conclusion) {
+						if ("success" !== (string) $conclusion) { $refuse("the release gate saw \"{$name}\" end as \"{$conclusion}\""); }
+					}
+				}
 				$rows[] = array("file" => $base, "sha256" => hash_file("sha256", $f), "job" => (string) $ci["job"], "job_key" => $key, "attempt" => (string) $ci["run_attempt"], "status" => "success");
 				continue;
 			}
@@ -426,44 +447,46 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			$to   = $argv[2];
 			$names = array_values(array_filter(explode("\n", (string) shell_exec("git diff --name-only " . escapeshellarg($from) . " " . escapeshellarg($to)))));
 			$bad = array();
+
+			// ONE FILE, AND ONLY ITS GENERATED FIELDS (V82-01).
+			//
+			// The previous rule allowed four kinds of file and judged three of
+			// them by their changed lines — which was still too generous in a way
+			// that mattered: a .mo was accepted merely because a .po had changed
+			// somewhere in the same diff, and a .mo is a compiled catalogue loaded
+			// at boot, so "a header line moved in the .po" licensed an arbitrary
+			// replacement of what the plugin actually reads. The .po rule itself
+			// matched a header-shaped line anywhere in the file, not only in the
+			// leading stanza.
+			//
+			// Rather than tighten three rules, there is one. Between the commit CI
+			// tested and the commit the package was built from, the ONLY thing a
+			// release does is write the digest of the finished package into
+			// update-info.json — the version, the sequence, the readme and every
+			// catalogue were settled before the build, in the commit CI ran. So
+			// exactly one path may differ, in exactly the fields bin/stamp-release.php
+			// generates. Everything else, including the plugin header and anything
+			// under languages/, means the shipped tree is not the tested tree.
+			$STAMPED = array("version", "release_sequence", "last_updated", "sha256");
 			foreach ($names as $path) {
-				// Never shipped: .distignore excludes tools/ from the package, so
-				// nothing under it can reach a user.
-				if (0 === strpos($path, "tools/")) { continue; }
-				// Documentation. Text only, and not executed.
-				if ("readme.txt" === $path) { continue; }
-				$diff = (string) shell_exec("git diff -U0 " . escapeshellarg($from) . " " . escapeshellarg($to) . " -- " . escapeshellarg($path));
-				$changed_lines = array();
-				foreach (explode("\n", $diff) as $line) {
-					if (preg_match("/\A[-+][^-+]/", $line) || "+" === $line || "-" === $line) { $changed_lines[] = $line; }
+				if ("tools/license-server/update-info.json" !== $path) {
+					$bad[] = $path . ": changed between the tested commit and the built one";
+					continue;
 				}
-				if ("rapls-passkey-pro.php" === $path) {
-					// Only the version comment and the two release constants.
-					foreach ($changed_lines as $line) {
-						$body = substr($line, 1);
-						if (preg_match("/\A\s*\*\s*Version:\s*[0-9][0-9a-z.\-]*\s*\z/i", $body)) { continue; }
-						if (preg_match("/\Adefine\(\s*.RAPLS_PASSKEY_PRO_VERSION.\s*,\s*.[0-9][0-9a-z.\-]*.\s*\);\s*\z/", $body)) { continue; }
-						if (preg_match("/\Adefine\(\s*.RAPLS_PASSKEY_PRO_RELEASE_SEQUENCE.\s*,\s*[0-9]+\s*\);\s*\z/", $body)) { continue; }
-						$bad[] = $path . ": " . trim($line);
+				$a = json_decode((string) shell_exec("git show " . escapeshellarg($from . ":" . $path)), true);
+				$b = json_decode((string) shell_exec("git show " . escapeshellarg($to . ":" . $path)), true);
+				if (!is_array($a) || !is_array($b)) {
+					$bad[] = $path . ": one of the two versions is not JSON";
+					continue;
+				}
+				foreach (array_unique(array_merge(array_keys($a), array_keys($b))) as $k) {
+					$before = $a[$k] ?? null;
+					$after  = $b[$k] ?? null;
+					if ($before === $after) { continue; }
+					if (!in_array($k, $STAMPED, true)) {
+						$bad[] = $path . ": field \"" . $k . "\" changed, which the release does not generate";
 					}
-					continue;
 				}
-				if (preg_match("#\Alanguages/.*\.(po|pot)\z#", $path)) {
-					// Header lines only — a changed translation is a changed
-					// string in the interface, which is not release metadata.
-					foreach ($changed_lines as $line) {
-						if (preg_match("/\A[-+]\"[A-Za-z-]+:/", $line)) { continue; }
-						$bad[] = $path . ": " . trim($line);
-					}
-					continue;
-				}
-				if (preg_match("#\Alanguages/(.*)\.mo\z#", $path, $m)) {
-					// Allowed only alongside its .po, which was just checked.
-					if (in_array("languages/" . $m[1] . ".po", $names, true)) { continue; }
-					$bad[] = $path . ": compiled catalogue changed with no .po beside it";
-					continue;
-				}
-				$bad[] = $path . ": not a release-metadata file";
 			}
 			if ($bad) {
 				fwrite(STDERR, implode("\n", array_map(function ($b) { return "  " . $b; }, $bad)) . "\n");
@@ -473,11 +496,27 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			echo "refusing to build: Pro changed between the tested commit and the built one, in ways a release does not (above)" >&2
 			exit 1
 		fi
-		echo "pro provenance ok: CI tested $TESTED_PRO; the package was built from $PRO_ZIP_COMMIT (release metadata only)"
+		echo "pro provenance ok: CI tested $TESTED_PRO; the package was built from $PRO_ZIP_COMMIT (update-info.json only)"
 	elif [ -n "$TESTED_PRO" ]; then
 		echo "pro provenance ok: CI tested and the package was built from $TESTED_PRO"
 	else
 		echo "refusing to build: no CI result names the Pro commit that was tested" >&2
+		exit 1
+	fi
+
+	# AND THE TREE THE BUNDLE IS STAGED FROM (V82-02). stage_plugin() copies every
+	# tracked file from Pro's CURRENT working tree into rapls-passkey-tests.zip —
+	# the whole licence server included — and only the tested and built COMMITS
+	# were being compared. A change committed after CI finished therefore shipped
+	# as source with nothing testing it, and "it is not in the plugin ZIP" is no
+	# comfort for tools/license-server/api.php: that file is not distributed to
+	# users, it is DEPLOYED. The tree that goes into the bundle has to be the tree
+	# that was tested.
+	PRO_HEAD="$( cd "$PRO" && git rev-parse HEAD 2>/dev/null || echo '' )"
+	if [ -n "$TESTED_PRO" ] && [ "$PRO_HEAD" != "$TESTED_PRO" ]; then
+		echo "refusing to build: CI tested Pro at $TESTED_PRO but this Pro checkout is at ${PRO_HEAD:-unknown}" >&2
+		echo "  the bundle carries the working tree's source, so it must be the tested one" >&2
+		( cd "$PRO" && git diff --name-only "$TESTED_PRO" "$PRO_HEAD" 2>/dev/null | sed 's/^/  changed: /' >&2 ) || true
 		exit 1
 	fi
 

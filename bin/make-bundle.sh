@@ -150,6 +150,26 @@ cp "$E2E_TOP" "$STAGE/"
 if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	mkdir -p "$STAGE/ci-artifacts"
 	find "$CI_ARTIFACTS" -name '*.json' -exec cp {} "$STAGE/ci-artifacts/" \;
+
+	# WHICH RESULTS A COMPLETE RUN PRODUCES (V80-01). Read out of the workflow's
+	# own matrix, so adding or removing a database changes what a bundle must
+	# contain — a list maintained here by hand would agree with whatever turned
+	# up, which is the failure this check exists to prevent. Each database
+	# contributes four: concurrency and integration, each plain and with
+	# CLIENT_FOUND_ROWS.
+	# -E, not BRE: BSD sed has no \| alternation, and a pattern that silently
+	# matches nothing would make the expected set empty — which is why the guard
+	# below is on the extraction and not only on the comparison.
+	DBS="$( sed -nE 's/^[[:space:]]*-[[:space:]]*name:[[:space:]]*((mysql|mariadb)-[0-9.]+)[[:space:]]*$/\1/p' "$FREE/.github/workflows/tests.yml" | sort -u )"
+	if [ -z "$DBS" ]; then
+		echo "refusing to build: the workflow's database matrix could not be read" >&2
+		exit 1
+	fi
+	EXPECTED_MATRICES="$( for db in $DBS; do
+		for kind in concurrency integration; do
+			printf '%s-%s\n%s-%s-foundrows\n' "$kind" "$db" "$kind" "$db"
+		done
+	done | sort | paste -sd, - )"
 	# Where they came from, written here rather than described in a README that
 	# outlives the run it names (V50-07).
 	#
@@ -172,66 +192,147 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			sed -n 's/.*"source_commit"[^"]*"\([0-9a-f]*\)".*/\1/p' | head -1
 	}
 
+	# WHAT IS READ IS WHAT IS ENFORCED (V80-01). The first version collected sha,
+	# job, matrix, attempt and passed and then refused only on a missing run_id —
+	# so a result with no sha, a mix of shas inside one run, an empty job, a
+	# passed:false, or eleven of the sixteen matrices all built happily, with
+	# every one of those facts printed into the provenance as though it had been
+	# checked. Each of them is a condition now.
+	#
+	# The expected matrices are named here rather than derived from what turned
+	# up, because a set derived from the files can never notice a missing one;
+	# the check below ties this list to the workflow so it cannot drift silently.
 	PROV="$( "$PHP_BIN" -r '
-		$dir = $argv[1];
-		$claimed = isset($argv[2]) ? trim($argv[2]) : "";
+		$dir      = $argv[1];
+		$claimed  = isset($argv[2]) ? trim($argv[2]) : "";
+		$expected = explode(",", $argv[3]);
+		$free_zip = isset($argv[4]) ? trim($argv[4]) : "";
+		sort($expected);
+
+		$refuse = function ($why) { fwrite(STDERR, "refusing to build: " . $why . "\n"); exit(1); };
+
 		$files = glob($dir . "/*.json");
 		sort($files);
-		$runs = array();
-		$shas = array();
 		$rows = array();
-		$mute = array();
+		$seen = array();
+		$agree = array("run_id" => array(), "run_attempt" => array(), "repository" => array(), "sha" => array(), "workflow" => array(), "pro_sha" => array());
 		foreach ($files as $f) {
-			if ("PROVENANCE.json" === basename($f)) { continue; }
-			$d  = json_decode((string) file_get_contents($f), true);
-			$ci = is_array($d) && isset($d["ci"]) && is_array($d["ci"]) ? $d["ci"] : array();
-			$id = isset($ci["run_id"]) ? (string) $ci["run_id"] : "";
-			if ("" === $id || "unknown" === $id) { $mute[] = basename($f); }
-			else { $runs[$id] = true; $shas[(string) ($ci["sha"] ?? "")] = true; }
+			$base = basename($f);
+			if ("PROVENANCE.json" === $base) { continue; }
+			$d = json_decode((string) file_get_contents($f), true);
+			if (!is_array($d)) { $refuse("{$base} is not JSON"); }
+			$ci = isset($d["ci"]) && is_array($d["ci"]) ? $d["ci"] : array();
+			// pro_sha may legitimately be "" (the job that did not check Pro out),
+			// so it is agreed on but not required to be non-empty.
+			foreach (array("run_id", "run_attempt", "repository", "sha", "workflow", "job", "matrix") as $k) {
+				if (!isset($ci[$k]) || "" === trim((string) $ci[$k]) || "unknown" === (string) $ci[$k]) {
+					$refuse("{$base} does not say which run produced it ({$k} is missing)\n  (re-download from a run of the workflow that stamps them — see .github/workflows/tests.yml)");
+				}
+			}
+			if (!preg_match("/\A[0-9]+\z/", (string) $ci["run_id"]))      { $refuse("{$base} has a run_id that is not a number"); }
+			if (!preg_match("/\A[0-9]+\z/", (string) $ci["run_attempt"])) { $refuse("{$base} has a run_attempt that is not a number"); }
+			if (!preg_match("/\A[0-9a-f]{40}\z/", (string) $ci["sha"]))   { $refuse("{$base} has a sha that is not a commit"); }
+			$pro = (string) ($ci["pro_sha"] ?? "");
+			if ("" !== $pro && !preg_match("/\A[0-9a-f]{40}\z/", $pro)) {
+				$refuse("{$base} has a pro_sha that is not a commit");
+			}
+			if (empty($d["passed"])) { $refuse("{$base} did not pass"); }
+			if ((string) $ci["matrix"] !== basename($f, ".json")) {
+				$refuse("{$base} is stamped as \"" . $ci["matrix"] . "\", which is not its name");
+			}
+			if (isset($seen[(string) $ci["matrix"]])) { $refuse("two results claim to be " . $ci["matrix"]); }
+			$seen[(string) $ci["matrix"]] = true;
+			foreach ($agree as $k => $_) { $agree[$k][(string) ($ci[$k] ?? "")] = true; }
 			$rows[] = array(
-				"file"    => basename($f),
+				"file"    => $base,
 				"sha256"  => hash_file("sha256", $f),
-				"job"     => (string) ($ci["job"] ?? ""),
-				"matrix"  => (string) ($ci["matrix"] ?? ""),
-				"attempt" => (string) ($ci["run_attempt"] ?? ""),
-				"passed"  => (bool) (is_array($d) && ! empty($d["passed"])),
+				"job"     => (string) $ci["job"],
+				"matrix"  => (string) $ci["matrix"],
+				"attempt" => (string) $ci["run_attempt"],
+				"passed"  => true,
 			);
 		}
-		if ($mute) {
-			fwrite(STDERR, "refusing to build: these CI results do not say which run produced them: " . implode(", ", $mute) . "\n");
-			fwrite(STDERR, "  (re-download them from a run of the workflow that stamps them — see .github/workflows/tests.yml)\n");
-			exit(1);
+		foreach (array("run_id", "run_attempt", "repository", "sha", "workflow") as $k) {
+			if (1 !== count($agree[$k])) {
+				$refuse("the results disagree about {$k}: " . implode(", ", array_keys($agree[$k])));
+			}
 		}
-		if (1 !== count($runs)) {
-			fwrite(STDERR, "refusing to build: the CI results come from more than one run: " . implode(", ", array_keys($runs)) . "\n");
-			exit(1);
-		}
-		$run = (string) array_key_first($runs);
-		if ("" !== $claimed && $claimed !== $run) {
-			fwrite(STDERR, "refusing to build: --ci-run says {$claimed}, the results say {$run}\n");
-			exit(1);
-		}
-		echo json_encode(array(
-			"run_id"    => $run,
-			"run_sha"   => (string) array_key_first($shas),
-			"artifacts" => $rows,
-		));
-	' "$STAGE/ci-artifacts" "${CI_RUN:-}" )" || exit 1
+		// pro_sha: every job that checked Pro out must name the SAME commit.
+		$pro_shas = array_values(array_filter(array_keys($agree["pro_sha"]), "strlen"));
+		if (count($pro_shas) > 1) { $refuse("the results disagree about which Pro commit was tested: " . implode(", ", $pro_shas)); }
 
-	RUN_ID="$( printf '%s' "$PROV" | sed -n 's/.*"run_id":"\([0-9]*\)".*/\1/p' )"
-	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "run_sha": %s,\n  "free_zip_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "files": %s,\n  "bundled_at": "%s",\n  "artifacts": %s\n}\n' \
+		$got = array_keys($seen);
+		sort($got);
+		if ($got !== $expected) {
+			$refuse("the set of results is not the one this workflow produces\n  missing:   " . implode(", ", array_diff($expected, $got))
+				. "\n  unexpected: " . implode(", ", array_diff($got, $expected)));
+		}
+
+		$run = (string) array_key_first($agree["run_id"]);
+		if ("" !== $claimed && $claimed !== $run) { $refuse("--ci-run says {$claimed}, the results say {$run}"); }
+
+		$run_sha = (string) array_key_first($agree["sha"]);
+		if ("" !== $free_zip && $free_zip !== $run_sha) {
+			$refuse("CI tested {$run_sha} but the Free ZIP was built from {$free_zip}\n  (rebuild the ZIP at the tested commit, or re-run CI on the commit being shipped)");
+		}
+
+		echo json_encode(array(
+			"run_id"       => $run,
+			"run_attempt"  => (string) array_key_first($agree["run_attempt"]),
+			"repository"   => (string) array_key_first($agree["repository"]),
+			"run_sha"      => $run_sha,
+			"tested_pro_commit" => $pro_shas ? $pro_shas[0] : "",
+			"artifacts"    => $rows,
+		));
+	' "$STAGE/ci-artifacts" "${CI_RUN:-}" "$EXPECTED_MATRICES" "$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" )" || exit 1
+
+	get() { printf '%s' "$PROV" | "$PHP_BIN" -r 'echo (string) (json_decode(stream_get_contents(STDIN), true)[$argv[1]] ?? "");' "$1"; }
+	RUN_ID="$( get run_id )"
+	TESTED_PRO="$( get tested_pro_commit )"
+	PRO_ZIP_COMMIT="$( zip_commit "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro )"
+
+	# THREE Pro COMMITS, EACH MEANING SOMETHING DIFFERENT (V80-02).
+	#   tested_pro_commit — what CI checked out and ran
+	#   pro_zip_commit    — what the shipped package was built from
+	#   pro_head          — where the repository stands now
+	# They differ legitimately: the digest of a built ZIP is written into
+	# update-info.json afterwards, which is a commit CI never saw. What must NOT
+	# differ is anything the tests cover, so the two are required to be equal or
+	# to differ only in release metadata.
+	if [ -n "$TESTED_PRO" ] && [ -n "$PRO_ZIP_COMMIT" ] && [ "$TESTED_PRO" != "$PRO_ZIP_COMMIT" ]; then
+		if ! ( cd "$PRO" && git merge-base --is-ancestor "$TESTED_PRO" "$PRO_ZIP_COMMIT" 2>/dev/null ); then
+			echo "refusing to build: CI tested Pro at $TESTED_PRO, which is not an ancestor of the built $PRO_ZIP_COMMIT" >&2
+			exit 1
+		fi
+		CHANGED="$( cd "$PRO" && git diff --name-only "$TESTED_PRO" "$PRO_ZIP_COMMIT" | grep -vE '^(tools/license-server/update-info\.json|readme\.txt|rapls-passkey-pro\.php|languages/)' || true )"
+		if [ -n "$CHANGED" ]; then
+			echo "refusing to build: Pro changed between the tested commit and the built one, in files that are not release metadata:" >&2
+			printf '  %s\n' $CHANGED >&2
+			exit 1
+		fi
+		echo "pro provenance ok: CI tested $TESTED_PRO; the package was built from $PRO_ZIP_COMMIT (release metadata only)"
+	elif [ -n "$TESTED_PRO" ]; then
+		echo "pro provenance ok: CI tested and the package was built from $TESTED_PRO"
+	else
+		echo "refusing to build: no CI result names the Pro commit that was tested" >&2
+		exit 1
+	fi
+
+	printf '{\n  "run_id": "%s",\n  "run_url": "https://github.com/rapls/rapls-passkey/actions/runs/%s",\n  "run_attempt": "%s",\n  "repository": "%s",\n  "run_sha": "%s",\n  "free_zip_commit": "%s",\n  "tested_pro_commit": "%s",\n  "pro_zip_commit": "%s",\n  "free_head": "%s",\n  "pro_head": "%s",\n  "results": %s,\n  "bundled_at": "%s",\n  "artifacts": %s\n}\n' \
 		"$RUN_ID" "$RUN_ID" \
-		"$( printf '%s' "$PROV" | sed -n 's/.*\("run_sha":"[0-9a-f]*"\).*/\1/p' | sed 's/"run_sha"://' )" \
+		"$( get run_attempt )" \
+		"$( get repository )" \
+		"$( get run_sha )" \
 		"$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" \
-		"$( zip_commit "$PLUGINS/rapls-passkey-pro.zip" rapls-passkey-pro )" \
+		"$TESTED_PRO" \
+		"$PRO_ZIP_COMMIT" \
 		"$( cd "$FREE" && git rev-parse HEAD )" \
 		"$( cd "$PRO" && git rev-parse HEAD 2>/dev/null || echo unknown )" \
 		"$( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' )" \
 		"$( date -u +%Y-%m-%dT%H:%M:%SZ )" \
 		"$( printf '%s' "$PROV" | "$PHP_BIN" -r 'echo json_encode(json_decode(stream_get_contents(STDIN), true)["artifacts"], JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);' )" \
 		> "$STAGE/ci-artifacts/PROVENANCE.json"
-	# Counted BEFORE PROVENANCE.json joined them — it is the record, not a result.
-	echo "ci provenance ok: run $RUN_ID, $( ls -1 "$STAGE/ci-artifacts" | grep -c '\.json$' ) files in the directory, $( ls -1 "$STAGE/ci-artifacts" | grep -c '^\(concurrency\|integration\)' ) results, each naming that run"
+	echo "ci provenance ok: run $RUN_ID at $( get run_sha ), all $( ls -1 "$STAGE/ci-artifacts" | grep -c '^\(concurrency\|integration\)' ) expected results present, agreeing and passing"
 fi
 
 # Refuse to ship machine-local state or anything shaped like a credential. This

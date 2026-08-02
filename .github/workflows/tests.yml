@@ -189,6 +189,12 @@ jobs:
       # the only thing the database changes is the concurrency and integration
       # runs above, which is what the matrix exists for. Doing it in one job
       # takes about six runner-minutes off every run.
+      # WHICH Pro COMMIT (V80-02). This checks out a second repository, and
+      # nothing recorded which revision of it arrived — so a bundle could say
+      # "CI tested the repository head" and be unable to name the Pro head it
+      # meant. RAPLS_PRO_REF pins it when a release wants a specific commit
+      # tested; unset, it is that repository's default branch, and either way
+      # the resolved SHA is written down in the step below.
       - name: Check out Pro (needs RAPLS_PRO_REPO_TOKEN)
         if: ${{ matrix.db.name == 'mysql-8.0' && env.PRO_TOKEN != '' }}
         env:
@@ -197,7 +203,17 @@ jobs:
         with:
           repository: rapls/rapls-passkey-pro
           token: ${{ secrets.RAPLS_PRO_REPO_TOKEN }}
+          ref: ${{ vars.RAPLS_PRO_REF }}
           path: pro-src
+
+      - name: Record which Pro commit this run tested
+        if: ${{ matrix.db.name == 'mysql-8.0' }}
+        run: |
+          if [ -d pro-src ]; then
+            echo "PRO_TESTED_SHA=$(git -C pro-src rev-parse HEAD)" >> "$GITHUB_ENV"
+          else
+            echo "PRO_TESTED_SHA=" >> "$GITHUB_ENV"
+          fi
 
       - name: Reproduction procedure (verify-bundle.sh) end to end
         if: ${{ matrix.db.name == 'mysql-8.0' }}
@@ -277,6 +293,10 @@ jobs:
                   "workflow"    => getenv("GITHUB_WORKFLOW"),
                   "job"         => getenv("GITHUB_JOB"),
                   "matrix"      => basename($f, ".json"),
+                  // The OTHER repository this run built and tested (V80-02).
+                  // "" when this job did not check it out, which is a fact the
+                  // bundle has to be able to see rather than infer.
+                  "pro_sha"     => (string) getenv("PRO_TESTED_SHA"),
               );
               file_put_contents($f, json_encode($d, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
             ' "$f"

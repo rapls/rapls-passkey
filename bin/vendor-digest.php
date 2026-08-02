@@ -111,26 +111,40 @@ function rapls_vendor_entries( $vendor ) {
 			// `),`" ends in the middle of it, and "up to a `),` on its own line"
 			// depends on how the file happens to be laid out. Neither is a fact
 			// about where the block ends.
-			$at = strpos( $body, "'root' => array(" );
-			if ( false !== $at ) {
-				$open  = strpos( $body, '(', $at );
-				$depth = 0;
-				$end   = $open;
-				for ( $i = $open, $n = strlen( $body ); $i < $n; $i++ ) {
-					if ( '(' === $body[ $i ] ) {
-						$depth++;
-					} elseif ( ')' === $body[ $i ] ) {
-						$depth--;
-						if ( 0 === $depth ) {
-							$end = $i;
-							break;
+			// TWICE, NOT ONCE. installed.php describes the root package in its
+			// 'root' block AND again under 'versions' => array( '<name>' => … ),
+			// with the same three values. Blanking only the first left the second
+			// to differ and the whole thing to fail — which is what the first
+			// attempt at this did.
+			$blank = static function ( $body, $marker ) {
+				$at = strpos( $body, $marker );
+				while ( false !== $at ) {
+					$open  = strpos( $body, '(', $at );
+					$depth = 0;
+					$end   = $open;
+					for ( $i = $open, $n = strlen( $body ); $i < $n; $i++ ) {
+						if ( '(' === $body[ $i ] ) {
+							$depth++;
+						} elseif ( ')' === $body[ $i ] ) {
+							$depth--;
+							if ( 0 === $depth ) {
+								$end = $i;
+								break;
+							}
 						}
 					}
+					$block = substr( $body, $at, $end - $at + 1 );
+					$fixed = preg_replace( "/('(?:pretty_version|version|reference)'\s*=>\s*)(?:NULL|null|'[^']*')/", '$1<volatile>', $block );
+					$body  = substr( $body, 0, $at ) . $fixed . substr( $body, $end + 1 );
+					$at    = strpos( $body, $marker, $at + strlen( $fixed ) );
 				}
-				$block = substr( $body, $at, $end - $at + 1 );
-				$body  = substr( $body, 0, $at )
-					. preg_replace( "/('(?:pretty_version|version|reference)'\s*=>\s*)(?:NULL|null|'[^']*')/", '$1<volatile>', $block )
-					. substr( $body, $end + 1 );
+				return $body;
+			};
+			$body = $blank( $body, "'root' => array(" );
+			// The root package's own entry in the versions map, found by the name
+			// the root block gives — not by guessing which package we are.
+			if ( preg_match( "/'root' => array\(\s*'name' => '([^']+)'/", $body, $nm ) ) {
+				$body = $blank( $body, "'" . $nm[1] . "' => array(" );
 			}
 			$body = preg_replace_callback(
 				'/"root"\s*:\s*\{.*?\}/s',

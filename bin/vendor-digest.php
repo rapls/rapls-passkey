@@ -80,7 +80,22 @@ function rapls_vendor_entries( $vendor ) {
 		}
 		// Only the executable bit matters: the rest of the mode varies with the
 		// umask of whoever ran Composer and says nothing about the bytes.
-		$exec        = ( fileperms( $path ) & 0111 ) ? '1' : '0';
+		$exec = ( fileperms( $path ) & 0111 ) ? '1' : '0';
+
+		// TWO FILES CARRY THE ROOT COMMIT. Composer writes the checkout's own
+		// git reference into vendor/composer/installed.php and installed.json, so
+		// they change on EVERY commit and a manifest recorded against them would
+		// be stale the moment it was committed — which is a manifest nobody can
+		// keep, and an unkeepable check gets deleted. The 40-character references
+		// in those two files are blanked before hashing; everything else in them,
+		// including all the code in installed.php, is covered as usual. What the
+		// blanking gives up is pinning the DEPENDENCIES' references, and
+		// composer.lock pins those and is tracked in git.
+		if ( 'composer/installed.php' === $rel || 'composer/installed.json' === $rel ) {
+			$body       = preg_replace( '/[0-9a-f]{40}/', '<ref>', (string) file_get_contents( $path ) );
+			$out[ $rel ] = 'file:' . $exec . ':' . hash( 'sha256', (string) $body );
+			continue;
+		}
 		$out[ $rel ] = 'file:' . $exec . ':' . hash_file( 'sha256', $path );
 	}
 	ksort( $out, SORT_STRING );

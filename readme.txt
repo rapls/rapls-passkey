@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.59
+Stable tag: 0.13.60
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,9 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.60 =
+* No change to the plugin itself. The rebuild check added last release could not run on the source it is about, was not called by anything, and compared packages by reading a diff tool's wording — so a path that changed from a file to a directory passed it. It now copies the source as it stands, runs in CI on every release, and compares the two packages as trees. None of it is part of this package.
 
 = 0.13.59 =
 * No change to the plugin itself. The verification bundle claimed a rebuild from its own source produces an identical package while the log in the same submission said otherwise; the claim is now narrower, accurate, and checked by a script that fails if anything differs beyond two named files and two named fields. None of it is part of this package.

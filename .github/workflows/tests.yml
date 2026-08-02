@@ -302,6 +302,27 @@ jobs:
             --db-host 127.0.0.1 --db-port 3306 --db-name rapls_test \
             --db-user root --db-pass rootpw --workers 50
 
+      # AND THE SOURCE WE HAND OUT REBUILDS THE PACKAGE (V88-01). bin/verify-rebuild.sh
+      # existed and nothing called it — not verify.sh, not this workflow, not
+      # make-bundle — so the claim it makes was checked once, by hand, and
+      # recorded in a log. It runs here, on a copy of the tree with .git removed,
+      # which is the shape the verification bundle ships.
+      - name: The source rebuilds the package (bin/verify-rebuild.sh)
+        if: ${{ matrix.db.name == 'mysql-8.0' }}
+        run: |
+          rm -rf "$RUNNER_TEMP/nogit"
+          mkdir -p "$RUNNER_TEMP/nogit"
+          for slug in rapls-passkey rapls-passkey-pro; do
+            [ -d "../$slug" ] || continue
+            rsync -a --exclude '.git/' --exclude 'build/' "../$slug/" "$RUNNER_TEMP/nogit/$slug/"
+            rm -rf "$RUNNER_TEMP/nogit/$slug/.git"
+            bash ../rapls-passkey/bin/verify-rebuild.sh \
+              --slug "$slug" \
+              --zip "../$slug.zip" \
+              --src "$RUNNER_TEMP/nogit/$slug" \
+              --scoper ../rapls-passkey/bin/php-scoper.phar
+          done
+
       # WHICH RUN PRODUCED THIS (V79-04). The result files said only whether the
       # scenarios passed, so a bundle could name a run and there was nothing in
       # the artifacts to agree or disagree with it — the provenance was an

@@ -73,9 +73,11 @@ function rapls_vendor_entries( $vendor ) {
 			continue;
 		}
 		if ( is_dir( $path ) ) {
-			// Directories are recorded so an empty one cannot appear or vanish
-			// unnoticed; they have no contents of their own.
-			$out[ $rel ] = 'dir:0:-';
+			// Directories carry no content, and an EMPTY one is not reproducible:
+			// a --no-dev install in a clean clone leaves no vendor/bin while a tree
+			// that once had dev tools keeps the empty directory behind. Recording
+			// them made the manifest checkout-specific for no gain — a directory
+			// with nothing in it cannot run.
 			continue;
 		}
 		// Only the executable bit matters: the rest of the mode varies with the
@@ -93,6 +95,19 @@ function rapls_vendor_entries( $vendor ) {
 		// composer.lock pins those and is tracked in git.
 		if ( 'composer/installed.php' === $rel || 'composer/installed.json' === $rel ) {
 			$body       = preg_replace( '/[0-9a-f]{40}/', '<ref>', (string) file_get_contents( $path ) );
+			$out[ $rel ] = 'file:' . $exec . ':' . hash( 'sha256', (string) $body );
+			continue;
+		}
+
+		// AND THE AUTOLOADER'S OWN NAME. Composer names its bootstrap classes
+		// ComposerAutoloaderInit<hash> / ComposerStaticInit<hash>, and the hash is
+		// minted per installation — so two installs of the SAME lock file differ
+		// in these three files and nowhere else. Blanking the name is what lets a
+		// clean clone reproduce the recorded tree and be checked against it;
+		// every other byte of the autoloader, including the class maps, is
+		// hashed as it stands.
+		if ( in_array( $rel, array( 'autoload.php', 'composer/autoload_real.php', 'composer/autoload_static.php' ), true ) ) {
+			$body       = preg_replace( '/Composer(?:Autoloader|Static)Init[0-9a-f]{16,}/', 'ComposerInit<hash>', (string) file_get_contents( $path ) );
 			$out[ $rel ] = 'file:' . $exec . ':' . hash( 'sha256', (string) $body );
 			continue;
 		}

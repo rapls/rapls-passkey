@@ -105,7 +105,23 @@ if [ -f "$PRO/tools/license-server/update-info.json" ] && [ -f "$PLUGINS/rapls-p
 		echo "  update-info:  version $INFO_VER, sequence $INFO_SEQ, sha $INFO_SHA" >&2
 		exit 1
 	fi
-	echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA"
+	# AND THE GENERATOR AGREES (V81-04). The three fields above are compared
+	# against the ZIP; last_updated is not, and it is the one that drifted. Pro's
+	# own stamper re-derives all four and reports any it would have to change, so
+	# wiring it in here is what makes "generated, not typed" a property of the
+	# bundle rather than of whoever remembered to run it.
+	if [ -f "$PRO/bin/stamp-release.php" ]; then
+		if ! "$PHP_BIN" "$PRO/bin/stamp-release.php" --check "$PLUGINS/rapls-passkey-pro.zip" >/dev/null 2>"$STAGE/.stamp-err"; then
+			echo "refusing to build: Pro's release metadata is not what the release generates" >&2
+			cat "$STAGE/.stamp-err" >&2
+			echo "  (run: php bin/stamp-release.php ../rapls-passkey-pro.zip)" >&2
+			exit 1
+		fi
+		rm -f "$STAGE/.stamp-err"
+		echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA (regenerating it changes nothing)"
+	else
+		echo "release metadata ok: $PRO_ZIP_VER / sequence $PRO_ZIP_SEQ / $PRO_SHA"
+	fi
 fi
 sed -e "s/__FREE_SHA__/$FREE_SHA/" -e "s/__PRO_SHA__/$PRO_SHA/" \
 	"$FREE/tests/db/verify-bundle.sh" > "$STAGE/verify.sh"
@@ -157,19 +173,63 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	# up, which is the failure this check exists to prevent. Each database
 	# contributes four: concurrency and integration, each plain and with
 	# CLIENT_FOUND_ROWS.
-	# -E, not BRE: BSD sed has no \| alternation, and a pattern that silently
-	# matches nothing would make the expected set empty — which is why the guard
-	# below is on the extraction and not only on the comparison.
-	DBS="$( sed -nE 's/^[[:space:]]*-[[:space:]]*name:[[:space:]]*((mysql|mariadb)-[0-9.]+)[[:space:]]*$/\1/p' "$FREE/.github/workflows/tests.yml" | sort -u )"
-	if [ -z "$DBS" ]; then
-		echo "refusing to build: the workflow's database matrix could not be read" >&2
+	#
+	# FROM THE WORKFLOW AS IT WAS AT THE TESTED COMMIT (V81-03), not as it is in
+	# this working tree. They are usually the same file; when they are not, the
+	# working tree is the wrong authority — it describes a run that did not
+	# happen. The run's own SHA is not known until the artifacts are read, so
+	# this is done in two passes: identity first, then the expected sets.
+	matrices_from() {   # $1 = the workflow file's text on stdin
+		local dbs
+		# -E, not BRE: BSD sed has no \| alternation, and a pattern that silently
+		# matches nothing would make the expected set empty — which is why the
+		# guard below is on the extraction and not only on the comparison.
+		dbs="$( sed -nE 's/^[[:space:]]*-[[:space:]]*name:[[:space:]]*((mysql|mariadb)-[0-9.]+)[[:space:]]*$/\1/p' | sort -u )"
+		[ -n "$dbs" ] || return 1
+		for db in $dbs; do
+			for kind in concurrency integration; do
+				printf '%s-%s\n%s-%s-foundrows\n' "$kind" "$db" "$kind" "$db"
+			done
+		done | sort | paste -sd, -
+	}
+	jobs_from() {       # the seven jobs a complete run has: 3 smoke + 4 database
+		local wf phps dbs
+		wf="$( cat )"
+		phps="$( printf '%s' "$wf" | sed -nE "s/^[[:space:]]*php:[[:space:]]*\[([^]]*)\].*/\1/p" | tr -d " '" | tr ',' '\n' | grep -v '^$' | sort -u )"
+		dbs="$( printf '%s' "$wf" | sed -nE 's/^[[:space:]]*-[[:space:]]*name:[[:space:]]*((mysql|mariadb)-[0-9.]+)[[:space:]]*$/\1/p' | sort -u )"
+		[ -n "$phps" ] && [ -n "$dbs" ] || return 1
+		{ for p in $phps; do printf 'smoke-php-%s\n' "$p"; done
+		  for d in $dbs;  do printf 'concurrency-%s\n' "$d"; done
+		} | sort | paste -sd, -
+	}
+
+	# Pass 1: what run do the artifacts claim? (Identity only; nothing is trusted
+	# yet — the strict checks run in pass 2 against that run's own workflow.)
+	RUN_SHA_CLAIM="$( "$PHP_BIN" -r '
+		$ids = array();
+		foreach (glob($argv[1] . "/*.json") as $f) {
+			$d = json_decode((string) file_get_contents($f), true);
+			if (is_array($d) && isset($d["ci"]["sha"])) { $ids[(string) $d["ci"]["sha"]] = true; }
+		}
+		echo 1 === count($ids) ? (string) array_key_first($ids) : "";
+	' "$STAGE/ci-artifacts" )"
+	if [ -z "$RUN_SHA_CLAIM" ]; then
+		echo "refusing to build: the CI results do not agree on one commit, or name none" >&2
 		exit 1
 	fi
-	EXPECTED_MATRICES="$( for db in $DBS; do
-		for kind in concurrency integration; do
-			printf '%s-%s\n%s-%s-foundrows\n' "$kind" "$db" "$kind" "$db"
-		done
-	done | sort | paste -sd, - )"
+	WORKFLOW_AT_RUN="$( cd "$FREE" && git show "$RUN_SHA_CLAIM:.github/workflows/tests.yml" 2>/dev/null )"
+	if [ -z "$WORKFLOW_AT_RUN" ]; then
+		echo "refusing to build: the workflow at $RUN_SHA_CLAIM could not be read (is that commit here?)" >&2
+		exit 1
+	fi
+	EXPECTED_MATRICES="$( printf '%s' "$WORKFLOW_AT_RUN" | matrices_from )" || {
+		echo "refusing to build: the database matrix could not be read from the workflow at $RUN_SHA_CLAIM" >&2
+		exit 1
+	}
+	EXPECTED_JOBS="$( printf '%s' "$WORKFLOW_AT_RUN" | jobs_from )" || {
+		echo "refusing to build: the job list could not be read from the workflow at $RUN_SHA_CLAIM" >&2
+		exit 1
+	}
 	# Where they came from, written here rather than described in a README that
 	# outlives the run it names (V50-07).
 	#
@@ -203,11 +263,20 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	# up, because a set derived from the files can never notice a missing one;
 	# the check below ties this list to the workflow so it cannot drift silently.
 	PROV="$( "$PHP_BIN" -r '
-		$dir      = $argv[1];
-		$claimed  = isset($argv[2]) ? trim($argv[2]) : "";
-		$expected = explode(",", $argv[3]);
-		$free_zip = isset($argv[4]) ? trim($argv[4]) : "";
+		$dir       = $argv[1];
+		$claimed   = isset($argv[2]) ? trim($argv[2]) : "";
+		$expected  = explode(",", $argv[3]);
+		$free_zip  = isset($argv[4]) ? trim($argv[4]) : "";
+		$exp_jobs  = explode(",", $argv[5]);
+		$free_head = isset($argv[6]) ? trim($argv[6]) : "";
 		sort($expected);
+		sort($exp_jobs);
+
+		// BOUND TO WHAT THEY MUST BE, NOT MERELY TO EACH OTHER (V81-03). Sixteen
+		// results all naming the same made-up repository agreed perfectly.
+		$WANT_REPO     = "rapls/rapls-passkey";
+		$WANT_WORKFLOW = "tests";
+		$WANT_JOBS     = array("smoke", "concurrency");   // the workflow ids
 
 		$refuse = function ($why) { fwrite(STDERR, "refusing to build: " . $why . "\n"); exit(1); };
 
@@ -215,6 +284,7 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		sort($files);
 		$rows = array();
 		$seen = array();
+		$jobs = array();
 		$agree = array("run_id" => array(), "run_attempt" => array(), "repository" => array(), "sha" => array(), "workflow" => array(), "pro_sha" => array());
 		foreach ($files as $f) {
 			$base = basename($f);
@@ -222,9 +292,13 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			$d = json_decode((string) file_get_contents($f), true);
 			if (!is_array($d)) { $refuse("{$base} is not JSON"); }
 			$ci = isset($d["ci"]) && is_array($d["ci"]) ? $d["ci"] : array();
-			// pro_sha may legitimately be "" (the job that did not check Pro out),
+			$is_status = isset($d["attestation"]) && "job-status" === $d["attestation"];
+
+			// pro_sha may legitimately be "" (a job that did not check Pro out),
 			// so it is agreed on but not required to be non-empty.
-			foreach (array("run_id", "run_attempt", "repository", "sha", "workflow", "job", "matrix") as $k) {
+			$need = array("run_id", "run_attempt", "repository", "sha", "workflow", "job");
+			if (!$is_status) { $need[] = "matrix"; }
+			foreach ($need as $k) {
 				if (!isset($ci[$k]) || "" === trim((string) $ci[$k]) || "unknown" === (string) $ci[$k]) {
 					$refuse("{$base} does not say which run produced it ({$k} is missing)\n  (re-download from a run of the workflow that stamps them — see .github/workflows/tests.yml)");
 				}
@@ -232,17 +306,36 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			if (!preg_match("/\A[0-9]+\z/", (string) $ci["run_id"]))      { $refuse("{$base} has a run_id that is not a number"); }
 			if (!preg_match("/\A[0-9]+\z/", (string) $ci["run_attempt"])) { $refuse("{$base} has a run_attempt that is not a number"); }
 			if (!preg_match("/\A[0-9a-f]{40}\z/", (string) $ci["sha"]))   { $refuse("{$base} has a sha that is not a commit"); }
+			if ($WANT_REPO !== (string) $ci["repository"])                { $refuse("{$base} names repository \"" . $ci["repository"] . "\", not {$WANT_REPO}"); }
+			if ($WANT_WORKFLOW !== (string) $ci["workflow"])              { $refuse("{$base} names workflow \"" . $ci["workflow"] . "\", not {$WANT_WORKFLOW}"); }
+			if (!in_array((string) $ci["job"], $WANT_JOBS, true))         { $refuse("{$base} names job \"" . $ci["job"] . "\", which is not one of " . implode(", ", $WANT_JOBS)); }
 			$pro = (string) ($ci["pro_sha"] ?? "");
-			if ("" !== $pro && !preg_match("/\A[0-9a-f]{40}\z/", $pro)) {
-				$refuse("{$base} has a pro_sha that is not a commit");
+			if ("" !== $pro && !preg_match("/\A[0-9a-f]{40}\z/", $pro))   { $refuse("{$base} has a pro_sha that is not a commit"); }
+			foreach ($agree as $k => $_) { $agree[$k][(string) ($ci[$k] ?? "")] = true; }
+
+			if ($is_status) {
+				// HOW THE JOB ENDED (V81-01). A database result says its own
+				// scenarios passed; it says nothing about the build, the smoke
+				// suite or the reproduction procedure that ran after it in the
+				// same job.
+				$key = (string) ($d["job_key"] ?? "");
+				if ("" === $key)            { $refuse("{$base} is a job attestation with no job_key"); }
+				if (isset($jobs[$key]))     { $refuse("two attestations claim to be {$key}"); }
+				if ("success" !== (string) ($d["status"] ?? "")) {
+					$refuse("job {$key} ended \"" . ($d["status"] ?? "") . "\", not success");
+				}
+				$jobs[$key] = true;
+				$rows[] = array("file" => $base, "sha256" => hash_file("sha256", $f), "job" => (string) $ci["job"], "job_key" => $key, "attempt" => (string) $ci["run_attempt"], "status" => "success");
+				continue;
 			}
-			if (empty($d["passed"])) { $refuse("{$base} did not pass"); }
+
+			// STRICTLY TRUE (V81-01). empty() accepts the STRING "false".
+			if (true !== ($d["passed"] ?? null)) { $refuse("{$base} does not record passed:true"); }
 			if ((string) $ci["matrix"] !== basename($f, ".json")) {
 				$refuse("{$base} is stamped as \"" . $ci["matrix"] . "\", which is not its name");
 			}
 			if (isset($seen[(string) $ci["matrix"]])) { $refuse("two results claim to be " . $ci["matrix"]); }
 			$seen[(string) $ci["matrix"]] = true;
-			foreach ($agree as $k => $_) { $agree[$k][(string) ($ci[$k] ?? "")] = true; }
 			$rows[] = array(
 				"file"    => $base,
 				"sha256"  => hash_file("sha256", $f),
@@ -257,15 +350,21 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 				$refuse("the results disagree about {$k}: " . implode(", ", array_keys($agree[$k])));
 			}
 		}
-		// pro_sha: every job that checked Pro out must name the SAME commit.
 		$pro_shas = array_values(array_filter(array_keys($agree["pro_sha"]), "strlen"));
 		if (count($pro_shas) > 1) { $refuse("the results disagree about which Pro commit was tested: " . implode(", ", $pro_shas)); }
 
 		$got = array_keys($seen);
 		sort($got);
 		if ($got !== $expected) {
-			$refuse("the set of results is not the one this workflow produces\n  missing:   " . implode(", ", array_diff($expected, $got))
+			$refuse("the set of results is not the one this workflow produces\n  missing:    " . implode(", ", array_diff($expected, $got))
 				. "\n  unexpected: " . implode(", ", array_diff($got, $expected)));
+		}
+		$got_jobs = array_keys($jobs);
+		sort($got_jobs);
+		if ($got_jobs !== $exp_jobs) {
+			$refuse("the run does not attest that every job succeeded\n  missing:    " . implode(", ", array_diff($exp_jobs, $got_jobs))
+				. "\n  unexpected: " . implode(", ", array_diff($got_jobs, $exp_jobs))
+				. "\n  (the smoke jobs attest too — a green database matrix is not a green run)");
 		}
 
 		$run = (string) array_key_first($agree["run_id"]);
@@ -275,16 +374,21 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 		if ("" !== $free_zip && $free_zip !== $run_sha) {
 			$refuse("CI tested {$run_sha} but the Free ZIP was built from {$free_zip}\n  (rebuild the ZIP at the tested commit, or re-run CI on the commit being shipped)");
 		}
+		if ("" !== $free_head && $free_head !== $run_sha) {
+			$refuse("CI tested {$run_sha} but this Free checkout is at {$free_head}\n  (the bundle is assembled from the working tree; it must be the tested one)");
+		}
 
 		echo json_encode(array(
 			"run_id"       => $run,
 			"run_attempt"  => (string) array_key_first($agree["run_attempt"]),
 			"repository"   => (string) array_key_first($agree["repository"]),
+			"workflow"     => (string) array_key_first($agree["workflow"]),
 			"run_sha"      => $run_sha,
 			"tested_pro_commit" => $pro_shas ? $pro_shas[0] : "",
+			"jobs"         => $got_jobs,
 			"artifacts"    => $rows,
 		));
-	' "$STAGE/ci-artifacts" "${CI_RUN:-}" "$EXPECTED_MATRICES" "$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" )" || exit 1
+	' "$STAGE/ci-artifacts" "${CI_RUN:-}" "$EXPECTED_MATRICES" "$( zip_commit "$PLUGINS/rapls-passkey.zip" rapls-passkey )" "$EXPECTED_JOBS" "$( cd "$FREE" && git rev-parse HEAD )" )" || exit 1
 
 	get() { printf '%s' "$PROV" | "$PHP_BIN" -r 'echo (string) (json_decode(stream_get_contents(STDIN), true)[$argv[1]] ?? "");' "$1"; }
 	RUN_ID="$( get run_id )"
@@ -311,10 +415,62 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 			echo "refusing to build: CI tested Pro at $TESTED_PRO and the package was built from $PRO_ZIP_COMMIT; neither contains the other" >&2
 			exit 1
 		fi
-		CHANGED="$( cd "$PRO" && git diff --name-only "$TESTED_PRO" "$PRO_ZIP_COMMIT" | grep -vE '^(tools/license-server/update-info\.json|readme\.txt|rapls-passkey-pro\.php|languages/)' || true )"
-		if [ -n "$CHANGED" ]; then
-			echo "refusing to build: Pro changed between the tested commit and the built one, in files that are not release metadata:" >&2
-			printf '  %s\n' $CHANGED >&2
+		# BY CONTENT, NOT BY FILENAME (V81-02). The allowlist named
+		# rapls-passkey-pro.php — which is not a version file, it is the code that
+		# runs when the plugin boots — so any amount of untested PHP could be
+		# added between the tested commit and the built one and still be called
+		# "release metadata only". Each changed path is now judged by what changed
+		# inside it.
+		if ! ( cd "$PRO" && "$PHP_BIN" -r '
+			$from = $argv[1];
+			$to   = $argv[2];
+			$names = array_values(array_filter(explode("\n", (string) shell_exec("git diff --name-only " . escapeshellarg($from) . " " . escapeshellarg($to)))));
+			$bad = array();
+			foreach ($names as $path) {
+				// Never shipped: .distignore excludes tools/ from the package, so
+				// nothing under it can reach a user.
+				if (0 === strpos($path, "tools/")) { continue; }
+				// Documentation. Text only, and not executed.
+				if ("readme.txt" === $path) { continue; }
+				$diff = (string) shell_exec("git diff -U0 " . escapeshellarg($from) . " " . escapeshellarg($to) . " -- " . escapeshellarg($path));
+				$changed_lines = array();
+				foreach (explode("\n", $diff) as $line) {
+					if (preg_match("/\A[-+][^-+]/", $line) || "+" === $line || "-" === $line) { $changed_lines[] = $line; }
+				}
+				if ("rapls-passkey-pro.php" === $path) {
+					// Only the version comment and the two release constants.
+					foreach ($changed_lines as $line) {
+						$body = substr($line, 1);
+						if (preg_match("/\A\s*\*\s*Version:\s*[0-9][0-9a-z.\-]*\s*\z/i", $body)) { continue; }
+						if (preg_match("/\Adefine\(\s*.RAPLS_PASSKEY_PRO_VERSION.\s*,\s*.[0-9][0-9a-z.\-]*.\s*\);\s*\z/", $body)) { continue; }
+						if (preg_match("/\Adefine\(\s*.RAPLS_PASSKEY_PRO_RELEASE_SEQUENCE.\s*,\s*[0-9]+\s*\);\s*\z/", $body)) { continue; }
+						$bad[] = $path . ": " . trim($line);
+					}
+					continue;
+				}
+				if (preg_match("#\Alanguages/.*\.(po|pot)\z#", $path)) {
+					// Header lines only — a changed translation is a changed
+					// string in the interface, which is not release metadata.
+					foreach ($changed_lines as $line) {
+						if (preg_match("/\A[-+]\"[A-Za-z-]+:/", $line)) { continue; }
+						$bad[] = $path . ": " . trim($line);
+					}
+					continue;
+				}
+				if (preg_match("#\Alanguages/(.*)\.mo\z#", $path, $m)) {
+					// Allowed only alongside its .po, which was just checked.
+					if (in_array("languages/" . $m[1] . ".po", $names, true)) { continue; }
+					$bad[] = $path . ": compiled catalogue changed with no .po beside it";
+					continue;
+				}
+				$bad[] = $path . ": not a release-metadata file";
+			}
+			if ($bad) {
+				fwrite(STDERR, implode("\n", array_map(function ($b) { return "  " . $b; }, $bad)) . "\n");
+				exit(1);
+			}
+		' "$TESTED_PRO" "$PRO_ZIP_COMMIT" ); then
+			echo "refusing to build: Pro changed between the tested commit and the built one, in ways a release does not (above)" >&2
 			exit 1
 		fi
 		echo "pro provenance ok: CI tested $TESTED_PRO; the package was built from $PRO_ZIP_COMMIT (release metadata only)"

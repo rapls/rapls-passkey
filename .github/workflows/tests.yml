@@ -61,6 +61,39 @@ jobs:
       - name: Run the smoke suite
         run: bash bin/run-tests.sh
 
+      # HOW THIS JOB ENDED (V81-01). The database results say whether the
+      # database scenarios passed and nothing else — a job whose build or smoke
+      # suite failed after them still uploaded them saying "passed", and a bundle
+      # assembled from a red run looked exactly like one from a green run. Every
+      # job attests to its OWN final status here, last, so job.status covers
+      # every step above it; the only thing after it is the upload.
+      - name: Attest how this job ended
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/status"
+          php -r '
+            file_put_contents($argv[1], json_encode(array(
+                "attestation" => "job-status",
+                "job_key"     => $argv[2],
+                "status"      => $argv[3],
+                "ci"          => array(
+                    "run_id"      => getenv("GITHUB_RUN_ID"),
+                    "run_attempt" => getenv("GITHUB_RUN_ATTEMPT"),
+                    "repository"  => getenv("GITHUB_REPOSITORY"),
+                    "sha"         => getenv("GITHUB_SHA"),
+                    "workflow"    => getenv("GITHUB_WORKFLOW"),
+                    "job"         => getenv("GITHUB_JOB"),
+                ),
+            ), JSON_PRETTY_PRINT) . "\n");
+          ' "$RUNNER_TEMP/status/job-smoke-php-${{ matrix.php }}.json" "smoke-php-${{ matrix.php }}" "${{ job.status }}"
+
+      - name: Upload this job's status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-smoke-php-${{ matrix.php }}
+          path: ${{ runner.temp }}/status/*.json
+
   concurrency:
     name: real-DB concurrency (${{ matrix.db.name }})
     runs-on: ubuntu-latest
@@ -302,6 +335,29 @@ jobs:
             ' "$f"
           done
 
+      # The same attestation as the smoke jobs (V81-01): a database job that
+      # passed its scenarios and then failed the reproduction build must not be
+      # indistinguishable from one that passed everything.
+      - name: Attest how this job ended
+        if: always()
+        run: |
+          php -r '
+            file_put_contents($argv[1], json_encode(array(
+                "attestation" => "job-status",
+                "job_key"     => $argv[2],
+                "status"      => $argv[3],
+                "ci"          => array(
+                    "run_id"      => getenv("GITHUB_RUN_ID"),
+                    "run_attempt" => getenv("GITHUB_RUN_ATTEMPT"),
+                    "repository"  => getenv("GITHUB_REPOSITORY"),
+                    "sha"         => getenv("GITHUB_SHA"),
+                    "workflow"    => getenv("GITHUB_WORKFLOW"),
+                    "job"         => getenv("GITHUB_JOB"),
+                    "pro_sha"     => (string) getenv("PRO_TESTED_SHA"),
+                ),
+            ), JSON_PRETTY_PRINT) . "\n");
+          ' "$RESULTS/job-concurrency-${{ matrix.db.name }}.json" "concurrency-${{ matrix.db.name }}" "${{ job.status }}"
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
@@ -310,3 +366,4 @@ jobs:
           path: |
             ${{ runner.temp }}/results/concurrency-*.json
             ${{ runner.temp }}/results/integration-*.json
+            ${{ runner.temp }}/results/job-*.json

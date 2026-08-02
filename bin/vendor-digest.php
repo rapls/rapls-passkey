@@ -90,17 +90,55 @@ function rapls_vendor_entries( $vendor ) {
 		// umask of whoever ran Composer and says nothing about the bytes.
 		$exec = ( fileperms( $path ) & 0111 ) ? '1' : '0';
 
-		// TWO FILES CARRY THE ROOT COMMIT. Composer writes the checkout's own
-		// git reference into vendor/composer/installed.php and installed.json, so
-		// they change on EVERY commit and a manifest recorded against them would
-		// be stale the moment it was committed — which is a manifest nobody can
-		// keep, and an unkeepable check gets deleted. The 40-character references
-		// in those two files are blanked before hashing; everything else in them,
-		// including all the code in installed.php, is covered as usual. What the
-		// blanking gives up is pinning the DEPENDENCIES' references, and
-		// composer.lock pins those and is tracked in git.
+		// TWO FILES DESCRIBE THE CHECKOUT THEY WERE WRITTEN IN. Composer records
+		// the ROOT package's git reference and a version derived from its branch
+		// in vendor/composer/installed.php and installed.json. Those change on
+		// every commit — a manifest recorded against them is stale the moment it
+		// is committed, and an unkeepable check is one that gets deleted — and a
+		// tree exported WITHOUT .git, which is exactly what this bundle ships,
+		// gets NULL and '1.0.0+no-version-set' instead, so the source we hand out
+		// could never satisfy its own manifest (V86-01).
+		//
+		// Three values are blanked, inside the root block only. The dependencies'
+		// versions and references are untouched, and every other byte of both
+		// files — including all the code in installed.php — is hashed as it
+		// stands. install_path is written as __DIR__ . '…' and so is already the
+		// same text everywhere.
 		if ( 'composer/installed.php' === $rel || 'composer/installed.json' === $rel ) {
-			$body       = preg_replace( '/[0-9a-f]{40}/', '<ref>', (string) file_get_contents( $path ) );
+			$body = (string) file_get_contents( $path );
+			// The root block, delimited by BALANCED parentheses rather than by a
+			// pattern: it contains `'aliases' => array(),`, so "up to the first
+			// `),`" ends in the middle of it, and "up to a `),` on its own line"
+			// depends on how the file happens to be laid out. Neither is a fact
+			// about where the block ends.
+			$at = strpos( $body, "'root' => array(" );
+			if ( false !== $at ) {
+				$open  = strpos( $body, '(', $at );
+				$depth = 0;
+				$end   = $open;
+				for ( $i = $open, $n = strlen( $body ); $i < $n; $i++ ) {
+					if ( '(' === $body[ $i ] ) {
+						$depth++;
+					} elseif ( ')' === $body[ $i ] ) {
+						$depth--;
+						if ( 0 === $depth ) {
+							$end = $i;
+							break;
+						}
+					}
+				}
+				$block = substr( $body, $at, $end - $at + 1 );
+				$body  = substr( $body, 0, $at )
+					. preg_replace( "/('(?:pretty_version|version|reference)'\s*=>\s*)(?:NULL|null|'[^']*')/", '$1<volatile>', $block )
+					. substr( $body, $end + 1 );
+			}
+			$body = preg_replace_callback(
+				'/"root"\s*:\s*\{.*?\}/s',
+				static function ( $m ) {
+					return preg_replace( '/("(?:pretty_version|version|reference)"\s*:\s*)(?:null|"[^"]*")/', '$1"<volatile>"', $m[0] );
+				},
+				(string) $body
+			);
 			$out[ $rel ] = 'file:' . $exec . ':' . hash( 'sha256', (string) $body );
 			continue;
 		}

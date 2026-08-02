@@ -106,11 +106,20 @@ stage_plugin() {
 			exit 1
 		}
 		rsync -a --exclude '.git' "$src/vendor/" "$dest/vendor/"
-		printf '{\n  "vendor_tree_sha256": "%s",\n  "verified_against": "vendor-manifest.json",\n  "composer_lock_sha256": "%s",\n  "from_commit": "%s"\n}\n' \
+		# BESIDE THE TREE, NOT INSIDE IT (V86-01). This record used to be written
+		# to vendor/VENDOR-PROVENANCE.json — a file the manifest does not list, in
+		# the one directory the manifest fixes completely. So the source in this
+		# bundle could not pass its own check: following the rebuild instructions
+		# in README.md, build-dist.sh refused, because the bundle had put a
+		# stowaway in vendor/ on the way out. A record of a tree must not be part
+		# of the tree it records.
+		mkdir -p "$STAGE/vendor-provenance"
+		printf '{\n  "plugin": "%s",\n  "vendor_tree_sha256": "%s",\n  "verified_against": "vendor-manifest.json",\n  "composer_lock_sha256": "%s",\n  "from_commit": "%s"\n}\n' \
+			"$slug" \
 			"$( cd "$src" && "$PHP_BIN" bin/vendor-digest.php --print )" \
 			"$( [ -f "$dest/composer.lock" ] && shasum -a 256 "$dest/composer.lock" | cut -d' ' -f1 || echo 'absent' )" \
 			"$commit" \
-			> "$dest/vendor/VENDOR-PROVENANCE.json"
+			> "$STAGE/vendor-provenance/$slug.json"
 	fi
 
 	# The scoper PHAR is 8 MB of third-party binary; the build script fetches it.
@@ -119,6 +128,22 @@ stage_plugin() {
 
 stage_plugin "$FREE" rapls-passkey
 stage_plugin "$PRO" rapls-passkey-pro
+
+# AND THE STAGED TREE PASSES THE CHECK IT SHIPS WITH (V86-01). The source in this
+# bundle is meant to rebuild the submitted ZIPs, and build-dist.sh inside it runs
+# vendor-digest.php against vendor-manifest.json — so the copy has to satisfy that
+# too. Checking the ORIGINAL tree and then copying it is not the same statement:
+# whatever the copy adds, moves or leaves out is exactly what this catches, and
+# it is how a record written into vendor/ went unnoticed.
+for slug in rapls-passkey rapls-passkey-pro; do
+	[ -d "$STAGE/$slug/vendor" ] || continue
+	"$PHP_BIN" "$STAGE/$slug/bin/vendor-digest.php" --root="$STAGE/$slug" --check >/dev/null || {
+		echo "refusing to build: the staged $slug does not pass its own vendor check" >&2
+		"$PHP_BIN" "$STAGE/$slug/bin/vendor-digest.php" --root="$STAGE/$slug" --check 2>&1 | sed 's/^/  /' >&2
+		exit 1
+	}
+done
+echo "staged source ok: both trees pass the vendor check they ship with"
 
 # The reproduction script, with the digests of the ZIPs it is meant to check.
 FREE_SHA="$(shasum -a 256 "$PLUGINS/rapls-passkey.zip" | cut -d' ' -f1)"

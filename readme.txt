@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.52
+Stable tag: 0.13.53
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,9 @@ What is stored on your site:
 
 External services (used only when you enable them):
 
-* Google reCAPTCHA v3 — only if you turn on reCAPTCHA for password logins. When active, the visitor's browser contacts Google and the plugin sends the resulting token (and the request IP) to Google's siteverify endpoint to score the request. See Google's privacy policy. Leaving reCAPTCHA off means no data goes to Google.
+* Google reCAPTCHA v3 — only if you turn on reCAPTCHA for password logins. When active, the visitor's browser loads https://www.google.com/recaptcha/api.js and the plugin sends the resulting token (and the request IP) to https://www.google.com/recaptcha/api/siteverify to score the request. Leaving reCAPTCHA off means no data goes to Google. Google's terms and privacy policy govern that use:
+    * Terms of Service: https://policies.google.com/terms
+    * Privacy Policy: https://policies.google.com/privacy
 
 Retention and removal:
 
@@ -80,6 +82,11 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.53 =
+* **Audit CSV export: a formula hidden behind leading whitespace is now neutralised too.** The check looked at the first byte, so a username beginning with a space, a tab, a non-breaking space or a byte-order mark before `=`, `+`, `-` or `@` was written to the file unguarded — and a spreadsheet skips that whitespace before deciding whether a cell is a formula.
+* The readme now links Google's terms and privacy policy for the optional reCAPTCHA integration, and names the endpoints it contacts.
+* Release tooling: the verification bundle is assembled from the tested commit rather than from the working tree, and refuses to build from a checkout with uncommitted changes.
 
 = 0.13.52 =
 * No change to the plugin itself. CI gained a final job that requires every other job in the run to have succeeded, the release tooling was tightened further, and the provenance record now counts test results and job attestations separately — none of it is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.50.

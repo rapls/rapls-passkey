@@ -114,11 +114,44 @@ final class AuditExport {
 	 * apostrophe. Values here can include a user-chosen login, which is attacker
 	 * influenced.
 	 *
+	 * NOT THE FIRST BYTE — THE FIRST THING THAT COUNTS (V83-02). Spreadsheets skip
+	 * leading whitespace before deciding whether a cell is a formula, so a login
+	 * of " =1+1", "\t=1+1", a non-breaking space or a byte-order mark followed by
+	 * "=1+1" walked straight past a check that looked at $value[0] and got a
+	 * space. The licence server's own CSV already stripped those before deciding;
+	 * this is the same rule, in the plugin that ships to other people's sites.
+	 *
+	 * The PREFIX goes on the original value, not on the trimmed one: what is
+	 * exported must still be what was recorded.
+	 *
 	 * @param string $value Cell value.
 	 * @return string
 	 */
 	private static function csv_safe( string $value ): string {
-		if ( '' !== $value && in_array( $value[0], array( '=', '+', '-', '@', "\t", "\r" ), true ) ) {
+		if ( '' === $value ) {
+			return $value;
+		}
+
+		// A leading byte-order mark, ASCII control characters and space, and the
+		// Unicode spaces a login can contain: NBSP (U+00A0), the U+2000–U+200A
+		// range, line/paragraph separators, U+202F, U+205F, U+3000 and the
+		// zero-width characters that are invisible in a cell but not to a parser.
+		$probe = preg_replace(
+			'/\A(?:\xEF\xBB\xBF|[\x00-\x20]|\xC2\xA0|\xE2\x80[\x80-\x8B\xA8\xA9\xAF]|\xE2\x81\x9F|\xE3\x80\x80|\xEF\xBB\xBF|\xEF\xBE\xA0)+/',
+			'',
+			$value
+		);
+		if ( null === $probe ) {
+			// A malformed sequence is not a reason to export it unguarded.
+			return "'" . $value;
+		}
+
+		if ( '' !== $probe && in_array( $probe[0], array( '=', '+', '-', '@' ), true ) ) {
+			return "'" . $value;
+		}
+		// And a value that BEGINS with a tab or a carriage return is a cell break
+		// wherever it appears, formula or not.
+		if ( in_array( $value[0], array( "\t", "\r", "\n" ), true ) ) {
 			return "'" . $value;
 		}
 		return $value;

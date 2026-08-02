@@ -43,23 +43,59 @@ SECRETS=(
 	"tools/license-server/rpls-license-data.json"
 )
 
+# FROM THE COMMIT, NOT FROM THE DESK (V83-01).
+#
+# This used to take the file LIST from git and the file CONTENTS from the working
+# tree, and every check afterwards compared commits — so editing a tracked file
+# without committing it put the edit in the bundle while `git rev-parse HEAD`
+# went on naming the tested commit and every gate passed. The distribution ZIPs'
+# source_dirty flag did not help: that is a property of those ZIPs, not of the
+# source staged here, and the licence server is staged here.
+#
+# So the tree comes out of the commit with `git archive`, and a dirty checkout is
+# refused outright rather than silently exported. Two independent things: even if
+# a future edit reintroduced a copy from the working tree, the clean-tree gate
+# would still catch it.
+require_clean() {
+	local src="$1" slug="$2" dirty
+	dirty="$( cd "$src" && git status --porcelain --untracked-files=no )"
+	if [ -n "$dirty" ]; then
+		echo "refusing to build: $slug has uncommitted changes, and the bundle carries its source" >&2
+		printf '%s\n' "$dirty" | sed 's/^/  /' >&2
+		exit 1
+	fi
+}
+
 stage_plugin() {
-	local src="$1" slug="$2" dest="$STAGE/$2"
+	local src="$1" slug="$2" dest="$STAGE/$2" commit
 	[ -d "$src" ] || return 0
 
+	require_clean "$src" "$slug"
+	commit="$( cd "$src" && git rev-parse HEAD )"
+
 	mkdir -p "$dest"
-	# Tracked files only.
-	( cd "$src" && git ls-files -z ) | while IFS= read -r -d '' file; do
-		for secret in "${SECRETS[@]}"; do
-			[ "$file" = "$secret" ] && continue 2
-		done
-		mkdir -p "$dest/$(dirname "$file")"
-		cp "$src/$file" "$dest/$file"
+	# The tracked tree AS COMMITTED. git archive writes exactly what is in the
+	# commit; nothing on this machine can differ from it.
+	( cd "$src" && git archive --format=tar "$commit" ) | ( cd "$dest" && tar -xf - )
+
+	# Never in the bundle, whatever the commit says.
+	for secret in "${SECRETS[@]}"; do
+		rm -f "$dest/$secret"
 	done
 
-	# vendor/ is generated, not tracked, and the suites need it.
+	# vendor/ is generated, not tracked, and the suites need it. It is BOUND TO
+	# THE LOCK FILE (V83-01): the digest of composer.lock as committed is recorded
+	# beside it, so a reproducer can tell which dependency set this is, and a
+	# vendor/ built from some other lock file is visible rather than assumed.
 	if [ -d "$src/vendor" ]; then
 		rsync -a --exclude '.git' "$src/vendor/" "$dest/vendor/"
+		if [ -f "$dest/composer.lock" ]; then
+			printf '{\n  "composer_lock_sha256": "%s",\n  "installed_sha256": "%s",\n  "from_commit": "%s"\n}\n' \
+				"$( shasum -a 256 "$dest/composer.lock" | cut -d' ' -f1 )" \
+				"$( [ -f "$dest/vendor/composer/installed.json" ] && shasum -a 256 "$dest/vendor/composer/installed.json" | cut -d' ' -f1 || echo 'absent' )" \
+				"$commit" \
+				> "$dest/vendor/VENDOR-PROVENANCE.json"
+		fi
 	fi
 
 	# The scoper PHAR is 8 MB of third-party binary; the build script fetches it.

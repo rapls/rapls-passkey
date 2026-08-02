@@ -64,6 +64,46 @@ namespace {
 	check( 'neutralises a formula-leading username', false !== strpos( $evil, "'=cmd|calc" ) && false === strpos( $evil, ',=cmd|calc' ) );
 	check( 'neutralises a formula-leading detail', false !== strpos( $evil, "'@SUM(1)" ) );
 
+	// AND WHEN SOMETHING HARMLESS COMES FIRST (V83-02). A spreadsheet skips
+	// leading whitespace before deciding whether a cell is a formula; the check
+	// looked at the first BYTE, so a space, a tab, a non-breaking space or a
+	// byte-order mark in front of it was enough to get through. Every
+	// combination of a leading character and a formula character, one row each.
+	$leaders = array(
+		'a space'              => ' ',
+		'a tab'                => "\t",
+		'a carriage return'    => "\r",
+		'a non-breaking space' => "\xC2\xA0",
+		'a byte-order mark'    => "\xEF\xBB\xBF",
+		'an en quad'           => "\xE2\x80\x80",
+		'a narrow no-break'    => "\xE2\x80\xAF",
+		'an ideographic space' => "\xE3\x80\x80",
+		'a zero-width space'   => "\xE2\x80\x8B",
+		'two spaces and a tab' => "  \t",
+	);
+	$leaks = array();
+	foreach ( $leaders as $what => $lead ) {
+		foreach ( array( '=', '+', '-', '@' ) as $op ) {
+			$payload = $lead . $op . '1+1';
+			$out     = $export->to_csv( array(
+				array( 'created_at' => '2026-06-10 09:00:00', 'event' => 'login', 'user_id' => 9, 'user_login' => $payload, 'detail' => '-cmd', 'ip' => '203.0.113.9' ),
+			) );
+			// The guarded form is the apostrophe immediately before the value,
+			// with the leading characters preserved after it.
+			if ( false === strpos( $out, "'" . $payload ) ) {
+				$leaks[] = $what . ' + ' . $op;
+			}
+		}
+	}
+	check( 'a formula behind leading whitespace is still neutralised (V83-02)' . ( $leaks ? ' — through: ' . implode( ', ', $leaks ) : '' ), array() === $leaks );
+
+	// And the guard does not fire on ordinary values, or the export becomes
+	// apostrophes.
+	$plain = $export->to_csv( array(
+		array( 'created_at' => '2026-06-10 09:00:00', 'event' => 'login', 'user_id' => 9, 'user_login' => 'alice', 'detail' => 'ok', 'ip' => '203.0.113.9' ),
+	) );
+	check( 'an ordinary value is left alone', false === strpos( $plain, "'alice" ) && false !== strpos( $plain, 'alice' ) );
+
 	echo "\n  {$pass} passed, {$failc} failed\n";
 	exit( $failc === 0 ? 0 : 1 );
 }

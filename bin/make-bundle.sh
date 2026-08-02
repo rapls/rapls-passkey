@@ -299,9 +299,16 @@ if [ -n "$CI_ARTIFACTS" ] && [ -d "$CI_ARTIFACTS" ]; then
 	# update-info.json afterwards, which is a commit CI never saw. What must NOT
 	# differ is anything the tests cover, so the two are required to be equal or
 	# to differ only in release metadata.
+	# EITHER ORDER, BECAUSE BOTH HAPPEN. The usual sequence builds the package,
+	# writes its digest into update-info.json, commits that, and pushes — so the
+	# commit CI checks out is one AHEAD of the one the package was built from. A
+	# re-run of CI on an older commit puts them the other way round. What matters
+	# is not which is first but that nothing between them is covered by a test:
+	# they must be on one line of history, and the difference must be release
+	# metadata only.
 	if [ -n "$TESTED_PRO" ] && [ -n "$PRO_ZIP_COMMIT" ] && [ "$TESTED_PRO" != "$PRO_ZIP_COMMIT" ]; then
-		if ! ( cd "$PRO" && git merge-base --is-ancestor "$TESTED_PRO" "$PRO_ZIP_COMMIT" 2>/dev/null ); then
-			echo "refusing to build: CI tested Pro at $TESTED_PRO, which is not an ancestor of the built $PRO_ZIP_COMMIT" >&2
+		if ! ( cd "$PRO" && { git merge-base --is-ancestor "$TESTED_PRO" "$PRO_ZIP_COMMIT" 2>/dev/null || git merge-base --is-ancestor "$PRO_ZIP_COMMIT" "$TESTED_PRO" 2>/dev/null; } ); then
+			echo "refusing to build: CI tested Pro at $TESTED_PRO and the package was built from $PRO_ZIP_COMMIT; neither contains the other" >&2
 			exit 1
 		fi
 		CHANGED="$( cd "$PRO" && git diff --name-only "$TESTED_PRO" "$PRO_ZIP_COMMIT" | grep -vE '^(tools/license-server/update-info\.json|readme\.txt|rapls-passkey-pro\.php|languages/)' || true )"

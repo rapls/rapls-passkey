@@ -30,14 +30,20 @@
  */
 
 $root     = dirname( __DIR__ );
-$vendor   = $root . '/vendor';
-$manifest = $root . '/vendor-manifest.json';
 $mode     = '';
 foreach ( array_slice( $argv, 1 ) as $a ) {
 	if ( in_array( $a, array( '--write', '--check', '--print' ), true ) ) {
 		$mode = substr( $a, 2 );
 	}
+	// --root exists so tests/smoke-vendor-digest.php can drive this against a
+	// tree it builds itself: the rules are worth testing without a network and
+	// without depending on which packages happen to be installed today.
+	if ( 0 === strpos( $a, '--root=' ) ) {
+		$root = rtrim( substr( $a, 7 ), '/' );
+	}
 }
+$vendor   = $root . '/vendor';
+$manifest = $root . '/vendor-manifest.json';
 if ( '' === $mode ) {
 	fwrite( STDERR, "usage: vendor-digest.php --write|--check|--print\n" );
 	exit( 2 );

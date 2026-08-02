@@ -65,16 +65,6 @@ if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
 	fi
 fi
 
-# WAS THERE A vendor/ BEFORE THIS RAN? (V84-01.) It decides what the check
-# below can mean. A fresh checkout has none, so whatever Composer creates in a
-# moment comes from composer.lock and nothing local could have got into it —
-# that is CI, and a clean clone. An EXISTING vendor/ is a working directory: a
-# file edited inside an installed package survives composer install, reaches the
-# scoped ZIP, and agrees with itself on every rebuild. That one is checked
-# against the tree recorded in vendor-manifest.json.
-VENDOR_PREEXISTING=0
-[ -d "$ROOT/vendor" ] && VENDOR_PREEXISTING=1
-
 # Runtime deps ONLY — dev tooling must never end up in the shipped, scoped vendor.
 "$COMPOSER_BIN" install --no-dev --optimize-autoloader
 
@@ -88,14 +78,20 @@ VENDOR_PREEXISTING=0
 # 1b) AND THE TREE THAT IS ABOUT TO BE SCOPED IS THE RECORDED ONE (V84-01).
 #     Here, after composer has finished with it and before a single byte is
 #     copied into the package.
-if [ "$VENDOR_PREEXISTING" = "1" ]; then
-	"$PHP_BIN" "$ROOT/bin/vendor-digest.php" --check || {
-		echo "refusing to build: vendor/ is not the dependency tree this release recorded" >&2
-		exit 1
-	}
-else
-	echo "vendor ok: created here from composer.lock in a checkout that had none"
-fi
+# ALWAYS, NOT ONLY WHEN vendor/ WAS ALREADY THERE (V85-01). The first version
+# skipped this whenever the checkout had no vendor/, on the reasoning that
+# Composer had just created it from composer.lock. But composer.lock pins which
+# packages and which references — it does not pin the bytes on disk, the
+# executable bits, files a package ships that the lock never names, or what a
+# different Composer version generates. That is provenance standing in for
+# content, which is the same substitution V84-01 was about. The tree that is
+# about to be scoped is compared, however it got here.
+"$PHP_BIN" "$ROOT/bin/vendor-digest.php" --check || {
+	echo "refusing to build: vendor/ is not the dependency tree this release recorded" >&2
+	echo "  (a different Composer version can produce a different tree; that is a" >&2
+	echo "   refusal on purpose — the manifest fixes the tree, not the intention)" >&2
+	exit 1
+}
 
 # 2) Scope src + vendor + the composer autoloader into build/. Do NOT dump again.
 rm -rf "$BUILD"

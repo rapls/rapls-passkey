@@ -137,7 +137,9 @@ if ( '' !== $sibling && is_dir( $work . '/rapls-passkey' ) && ! is_dir( $work . 
 $allowed_skips = array(
 	// smoke-dist-inputs reads the build script and the ignore files, none of which
 	// is in a plugin artifact — source-only, like smoke-docs-endpoints (V71-01).
-	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php', 'smoke-dist-inputs.php' ),
+	// smoke-vendor-digest drives bin/vendor-digest.php, which a distribution does
+	// not carry — source-only, and it says so rather than passing on nothing.
+	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php', 'smoke-dist-inputs.php', 'smoke-vendor-digest.php' ),
 	// smoke-mds names the bundled library; the other two exercise operator tooling
 	// under tools/, which is deliberately NOT part of the plugin artifact — it is
 	// shipped in the verification bundle instead, where the source-tree run covers
@@ -150,7 +152,7 @@ $allowed_skips = array(
 	// smoke-runbook-rq runs the runbook's own helper against a loopback (V79-01);
 	// the document is not in a plugin artifact either, so it is source-only for
 	// the same reason and named here for the same reason.
-	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php', 'smoke-runbook-rq.php' ),
+	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php', 'smoke-runbook-rq.php', 'smoke-vendor-digest.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 

@@ -208,10 +208,28 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 	// test, and it reported "differs in exactly two paths" whatever it found —
 	// including for two trees that were identical, which the log then recorded
 	// as a difference.
+	// WHAT IS IDENTICAL IS THE TREE, NOT THE PACKAGE (V90-01). The two ZIPs have
+	// different digests — that is why this code path is running at all — and
+	// saying "the two packages are identical" beside two different SHA-256s is
+	// the same kind of overstatement as the README claim that started this.
+	// What matches is every file inside them; the archives still differ in their
+	// own metadata.
+	//
+	// And the explanation of each permitted difference belongs to the difference:
+	// printing both lines unconditionally described differences that were not
+	// there, which is how a caller comes to believe a check found something it
+	// did not.
+	$why = array(
+		"$slug/build-manifest.json"           => "source_dirty: unknown (no git in this source) vs false",
+		"$slug/vendor/composer/installed.php" => "the root package's pretty_version, version, reference",
+	);
 	if ( ! $differ ) {
-		echo "  {$slug}: the two packages are identical\n";
+		echo "  {$slug}: the extracted package trees are identical — every file matches; the ZIPs differ only in archive metadata\n";
 	} else {
-		echo "  {$slug}: differs only in " . implode( " and ", $differ ) . " — and only in the fields allowed\n";
+		echo "  {$slug}: the extracted trees differ only in " . implode( " and ", $differ ) . ", and only in the fields allowed\n";
+		foreach ( $differ as $rel ) {
+			echo "    " . str_pad( basename( $rel ), 24 ) . ( $why[ $rel ] ?? "" ) . "\n";
+		}
 	}
 COMPARATOR_PHP
 
@@ -315,5 +333,3 @@ mkdir -p "$WORK/a" "$WORK/b"
 # compared; nothing about the comparison depends on how a tool phrases itself.
 compare_trees "$SLUG" "$WORK/a" "$WORK/b" || exit 1
 
-echo "    build-manifest.json           source_dirty: unknown (no git in this source) vs false"
-echo "    vendor/composer/installed.php the root package's pretty_version, version, reference"

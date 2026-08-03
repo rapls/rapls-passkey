@@ -58,28 +58,6 @@ done
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGINS="$(cd "$HERE/.." && pwd)"
 [ -n "$SLUG" ] || { echo "--slug is required" >&2; exit 2; }
-[ -n "$ZIP" ]  || ZIP="$PLUGINS/$SLUG.zip"
-[ -n "$SRC" ]  || SRC="$PLUGINS/$SLUG"
-[ -f "$ZIP" ]  || { echo "no such ZIP: $ZIP" >&2; exit 2; }
-[ -d "$SRC" ]  || { echo "no such source directory: $SRC" >&2; exit 2; }
-
-# PHP-Scoper is 8 MB of third-party binary and is not tracked, so a source tree
-# handed to a reviewer does not carry it. Say where to get it rather than
-# failing three steps later with something obscure.
-if [ -z "$SCOPER" ]; then
-	for candidate in "$SRC/bin/php-scoper.phar" "$HERE/bin/php-scoper.phar" "$PLUGINS/$SLUG/bin/php-scoper.phar"; do
-		[ -f "$candidate" ] && { SCOPER="$candidate"; break; }
-	done
-fi
-if [ -z "$SCOPER" ] || [ ! -f "$SCOPER" ]; then
-	cat >&2 <<'MISSING'
-php-scoper.phar was not found. It is third-party and not tracked; pass it with
---scoper, or fetch the pinned release first:
-  curl -L -o /tmp/php-scoper.phar \
-    https://github.com/humbug/php-scoper/releases/download/0.18.11/php-scoper.phar
-MISSING
-	exit 2
-fi
 
 # The comparison, as a value so it can be used twice: by --compare and by the
 # rebuild path below.
@@ -138,11 +116,42 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 
 	$bad = array();
 
+	// THE EXEMPTION IS FOR CONTENT, NOT FOR EVERYTHING (V89-01). Two paths are
+	// allowed to differ; nothing said they had to stay the same KIND, or keep
+	// the same executable bit. The map recorded both and the exemption threw
+	// them away, so `chmod +x` on installed.php — or replacing it with a symlink
+	// to a file of the same text, which file_get_contents() would follow —
+	// passed. What is permitted is a difference in two named fields inside two
+	// regular files, and that is now what is checked.
+	$kind_ok = array();
+	foreach ( $allowed as $rel ) {
+		$kind_ok[ $rel ] = true;
+		if ( ! in_array( $rel, $differ, true ) ) { continue; }
+		$ka = $ma[ $rel ] ?? null;
+		$kb = $mb[ $rel ] ?? null;
+		if ( null === $ka || null === $kb ) {
+			$bad[] = "{$rel} is missing on one side";
+			$kind_ok[ $rel ] = false;
+			continue;
+		}
+		list( $kinda, $execa ) = explode( ":", $ka );
+		list( $kindb, $execb ) = explode( ":", $kb );
+		if ( "file" !== $kinda || "file" !== $kindb ) {
+			$bad[] = "{$rel} is not a regular file on both sides ({$kinda} vs {$kindb})";
+			$kind_ok[ $rel ] = false;
+			continue;
+		}
+		if ( $execa !== $execb ) {
+			$bad[] = "{$rel} differs in its executable bit";
+			$kind_ok[ $rel ] = false;
+		}
+	}
+
 	// Only files that actually differ are examined — a file that matches has
 	// nothing to allow or refuse, and reading one that is not there is how this
 	// reported "not JSON on one side" for two identical trees.
 	// build-manifest.json: source_dirty only, and only false <-> unknown.
-	if ( in_array( "$slug/build-manifest.json", $differ, true ) ) {
+	if ( in_array( "$slug/build-manifest.json", $differ, true ) && ! empty( $kind_ok[ "$slug/build-manifest.json" ] ) ) {
 	$ja = json_decode( (string) file_get_contents( "$a/$slug/build-manifest.json" ), true );
 	$jb = json_decode( (string) file_get_contents( "$b/$slug/build-manifest.json" ), true );
 	if ( ! is_array( $ja ) || ! is_array( $jb ) ) {
@@ -184,6 +193,7 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 		return $body;
 	};
 	if ( in_array( "$slug/vendor/composer/installed.php", $differ, true )
+		&& ! empty( $kind_ok[ "$slug/vendor/composer/installed.php" ] )
 		&& $norm( (string) file_get_contents( "$a/$slug/vendor/composer/installed.php" ) )
 		!== $norm( (string) file_get_contents( "$b/$slug/vendor/composer/installed.php" ) ) ) {
 		$bad[] = "installed.php differs in more than the root package version and reference";
@@ -193,6 +203,16 @@ read -r -d '' COMPARATOR <<'COMPARATOR_PHP' || true
 		fwrite( STDERR, "  " . $slug . ": " . implode( "\n  " . $slug . ": ", $bad ) . "\n" );
 		exit( 1 );
 	}
+
+	// SAY WHAT DIFFERED, NOT WHAT WAS PERMITTED (V89-03). The check is a subset
+	// test, and it reported "differs in exactly two paths" whatever it found —
+	// including for two trees that were identical, which the log then recorded
+	// as a difference.
+	if ( ! $differ ) {
+		echo "  {$slug}: the two packages are identical\n";
+	} else {
+		echo "  {$slug}: differs only in " . implode( " and ", $differ ) . " — and only in the fields allowed\n";
+	}
 COMPARATOR_PHP
 
 # Extracted so --compare can reach it without a rebuild.
@@ -200,11 +220,47 @@ compare_trees() {   # $1 = slug, $2 = tree A, $3 = tree B
 	"$PHP_BIN" -r "$COMPARATOR" "$1" "$2" "$3"
 }
 
-if [ -n "$COMPARE_A" ]; then
+# --compare IS A WHOLE MODE, NOT A SHORTCUT THROUGH THIS ONE (V89-02). It used
+# to fall through the ZIP, source and PHAR checks, which have nothing to do with
+# comparing two directories that already exist — while nothing checked the two
+# directories themselves, and the map of a directory that is not there is empty.
+# Two empty maps agree, so a mistyped fixture path passed. Everything it needs
+# is required; nothing it does not need is.
+if [ -n "$COMPARE_A" ] || [ -n "$COMPARE_B" ]; then
+	for side in "A:$COMPARE_A" "B:$COMPARE_B"; do
+		name="${side%%:*}"; dir="${side#*:}"
+		[ -n "$dir" ]      || { echo "--compare needs two directories (side $name is missing)" >&2; exit 2; }
+		[ -d "$dir" ]      || { echo "--compare: no such directory: $dir" >&2; exit 2; }
+		[ -d "$dir/$SLUG" ] || { echo "--compare: $dir holds no $SLUG/ — is --slug right?" >&2; exit 2; }
+		[ -n "$( ls -A "$dir/$SLUG" 2>/dev/null )" ] || { echo "--compare: $dir/$SLUG is empty" >&2; exit 2; }
+	done
 	compare_trees "$SLUG" "$COMPARE_A" "$COMPARE_B" || exit 1
-	echo "  ${SLUG}: the two trees differ in exactly the paths and fields allowed"
 	exit 0
 fi
+
+[ -n "$ZIP" ]  || ZIP="$PLUGINS/$SLUG.zip"
+[ -n "$SRC" ]  || SRC="$PLUGINS/$SLUG"
+[ -f "$ZIP" ]  || { echo "no such ZIP: $ZIP" >&2; exit 2; }
+[ -d "$SRC" ]  || { echo "no such source directory: $SRC" >&2; exit 2; }
+
+# PHP-Scoper is 8 MB of third-party binary and is not tracked, so a source tree
+# handed to a reviewer does not carry it. Say where to get it rather than
+# failing three steps later with something obscure.
+if [ -z "$SCOPER" ]; then
+	for candidate in "$SRC/bin/php-scoper.phar" "$HERE/bin/php-scoper.phar" "$PLUGINS/$SLUG/bin/php-scoper.phar"; do
+		[ -f "$candidate" ] && { SCOPER="$candidate"; break; }
+	done
+fi
+if [ -z "$SCOPER" ] || [ ! -f "$SCOPER" ]; then
+	cat >&2 <<'MISSING'
+php-scoper.phar was not found. It is third-party and not tracked; pass it with
+--scoper, or fetch the pinned release first:
+  curl -L -o /tmp/php-scoper.phar \
+    https://github.com/humbug/php-scoper/releases/download/0.18.11/php-scoper.phar
+MISSING
+	exit 2
+fi
+
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -259,6 +315,5 @@ mkdir -p "$WORK/a" "$WORK/b"
 # compared; nothing about the comparison depends on how a tool phrases itself.
 compare_trees "$SLUG" "$WORK/a" "$WORK/b" || exit 1
 
-echo "  ${SLUG}: differs in exactly two paths, and in exactly the fields allowed"
 echo "    build-manifest.json           source_dirty: unknown (no git in this source) vs false"
 echo "    vendor/composer/installed.php the root package's pretty_version, version, reference"

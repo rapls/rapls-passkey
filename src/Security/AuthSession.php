@@ -11,9 +11,7 @@ use RaplsPasskey\Support\Settings;
 use WP_Error;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Every passwordless sign-in path (passkey, QR cross-device, magic link,

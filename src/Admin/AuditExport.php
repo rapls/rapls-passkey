@@ -9,9 +9,7 @@ namespace RaplsPasskey\Admin;
 
 use RaplsPasskey\Audit\AuditLog;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Streams the audit log as a UTF-8 CSV (with BOM, so Japanese opens cleanly in
@@ -54,7 +52,8 @@ final class AuditExport {
 		header( 'Content-Disposition: attachment; filename="rapls-passkey-audit-' . gmdate( 'Ymd-His' ) . '.csv"' );
 
 		echo "\xEF\xBB\xBF"; // UTF-8 BOM.
-		echo $this->to_csv( $rows ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->to_csv( $rows );
 		exit;
 	}
 
@@ -65,6 +64,9 @@ final class AuditExport {
 	 * @return string
 	 */
 	public function to_csv( array $rows ): string {
+		// An in-memory stream, not a file: WP_Filesystem cannot open php://temp, and
+		// fputcsv() needs a real handle to do the RFC 4180 quoting for us.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		$handle = fopen( 'php://temp', 'r+' );
 
 		// Explicit CSV control args (RFC 4180 quote-doubling, no backslash escape)
@@ -103,6 +105,7 @@ final class AuditExport {
 
 		rewind( $handle );
 		$csv = (string) stream_get_contents( $handle );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		fclose( $handle );
 
 		return $csv;

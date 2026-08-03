@@ -9,9 +9,7 @@ namespace RaplsPasskey\Recovery;
 
 use RaplsPasskey\Credentials\CredentialRepository;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Pure decision helpers that keep passkey enforcement from locking anyone out.

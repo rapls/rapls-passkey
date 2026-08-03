@@ -10,9 +10,7 @@ namespace RaplsPasskey\Admin;
 use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a dashboard widget summarising passkey adoption — total passkeys, how
@@ -71,15 +69,16 @@ final class DashboardWidget {
 			esc_html__( 'Registered passkeys', 'rapls-passkey' ),
 			esc_html( number_format_i18n( $total ) )
 		);
+		if ( $all_users > 0 ) {
+			/* translators: 1: users with a passkey, 2: total users, 3: percentage. */
+			$share = sprintf( __( '%1$s / %2$s (%3$d%%)', 'rapls-passkey' ), number_format_i18n( $users ), number_format_i18n( $all_users ), $pct );
+		} else {
+			$share = number_format_i18n( $users );
+		}
 		printf(
 			'<li><strong>%s</strong>: %s</li>',
 			esc_html__( 'Users with a passkey', 'rapls-passkey' ),
-			esc_html(
-				$all_users > 0
-					/* translators: 1: users with a passkey, 2: total users, 3: percentage. */
-					? sprintf( __( '%1$s / %2$s (%3$d%%)', 'rapls-passkey' ), number_format_i18n( $users ), number_format_i18n( $all_users ), $pct )
-					: number_format_i18n( $users )
-			)
+			esc_html( $share )
 		);
 		printf(
 			'<li><strong>%s</strong>: %s</li>',

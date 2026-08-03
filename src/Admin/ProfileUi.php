@@ -12,9 +12,7 @@ use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Support\Help;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a "Passkey" section to the user profile screen: a list of registered

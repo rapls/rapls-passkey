@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Runs on plugin deactivation. Keeps all user data; only transient runtime

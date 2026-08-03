@@ -12,9 +12,7 @@
 
 namespace RaplsPasskey\Credentials;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Creates and versions the plugin's credential table.
@@ -408,11 +406,13 @@ final class Schema {
 
 		// Clear any probe rows a killed request left behind (see
 		// writer_rejects_duplicate_slot(); user_id 0 is never a real user).
-		$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$wpdb->query( "DELETE FROM {$table} WHERE user_id = 0 AND credential_id LIKE 'rapls-probe-%'" );
 
 		// Batched so a site with a large table does not build one huge statement.
 		do {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$rows = $wpdb->get_results(
 				"SELECT id, user_id FROM {$table} WHERE slot_no IS NULL ORDER BY user_id ASC, id ASC LIMIT 500",
 				ARRAY_A
 			);
@@ -425,10 +425,12 @@ final class Schema {
 			foreach ( $rows as $row ) {
 				$user_id = (int) $row['user_id'];
 				// The next free number for this user: one past their highest slot.
-				$next = 1 + (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$next = 1 + (int) $wpdb->get_var(
 					$wpdb->prepare( "SELECT COALESCE(MAX(slot_no), 0) FROM {$table} WHERE user_id = %d", $user_id )
 				);
-				$updated = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+				$updated = $wpdb->query(
 					$wpdb->prepare( "UPDATE {$table} SET slot_no = %d WHERE id = %d AND slot_no IS NULL", $next, (int) $row['id'] )
 				);
 				if ( false === $updated ) {
@@ -453,9 +455,13 @@ final class Schema {
 		$table = self::credentials_table();
 
 		if ( ! self::slot_index_exists() ) {
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// The table name comes from $wpdb->prefix and a constant, and DDL takes no
+			// placeholders — a range is used because the call spans several lines.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->query(
 				"ALTER TABLE {$table} ADD UNIQUE KEY " . self::SLOT_INDEX . ' (user_id, slot_no)'
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
 
 		// Confirm against the table rather than trusting the ALTER's return value.
@@ -487,7 +493,8 @@ final class Schema {
 	private static function slot_index_well_formed(): bool {
 		global $wpdb;
 		$table = self::credentials_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows  = $wpdb->get_results(
 			$wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name = %s", self::SLOT_INDEX ),
 			ARRAY_A
 		);
@@ -540,7 +547,8 @@ final class Schema {
 		$tag   = 'rapls-probe-' . $slot . '-';
 
 		$insert = static function ( string $suffix ) use ( $wpdb, $table, $slot, $now, $tag ) {
-			return $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			return $wpdb->query(
 				$wpdb->prepare(
 					"INSERT INTO {$table} (user_id, slot_no, credential_id, credential_data, sign_count, created_at) VALUES (0, %d, %s, '{}', 0, %s)",
 					$slot,
@@ -570,9 +578,11 @@ final class Schema {
 		// concurrency the first attempt can lose a lock wait.
 		$cleanup = "DELETE FROM {$table} WHERE user_id = 0 AND slot_no = %d AND credential_id LIKE %s";
 		$like    = $wpdb->esc_like( $tag ) . '%';
-		$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) );
 		if ( false === $cleaned ) {
-			$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$cleaned = $wpdb->query( $wpdb->prepare( $cleanup, $slot, $like ) );
 		}
 		$restore();
 
@@ -633,7 +643,8 @@ final class Schema {
 
 		// Table names are built from $wpdb->prefix, not user input.
 		foreach ( array( self::credentials_table(), self::audit_table() ) as $table ) {
-			$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 		}
 		delete_option( self::VERSION_OPTION );
 		delete_option( self::SLOT_INDEX_OPTION );

@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Support;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Detects well-known security plugins (Wordfence, SiteGuard WP Plugin,

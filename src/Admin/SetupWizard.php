@@ -12,9 +12,7 @@ use RaplsPasskey\Support\Compat;
 use RaplsPasskey\WebAuthn\RelyingParty;
 use RaplsPasskey\Plugin;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Activating a passkey plugin and being dropped on a settings screen leaves the two

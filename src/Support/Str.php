@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Support;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Multibyte-aware helpers that degrade gracefully where the mbstring extension

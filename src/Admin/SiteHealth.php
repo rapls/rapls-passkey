@@ -11,9 +11,7 @@ use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Support\Compat;
 use RaplsPasskey\WebAuthn\RelyingParty;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds checks under Tools → Site Health for the things that most often break a
@@ -269,7 +267,8 @@ final class SiteHealth {
 		}
 		global $wpdb;
 		$table = Schema::credentials_table();
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
 	}
 
 	/**
@@ -280,7 +279,8 @@ final class SiteHealth {
 	private function tables_exist(): bool {
 		global $wpdb;
 		foreach ( array( Schema::credentials_table(), Schema::audit_table() ) as $table ) {
-			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
 			if ( $found !== $table ) {
 				return false;
 			}

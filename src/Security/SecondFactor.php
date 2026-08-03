@@ -14,9 +14,7 @@ use RaplsPasskey\Support\RateLimit;
 use RaplsPasskey\Support\Settings;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * 2FA plugins (Wordfence Login Security, Two-Factor, …) enforce the second factor
@@ -143,7 +141,8 @@ final class SecondFactor {
 				// An active 2FA plugin errored while reporting the user's state.
 				$indeterminate = true;
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'rapls-passkey: second-factor provider unavailable: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					error_log( 'rapls-passkey: second-factor provider unavailable: ' . $e->getMessage() );
 				}
 			}
 		}

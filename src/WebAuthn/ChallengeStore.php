@@ -9,9 +9,7 @@ namespace RaplsPasskey\WebAuthn;
 
 use ParagonIE\ConstantTime\Base64UrlSafe;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Holds the pending ceremony options (which contain the challenge) server-side
@@ -98,8 +96,10 @@ final class ChallengeStore {
 			delete_transient( $key );
 			return true;
 		}
-		$rows = $wpdb->delete( $wpdb->options, array( 'option_name' => '_transient_' . $key ) ); // phpcs:ignore WordPress.DB
-		$wpdb->delete( $wpdb->options, array( 'option_name' => '_transient_timeout_' . $key ) ); // phpcs:ignore WordPress.DB
+		// phpcs:ignore WordPress.DB
+		$rows = $wpdb->delete( $wpdb->options, array( 'option_name' => '_transient_' . $key ) );
+		// phpcs:ignore WordPress.DB
+		$wpdb->delete( $wpdb->options, array( 'option_name' => '_transient_timeout_' . $key ) );
 		if ( false === $rows ) {
 			// A query error must not let a challenge be replayed — fail closed. The
 			// worst case is a single failed login the user can simply retry.

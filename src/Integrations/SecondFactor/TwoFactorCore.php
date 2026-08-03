@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations\SecondFactor;
 
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * The Two-Factor plugin is provider-based (TOTP, email, backup codes, …), and each
@@ -47,6 +45,8 @@ final class TwoFactorCore implements Provider {
 		try {
 			$using = (bool) \Two_Factor_Core::is_user_using_two_factor( $user->ID );
 		} catch ( \Throwable $e ) {
+			// The message is a literal; $e is the previous exception, not output.
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 			throw new ProviderUnavailable( 'Two-Factor status could not be read.', 0, $e );
 		}
 		if ( ! $using ) {

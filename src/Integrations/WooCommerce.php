@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations;
 
 use RaplsPasskey\Frontend\Shortcodes;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Surfaces passkey sign-in on WooCommerce's "My account" login screen (and,
@@ -64,7 +62,8 @@ final class WooCommerce {
 		echo '<div class="rapls-pk-wc">';
 		echo '<p class="rapls-pk-wc-heading">' . esc_html__( 'Sign in with a passkey', 'rapls-passkey' ) . '</p>';
 		// render_login() returns trusted, internally-escaped markup.
-		echo $this->shortcodes->render_login( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->shortcodes->render_login( array() );
 		echo '<p class="rapls-pk-wc-or">' . esc_html__( 'Or sign in with a password', 'rapls-passkey' ) . '</p>';
 		echo '</div>';
 	}

@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Support;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Compares a request Origin/Referer against the site origin. Unlike a bare host

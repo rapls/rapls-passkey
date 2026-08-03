@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Recovery;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * A last-resort escape hatch: defining `RAPLS_PASSKEY_BYPASS` (truthy) in

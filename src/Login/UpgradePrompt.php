@@ -11,9 +11,7 @@ use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Support\Settings;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Right after an interactive (password) login, if the user has no passkey yet,
@@ -66,7 +64,8 @@ final class UpgradePrompt {
 		if ( ! $user instanceof WP_User ) {
 			return $redirect_to;
 		}
-		if ( isset( $_REQUEST['interim-login'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_REQUEST['interim-login'] ) ) {
 			return $redirect_to;
 		}
 		if ( ! Settings::upgrade_prompt_enabled() ) {
@@ -100,8 +99,10 @@ final class UpgradePrompt {
 			exit;
 		}
 
-		$dest = isset( $_GET['redirect_to'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? wp_validate_redirect( wp_unslash( $_GET['redirect_to'] ), admin_url() ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$dest = isset( $_GET['redirect_to'] )
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			? wp_validate_redirect( wp_unslash( $_GET['redirect_to'] ), admin_url() )
 			: admin_url();
 		if ( '' === $dest ) {
 			$dest = admin_url();

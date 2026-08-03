@@ -10,9 +10,7 @@ namespace RaplsPasskey\Audit;
 use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Support\Settings;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Records security-relevant events (registration, login, removal, recovery) to
@@ -44,7 +42,8 @@ final class AuditLog {
 		}
 
 		global $wpdb;
-		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
 			Schema::audit_table(),
 			array(
 				'user_id'    => $user_id,
@@ -66,7 +65,8 @@ final class AuditLog {
 	public static function recent( int $limit = 50 ): array {
 		global $wpdb;
 		$table = Schema::audit_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows  = $wpdb->get_results(
 			$wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d", $limit ),
 			ARRAY_A
 		);
@@ -85,7 +85,8 @@ final class AuditLog {
 		global $wpdb;
 		$table  = Schema::audit_table();
 		$offset = max( 0, $offset );
-		$rows   = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows   = $wpdb->get_results(
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC LIMIT %d OFFSET %d", $user_id, $limit, $offset ),
 			ARRAY_A
 		);
@@ -101,7 +102,8 @@ final class AuditLog {
 	 */
 	public static function delete_for_user( int $user_id ): bool {
 		global $wpdb;
-		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted = $wpdb->delete(
 			Schema::audit_table(),
 			array( 'user_id' => $user_id ),
 			array( '%d' )

@@ -13,9 +13,7 @@
 
 namespace RaplsPasskey\Credentials;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Curated AAGUID -> provider-name lookup.

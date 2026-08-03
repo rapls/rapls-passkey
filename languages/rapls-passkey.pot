@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later license.
 msgid ""
 msgstr ""
-"Project-Id-Version: Rapls Passkey 0.13.62\n"
+"Project-Id-Version: Rapls Passkey 0.13.63\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-03 11:15+0000\n"
+"POT-Creation-Date: 2026-08-03 14:25+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -12,30 +12,30 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Domain: rapls-passkey\n"
 
-#: src/Admin/AuditExport.php:40 src/Admin/SettingsPage.php:46
-#: src/Admin/SetupWizard.php:134
+#: src/Admin/AuditExport.php:38 src/Admin/SettingsPage.php:44
+#: src/Admin/SetupWizard.php:132
 msgid "You do not have permission."
 msgstr ""
 
-#: src/Admin/AuditExport.php:75 src/Admin/SettingsPage.php:493
-#: src/Privacy/PersonalData.php:138
+#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:493
+#: src/Privacy/PersonalData.php:136
 msgid "Date/time (UTC)"
 msgstr ""
 
-#: src/Admin/AuditExport.php:76 src/Admin/SettingsPage.php:494
-#: src/Privacy/PersonalData.php:134
+#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:494
+#: src/Privacy/PersonalData.php:132
 msgid "Event"
 msgstr ""
 
-#: src/Admin/AuditExport.php:77
+#: src/Admin/AuditExport.php:79
 msgid "User ID"
 msgstr ""
 
-#: src/Admin/AuditExport.php:78
+#: src/Admin/AuditExport.php:80
 msgid "Username"
 msgstr ""
 
-#: src/Admin/AuditExport.php:79 src/Admin/SettingsPage.php:496
+#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:496
 msgid "Details"
 msgstr ""
 
@@ -52,27 +52,27 @@ msgstr ""
 msgid "User"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:171 src/Admin/ProfileUi.php:119
-#: src/Frontend/Shortcodes.php:183 src/Privacy/PersonalData.php:104
+#: src/Admin/CredentialsPage.php:171 src/Admin/ProfileUi.php:117
+#: src/Frontend/Shortcodes.php:183 src/Privacy/PersonalData.php:102
 msgid "Name"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:120
+#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:118
 #: src/Frontend/Shortcodes.php:184
 msgid "Authenticator"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:121
-#: src/Frontend/Shortcodes.php:185 src/Privacy/PersonalData.php:108
+#: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:119
+#: src/Frontend/Shortcodes.php:185 src/Privacy/PersonalData.php:106
 msgid "Registered"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:122
-#: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:112
+#: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:120
+#: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:110
 msgid "Last used"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:123
+#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:121
 #: src/Frontend/Shortcodes.php:187
 msgid "Status"
 msgstr ""
@@ -85,13 +85,13 @@ msgstr ""
 msgid "(deleted user)"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:196 src/Admin/ProfileUi.php:85
-#: src/Admin/ProfileUi.php:133 src/Frontend/Shortcodes.php:107
+#: src/Admin/CredentialsPage.php:196 src/Admin/ProfileUi.php:83
+#: src/Admin/ProfileUi.php:131 src/Frontend/Shortcodes.php:105
 #: src/Frontend/Shortcodes.php:197
 msgid "(no name)"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:134
+#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:132
 #: src/Frontend/Shortcodes.php:198
 msgid "Unknown"
 msgstr ""
@@ -100,26 +100,26 @@ msgstr ""
 msgid "Never"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:86
-#: src/Admin/ProfileUi.php:138 src/Frontend/Shortcodes.php:110
+#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:84
+#: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:108
 #: src/Frontend/Shortcodes.php:201
 msgid "Active"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:87
-#: src/Admin/ProfileUi.php:138 src/Frontend/Shortcodes.php:111
+#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:85
+#: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:109
 #: src/Frontend/Shortcodes.php:201
 msgid "Suspended"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:88
-#: src/Admin/ProfileUi.php:146 src/Frontend/Shortcodes.php:112
+#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:86
+#: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:110
 #: src/Frontend/Shortcodes.php:204
 msgid "Suspend"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:89
-#: src/Admin/ProfileUi.php:146 src/Frontend/Shortcodes.php:113
+#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:87
+#: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:111
 #: src/Frontend/Shortcodes.php:204
 msgid "Resume"
 msgstr ""
@@ -128,7 +128,7 @@ msgstr ""
 msgid "Delete this passkey? This cannot be undone."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:208 src/Admin/ProfileUi.php:148
+#: src/Admin/CredentialsPage.php:208 src/Admin/ProfileUi.php:146
 #: src/Frontend/Shortcodes.php:205
 msgid "Delete"
 msgstr ""
@@ -149,141 +149,141 @@ msgstr ""
 msgid "That passkey no longer exists."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:58 src/Admin/CredentialsPage.php:59
+#: src/Admin/CredentialsPage.php:56 src/Admin/CredentialsPage.php:57
 #: src/Admin/CredentialsPage.php:142
 msgid "Passkeys"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:81 src/Rest/Endpoints.php:730
+#: src/Admin/CredentialsPage.php:80 src/Rest/Endpoints.php:730
 #: src/Rest/Endpoints.php:767
 msgid "You do not have permission to change this passkey."
 msgstr ""
 
-#: src/Admin/DashboardWidget.php:100
-msgid "Users list"
-msgstr ""
-
-#: src/Admin/DashboardWidget.php:102
+#: src/Admin/DashboardWidget.php:101
 msgid "Settings"
 msgstr ""
 
-#: src/Admin/DashboardWidget.php:46
+#: src/Admin/DashboardWidget.php:44
 msgid "Rapls Passkey: Adoption"
 msgstr ""
 
-#: src/Admin/DashboardWidget.php:71 src/Admin/ProfileUi.php:114
+#: src/Admin/DashboardWidget.php:69 src/Admin/ProfileUi.php:112
 msgid "Registered passkeys"
 msgstr ""
 
-#: src/Admin/DashboardWidget.php:76
-msgid "Users with a passkey"
-msgstr ""
-
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: src/Admin/DashboardWidget.php:80
+#: src/Admin/DashboardWidget.php:74
 msgid "%1$s / %2$s (%3$d%%)"
 msgstr ""
 
-#: src/Admin/DashboardWidget.php:86
+#: src/Admin/DashboardWidget.php:80
+msgid "Users with a passkey"
+msgstr ""
+
+#: src/Admin/DashboardWidget.php:85
 msgid "Last 30 days"
 msgstr ""
 
 #. translators: 1: passkey logins, 2: new registrations.
-#: src/Admin/DashboardWidget.php:90
+#: src/Admin/DashboardWidget.php:89
 msgid "%1$s logins / %2$s new registrations"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:111 src/Admin/SettingsPage.php:153
-#: src/Admin/UsersColumn.php:54 src/Integrations/WooCommerceAccount.php:91
-#: src/Integrations/WooCommerceAccount.php:106
-#: src/Privacy/PersonalData.php:100
+#: src/Admin/DashboardWidget.php:99
+msgid "Users list"
+msgstr ""
+
+#: src/Admin/ProfileUi.php:109 src/Admin/SettingsPage.php:153
+#: src/Admin/UsersColumn.php:52 src/Integrations/WooCommerceAccount.php:89
+#: src/Integrations/WooCommerceAccount.php:104
+#: src/Privacy/PersonalData.php:98
 msgid "Passkey"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:114
+#: src/Admin/ProfileUi.php:112
 msgid "Your registered passkeys"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:129 src/Frontend/Shortcodes.php:193
+#: src/Admin/ProfileUi.php:127 src/Frontend/Shortcodes.php:193
 msgid "No passkeys are registered."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:142 src/Frontend/Shortcodes.php:203
+#: src/Admin/ProfileUi.php:140 src/Frontend/Shortcodes.php:203
 msgid "Rename"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:159 src/Frontend/Shortcodes.php:213
+#: src/Admin/ProfileUi.php:157 src/Frontend/Shortcodes.php:213
 msgid "Register a passkey"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:165
+#: src/Admin/ProfileUi.php:163
 msgid "Register a passkey for this user"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:169
+#: src/Admin/ProfileUi.php:167
 msgid "The passkey is created on the authenticator in front of you right now (your device, or a security key you are about to hand over) — so use this only when you are setting the user up in person. They are emailed about the new passkey, and it is recorded in the audit log."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:172
+#: src/Admin/ProfileUi.php:170
 msgid "Passkeys can only be registered from your own profile screen."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:75 src/Frontend/Shortcodes.php:99
-#: src/Login/UpgradePrompt.php:125
+#: src/Admin/ProfileUi.php:73 src/Frontend/Shortcodes.php:97
+#: src/Login/UpgradePrompt.php:126
 msgid "Registering passkey..."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:76 src/Frontend/Shortcodes.php:100
-#: src/Login/UpgradePrompt.php:126
+#: src/Admin/ProfileUi.php:74 src/Frontend/Shortcodes.php:98
+#: src/Login/UpgradePrompt.php:127
 msgid "Passkey registered."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:77 src/Frontend/Shortcodes.php:101
-#: src/Login/UpgradePrompt.php:127 src/Rest/Endpoints.php:236
-#: src/Rest/Endpoints.php:270 src/Rest/Endpoints.php:309
-#: src/Rest/Endpoints.php:319
+#: src/Admin/ProfileUi.php:75 src/Frontend/Shortcodes.php:99
+#: src/Login/UpgradePrompt.php:128 src/Rest/Endpoints.php:234
+#: src/Rest/Endpoints.php:269 src/Rest/Endpoints.php:308
+#: src/Rest/Endpoints.php:318
 msgid "Failed to register the passkey."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:78 src/Frontend/Shortcodes.php:102
-#: src/Login/LoginForm.php:60 src/Login/UpgradePrompt.php:128
+#: src/Admin/ProfileUi.php:76 src/Frontend/Shortcodes.php:100
+#: src/Login/LoginForm.php:59 src/Login/UpgradePrompt.php:129
 msgid "This browser does not support passkeys."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:79
+#: src/Admin/ProfileUi.php:77
 msgid "Registration was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:104
-#: src/Login/UpgradePrompt.php:130
+#: src/Admin/ProfileUi.php:78 src/Frontend/Shortcodes.php:102
+#: src/Login/UpgradePrompt.php:131
 msgid "This authenticator already has a passkey registered."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:81 src/Frontend/Shortcodes.php:105
+#: src/Admin/ProfileUi.php:79 src/Frontend/Shortcodes.php:103
 msgid "Delete this passkey?"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:82 src/Frontend/Shortcodes.php:106
+#: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:104
 msgid "Name for this passkey (optional):"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:83 src/Frontend/Shortcodes.php:108
+#: src/Admin/ProfileUi.php:81 src/Frontend/Shortcodes.php:106
 msgid "New name for this passkey:"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:84 src/Frontend/Shortcodes.php:109
+#: src/Admin/ProfileUi.php:82 src/Frontend/Shortcodes.php:107
 msgid "Could not rename the passkey."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:90 src/Frontend/Shortcodes.php:114
+#: src/Admin/ProfileUi.php:88 src/Frontend/Shortcodes.php:112
 msgid "Suspend this passkey? It will stop working until you resume it, but it is not deleted."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:141
+#: src/Admin/SettingsPage.php:139
 msgid "Rapls Passkey Settings"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:142
+#: src/Admin/SettingsPage.php:140
 msgid "Setup check"
 msgstr ""
 
@@ -625,254 +625,254 @@ msgstr ""
 msgid "Users"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:61 src/Admin/SettingsPage.php:62
-#: src/Admin/SiteHealth.php:53
+#: src/Admin/SettingsPage.php:59 src/Admin/SettingsPage.php:60
+#: src/Admin/SiteHealth.php:51
 msgid "Rapls Passkey"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:118
+#: src/Admin/SetupWizard.php:116
 msgid "Rapls Passkey is active."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:119
+#: src/Admin/SetupWizard.php:117
 msgid "Run the three-minute setup check to confirm passkeys will work on this site, and register your own."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:122
+#: src/Admin/SetupWizard.php:120
 msgid "Start setup"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:123
+#: src/Admin/SetupWizard.php:121
 msgid "Dismiss"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:163
+#: src/Admin/SetupWizard.php:161
 msgid "Step 1: can this site use passkeys?"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:167
+#: src/Admin/SetupWizard.php:165
 msgid "Secure connection"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:170
+#: src/Admin/SetupWizard.php:168
 msgid "OK. WebAuthn requires HTTPS (localhost is exempt)."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:172
+#: src/Admin/SetupWizard.php:170
 msgid "Not available."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:173
+#: src/Admin/SetupWizard.php:171
 msgid "Browsers refuse WebAuthn without HTTPS, so no passkey can be registered or used until this site is served over HTTPS."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:178 src/Admin/SiteHealth.php:65
+#: src/Admin/SetupWizard.php:176 src/Admin/SiteHealth.php:63
 msgid "WebAuthn library"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:181
+#: src/Admin/SetupWizard.php:179
 msgid "Loaded."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:183
+#: src/Admin/SetupWizard.php:181
 msgid "Missing."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:184
+#: src/Admin/SetupWizard.php:182
 msgid "Run composer install in the plugin directory."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:189
+#: src/Admin/SetupWizard.php:187
 msgid "Relying-party ID"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:193
+#: src/Admin/SetupWizard.php:191
 msgid "Passkeys are bound to this domain. If you later move the site to another domain, or change this with the rapls_passkey_rp_id filter, every passkey already registered stops matching and users have to register again. Decide it now, before anyone enrols."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:199
+#: src/Admin/SetupWizard.php:197
 msgid "Security plugins"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:203
+#: src/Admin/SetupWizard.php:201
 msgid "Detected and coexisted with: this plugin adds no CSP header, uses only standard login hooks, and keeps its REST routes reachable where a plugin locks the REST API down to logged-in users."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:211
+#: src/Admin/SetupWizard.php:209
 msgid "Step 2: register your own passkey"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:213
+#: src/Admin/SetupWizard.php:211
 msgid "Fix the items above first — passkeys cannot be registered until they pass."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:216
+#: src/Admin/SetupWizard.php:214
 msgid "You already have a passkey. Sign out and back in with it once, so you know the login flow works before you ask anyone else to use it."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:220
+#: src/Admin/SetupWizard.php:218
 msgid "Register one now. An administrator who has not tried it cannot tell whether it works for everyone else."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:224
+#: src/Admin/SetupWizard.php:222
 msgid "Go to your profile and register"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:229
+#: src/Admin/SetupWizard.php:227
 msgid "Step 3: decide the rollout"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:231
+#: src/Admin/SetupWizard.php:229
 msgid "Passkeys sit alongside passwords by default: nothing is taken away, and users adopt them at their own pace. When you are ready to go further, the settings screen carries the login rate limit, the post-login prompt that offers users a passkey, and reCAPTCHA for the password form. Making passkeys mandatory for a role, disabling password login, cross-device QR sign-in and recovery codes come with Rapls Passkey Pro."
 msgstr ""
 
-#: src/Admin/SetupWizard.php:235
+#: src/Admin/SetupWizard.php:233
 msgid "Go to settings"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:236
+#: src/Admin/SetupWizard.php:234
 msgid "Finish setup"
 msgstr ""
 
-#: src/Admin/SetupWizard.php:74 src/Admin/SetupWizard.php:75
-#: src/Admin/SetupWizard.php:161
+#: src/Admin/SetupWizard.php:72 src/Admin/SetupWizard.php:73
+#: src/Admin/SetupWizard.php:159
 msgid "Rapls Passkey setup"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:102 src/Admin/SiteHealth.php:134
+#: src/Admin/SiteHealth.php:100 src/Admin/SiteHealth.php:132
 msgid "Rapls Passkey: HTTPS"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:106 src/Admin/SiteHealth.php:148
+#: src/Admin/SiteHealth.php:104 src/Admin/SiteHealth.php:146
 msgid "Rapls Passkey: WebAuthn library"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:110 src/Admin/SiteHealth.php:162
+#: src/Admin/SiteHealth.php:108 src/Admin/SiteHealth.php:160
 msgid "Rapls Passkey: Database"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:114 src/Admin/SiteHealth.php:189
+#: src/Admin/SiteHealth.php:112 src/Admin/SiteHealth.php:187
 msgid "Rapls Passkey: RP ID"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:131
+#: src/Admin/SiteHealth.php:129
 msgid "The site is served over a secure context (HTTPS)."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:132
+#: src/Admin/SiteHealth.php:130
 msgid "Passkeys require HTTPS (a secure context). Install an SSL certificate and serve the site over HTTPS (except on localhost)."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:145
+#: src/Admin/SiteHealth.php:143
 msgid "The WebAuthn library is loaded."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:146
+#: src/Admin/SiteHealth.php:144
 msgid "The WebAuthn library was not found. Run `composer install` to install dependencies. Passkey authentication is disabled."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:159
+#: src/Admin/SiteHealth.php:157
 msgid "The credential and audit-log tables exist."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:160
+#: src/Admin/SiteHealth.php:158
 msgid "The plugin database tables were not found. Deactivate and reactivate the plugin to create them."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:175
+#: src/Admin/SiteHealth.php:173
 msgid "No known login-security plugins are detected."
 msgstr ""
 
 #. translators: %s: comma-separated plugin names.
-#: src/Admin/SiteHealth.php:178
+#: src/Admin/SiteHealth.php:176
 msgid "Detected security plugins: %s. The plugin adapts automatically to work even when the REST API is restricted."
 msgstr ""
 
 #. translators: 1: RP ID, 2: site host.
-#: src/Admin/SiteHealth.php:184
+#: src/Admin/SiteHealth.php:182
 msgid "The current RP ID is %1$s and the site host is %2$s. The RP ID determines the scope of passkeys (changeable via the rapls_passkey_rp_id filter)."
 msgstr ""
 
-#: src/Admin/SiteHealth.php:240
+#: src/Admin/SiteHealth.php:238
 msgid "Security"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:49
+#: src/Admin/SiteHealth.php:47
 msgid "Yes"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:50
+#: src/Admin/SiteHealth.php:48
 msgid "No"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:56
+#: src/Admin/SiteHealth.php:54
 msgid "Version"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:60
+#: src/Admin/SiteHealth.php:58
 msgid "HTTPS / secure context"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:66
+#: src/Admin/SiteHealth.php:64
 msgid "Loaded"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:66
+#: src/Admin/SiteHealth.php:64
 msgid "Not found"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:70
+#: src/Admin/SiteHealth.php:68
 msgid "Database tables"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:71
+#: src/Admin/SiteHealth.php:69
 msgid "Present"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:71
+#: src/Admin/SiteHealth.php:69
 msgid "Not created"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:79
+#: src/Admin/SiteHealth.php:77
 msgid "Total registered passkeys"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:83
+#: src/Admin/SiteHealth.php:81
 msgid "Detected security plugins"
 msgstr ""
 
-#: src/Admin/SiteHealth.php:84
+#: src/Admin/SiteHealth.php:82
 msgid "None"
 msgstr ""
 
-#: src/Admin/UsersColumn.php:77
+#: src/Admin/UsersColumn.php:75
 msgid "Not registered"
 msgstr ""
 
 #. translators: %d: number of passkeys.
-#: src/Admin/UsersColumn.php:85
+#: src/Admin/UsersColumn.php:83
 msgid "Passkeys: %d"
 msgstr ""
 
 #. translators: %s: date a passkey was last used.
-#: src/Admin/UsersColumn.php:95
+#: src/Admin/UsersColumn.php:93
 msgid "Last %s"
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:103
+#: src/Frontend/Shortcodes.php:101
 msgid "The operation was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:130 src/Integrations/LoginForms.php:113
-#: src/Integrations/WooCommerce.php:65 src/Login/LoginForm.php:75
+#: src/Frontend/Shortcodes.php:128 src/Integrations/LoginForms.php:111
+#: src/Integrations/WooCommerce.php:63 src/Login/LoginForm.php:74
 msgid "Sign in with a passkey"
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:137
+#: src/Frontend/Shortcodes.php:135
 msgid "You are already signed in."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:148
+#: src/Frontend/Shortcodes.php:146
 msgid "Username or email address"
 msgstr ""
 
@@ -880,12 +880,12 @@ msgstr ""
 msgid "Please sign in to manage your passkeys."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:97 src/Login/LoginForm.php:58
+#: src/Frontend/Shortcodes.php:95 src/Login/LoginForm.php:57
 msgid "Authenticating..."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:98 src/Login/LoginForm.php:59
-#: src/Rest/Endpoints.php:1005
+#: src/Frontend/Shortcodes.php:96 src/Login/LoginForm.php:58
+#: src/Rest/Endpoints.php:1006
 msgid "Passkey authentication failed."
 msgstr ""
 
@@ -897,104 +897,104 @@ msgstr ""
 msgid "Enter the code from your authenticator app, or one of your Wordfence recovery codes."
 msgstr ""
 
-#: src/Integrations/WooCommerce.php:68
+#: src/Integrations/WooCommerce.php:67
 msgid "Or sign in with a password"
 msgstr ""
 
-#: src/Login/LoginForm.php:61
+#: src/Login/LoginForm.php:60
 msgid "Authentication was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Login/LoginForm.php:62
+#: src/Login/LoginForm.php:61
 msgid "Please enter your username or email address."
 msgstr ""
 
-#: src/Login/Recaptcha.php:110
+#: src/Login/Recaptcha.php:109
 msgid "reCAPTCHA could not be verified. Reload the page and try again."
 msgstr ""
 
-#: src/Login/Recaptcha.php:113
+#: src/Login/Recaptcha.php:112
 msgid "reCAPTCHA verification failed."
 msgstr ""
 
-#: src/Login/SecondFactorScreen.php:129
+#: src/Login/SecondFactorScreen.php:127
 msgid "Two-factor authentication"
 msgstr ""
 
 #. translators: %s: the user's login name.
-#: src/Login/SecondFactorScreen.php:140
+#: src/Login/SecondFactorScreen.php:138
 msgid "Signed in as %s. One more step: confirm your second factor."
 msgstr ""
 
-#: src/Login/SecondFactorScreen.php:152
+#: src/Login/SecondFactorScreen.php:150
 msgid "Confirm"
 msgstr ""
 
-#: src/Login/SecondFactorScreen.php:157
+#: src/Login/SecondFactorScreen.php:155
 msgid "Back to the normal login"
 msgstr ""
 
-#: src/Login/SecondFactorScreen.php:74
+#: src/Login/SecondFactorScreen.php:72
 msgid "Your session is invalid. Please try again."
 msgstr ""
 
-#: src/Login/SecondFactorScreen.php:98
+#: src/Login/SecondFactorScreen.php:96
 msgid "The two-factor authentication code is not correct."
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:129
+#: src/Login/UpgradePrompt.php:130
 msgid "Cancelled."
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:140
+#: src/Login/UpgradePrompt.php:141
 msgid "Set up a passkey"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:143
+#: src/Login/UpgradePrompt.php:144
 msgid "Sign in faster and more securely next time"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:144
+#: src/Login/UpgradePrompt.php:145
 msgid "Set up a passkey on this device to sign in quickly next time without a password, using your fingerprint, face, or PIN. It also resists phishing."
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:147
+#: src/Login/UpgradePrompt.php:148
 msgid "Create a passkey"
 msgstr ""
 
-#: src/Login/UpgradePrompt.php:152
+#: src/Login/UpgradePrompt.php:153
 msgid "Later"
 msgstr ""
 
-#: src/Plugin.php:260
+#: src/Plugin.php:263
 msgid "Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to install dependencies. Passkey authentication is disabled."
 msgstr ""
 
-#: src/Privacy/PersonalData.php:116
+#: src/Privacy/PersonalData.php:114
 msgid "Credential ID"
 msgstr ""
 
-#: src/Privacy/PersonalData.php:130
+#: src/Privacy/PersonalData.php:128
 msgid "Passkey audit log"
 msgstr ""
 
-#: src/Privacy/PersonalData.php:55 src/Privacy/PersonalData.php:70
+#: src/Privacy/PersonalData.php:53 src/Privacy/PersonalData.php:68
 msgid "Rapls Passkey (Passkey)"
 msgstr ""
 
-#: src/Recovery/Bypass.php:51
+#: src/Recovery/Bypass.php:49
 msgid "Rapls Passkey: The emergency bypass (RAPLS_PASSKEY_BYPASS) is enabled. Passkey enforcement is disabled. After recovery, remove the constant from wp-config.php."
 msgstr ""
 
-#: src/Rest/Endpoints.php:180
+#: src/Rest/Endpoints.php:178
 msgid "Invalid request."
 msgstr ""
 
-#: src/Rest/Endpoints.php:183 src/Rest/Endpoints.php:1093
+#: src/Rest/Endpoints.php:181 src/Rest/Endpoints.php:1094
 msgid "Too many attempts. Please try again later."
 msgstr ""
 
-#: src/Rest/Endpoints.php:324
+#: src/Rest/Endpoints.php:323
 msgid "This passkey is already registered."
 msgstr ""
 
@@ -1033,112 +1033,112 @@ msgstr ""
 msgid "You can register at most %d passkeys. Remove an unused passkey before registering a new one."
 msgstr ""
 
-#: src/Security/AuthSession.php:109
+#: src/Security/AuthSession.php:107
 msgid "Two-factor authentication cannot be verified right now. Please sign in with your passkey or password."
 msgstr ""
 
-#: src/Security/AuthSession.php:90
+#: src/Security/AuthSession.php:88
 msgid "Two-factor authentication cannot be started right now. Please try again."
 msgstr ""
 
-#: src/Security/AuthSession.php:96
+#: src/Security/AuthSession.php:94
 msgid "Enter your two-factor authentication code to finish signing in."
 msgstr ""
 
-#: src/Security/LoginGate.php:70
+#: src/Security/LoginGate.php:68
 msgid "You cannot sign in to this account right now."
 msgstr ""
 
 #. translators: %s: site name.
-#: src/Security/Notifications.php:112
+#: src/Security/Notifications.php:110
 msgid "[%s] A passkey was removed"
 msgstr ""
 
-#: src/Security/Notifications.php:116
+#: src/Security/Notifications.php:114
 msgid "A site administrator removed one passkey from your account."
 msgstr ""
 
-#: src/Security/Notifications.php:118
+#: src/Security/Notifications.php:116
 msgid "One passkey was removed from your account."
 msgstr ""
 
-#: src/Security/Notifications.php:121
+#: src/Security/Notifications.php:119
 msgid "If this was not you, change your password immediately."
 msgstr ""
 
 #. translators: %s: site name.
-#: src/Security/Notifications.php:157
+#: src/Security/Notifications.php:155
 msgid "[%s] You signed in with a recovery code"
 msgstr ""
 
-#: src/Security/Notifications.php:159
+#: src/Security/Notifications.php:157
 msgid "Your account was signed into using a recovery code."
 msgstr ""
 
 #. translators: %s: site name.
-#: src/Security/Notifications.php:162
+#: src/Security/Notifications.php:160
 msgid "[%s] New device sign-in"
 msgstr ""
 
-#: src/Security/Notifications.php:164
+#: src/Security/Notifications.php:162
 msgid "Your account was signed into with a passkey from a device or browser not seen before."
 msgstr ""
 
-#: src/Security/Notifications.php:167
+#: src/Security/Notifications.php:165
 msgid "If this was not you, change your password immediately and remove any unknown passkeys."
 msgstr ""
 
 #. translators: %s: user display name.
-#: src/Security/Notifications.php:251
+#: src/Security/Notifications.php:249
 msgid "Hello %s,"
 msgstr ""
 
 #. translators: %s: date and time.
-#: src/Security/Notifications.php:279
+#: src/Security/Notifications.php:277
 msgid "Date/time: %s"
 msgstr ""
 
 #. translators: %s: IP address.
-#: src/Security/Notifications.php:286
+#: src/Security/Notifications.php:284
 msgid "IP address: %s"
 msgstr ""
 
 #. translators: %s: browser user agent.
-#: src/Security/Notifications.php:292
+#: src/Security/Notifications.php:290
 msgid "Browser: %s"
 msgstr ""
 
 #. translators: %s: site name.
-#: src/Security/Notifications.php:71
+#: src/Security/Notifications.php:69
 msgid "[%s] A new passkey was registered"
 msgstr ""
 
-#: src/Security/Notifications.php:74
+#: src/Security/Notifications.php:72
 msgid "A new passkey was registered on your account."
 msgstr ""
 
 #. translators: %s: passkey label.
-#: src/Security/Notifications.php:77
+#: src/Security/Notifications.php:75
 msgid "Name: %s"
 msgstr ""
 
 #. translators: %s: authenticator/provider name (e.g. iCloud Keychain).
-#: src/Security/Notifications.php:82
+#: src/Security/Notifications.php:80
 msgid "Authenticator: %s"
 msgstr ""
 
-#: src/Security/Notifications.php:85
+#: src/Security/Notifications.php:83
 msgid "If this was not you, change your password immediately and remove any unknown passkeys from your profile screen."
 msgstr ""
 
-#: src/Support/Help.php:43
+#: src/Support/Help.php:41
 msgid "A passkey lets you sign in with your fingerprint, face, or device unlock (PIN) with no password. It resists phishing and avoids the risks of password reuse and leaks."
 msgstr ""
 
-#: src/Support/Help.php:53
+#: src/Support/Help.php:51
 msgid "What is a passkey?"
 msgstr ""
 
-#: src/Support/Help.php:60
+#: src/Support/Help.php:58
 msgid "Learn more"
 msgstr ""

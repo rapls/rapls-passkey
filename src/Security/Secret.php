@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Security;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Symmetric encryption for the few third-party secrets the plugins must store

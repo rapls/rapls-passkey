@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations;
 
 use RaplsPasskey\Frontend\Shortcodes;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Surfaces the passkey login button inside the login forms of popular plugins by
@@ -112,7 +110,8 @@ final class LoginForms {
 		echo '<div class="rapls-pk-integration rapls-pk-integration-' . esc_attr( $key ) . '">';
 		echo '<p class="rapls-pk-integration-heading">' . esc_html__( 'Sign in with a passkey', 'rapls-passkey' ) . '</p>';
 		// render_login() returns trusted, internally-escaped markup.
-		echo $this->shortcodes->render_login( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->shortcodes->render_login( array() );
 		echo '</div>';
 	}
 }

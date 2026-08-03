@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Credentials;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * One row of the credentials table. `record_json` is the serialised

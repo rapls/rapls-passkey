@@ -40,9 +40,7 @@ use RaplsPasskey\WebAuthn\Codec;
 use RaplsPasskey\WebAuthn\RegistrationManager;
 use RaplsPasskey\WebAuthn\RelyingParty;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Singleton that wires the plugin's subsystems on `plugins_loaded`.
@@ -237,6 +235,11 @@ final class Plugin {
 	 * Load translations.
 	 */
 	public function load_textdomain(): void {
+		// The second argument is the deprecated $deprecated parameter, and false is
+		// the documented value for it — but it has to be passed to reach the third.
+		// The distribution build fully qualifies it to \false, which the sniff
+		// compares textually against "false" and so reports.
+		// phpcs:ignore WordPress.WP.DeprecatedParameters.Load_plugin_textdomainParam2Found
 		load_plugin_textdomain( 'rapls-passkey', false, dirname( RAPLS_PASSKEY_BASENAME ) . '/languages' );
 	}
 

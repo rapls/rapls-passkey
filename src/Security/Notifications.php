@@ -12,9 +12,7 @@ use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Support\Settings;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Emails the affected user when a passkey is registered or removed, and when a

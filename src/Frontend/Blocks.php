@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Frontend;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Registers two dynamic blocks that render through the same code as the

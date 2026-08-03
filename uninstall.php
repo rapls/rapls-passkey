@@ -9,6 +9,8 @@
  * @package RaplsPasskey
  */
 
+defined( 'ABSPATH' ) || exit;
+
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
@@ -33,7 +35,8 @@ function rapls_passkey_uninstall_site(): void {
 	// are short-lived and WP expires them lazily, but a delete keeps uninstall tidy.
 	$like    = $wpdb->esc_like( '_transient_rapls_passkey_' ) . '%';
 	$timeout = $wpdb->esc_like( '_transient_timeout_rapls_passkey_' ) . '%';
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", $like, $timeout ) ); // phpcs:ignore WordPress.DB
+	// phpcs:ignore WordPress.DB
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", $like, $timeout ) );
 
 	// Per-user WebAuthn-handle creation locks, per-user registration locks, per-IP
 	// rate-limit counters, and quota reservation slots (all raw options rather than
@@ -51,7 +54,8 @@ function rapls_passkey_uninstall_site(): void {
 	$reg_lock    = $wpdb->esc_like( 'rapls_pk_reg_lock_' ) . '%';
 	$rate_rows   = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';
 	$slot_rows   = $wpdb->esc_like( 'rapls_passkey_rs_' ) . '%';
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s", $handle_lock, $handle_claim, $migrate_rows, $reg_lock, $rate_rows, $slot_rows, $attempt_rows ) ); // phpcs:ignore WordPress.DB
+	// phpcs:ignore WordPress.DB
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s", $handle_lock, $handle_claim, $migrate_rows, $reg_lock, $rate_rows, $slot_rows, $attempt_rows ) );
 }
 
 // Remove per-user meta this plugin stored, for every user (global, not per-site).

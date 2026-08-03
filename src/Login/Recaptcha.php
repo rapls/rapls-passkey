@@ -11,9 +11,7 @@ use RaplsPasskey\Support\Settings;
 use WP_Error;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Protects the standard username/password login with Google reCAPTCHA v3.
@@ -56,7 +54,8 @@ final class Recaptcha {
 			'rapls-passkey-recaptcha-api',
 			'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( $site_key ),
 			array(),
-			null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Google API, no version.
+			// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- Google API, no version.
+			null,
 			true
 		);
 		wp_enqueue_script(

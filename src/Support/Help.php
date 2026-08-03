@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Support;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * A small, self-contained explainer shown at passkey enrolment/sign-in points.
@@ -76,6 +74,7 @@ final class Help {
 	 * @param string $variant See {@see html()}.
 	 */
 	public static function render( string $variant = 'details' ): void {
-		echo self::html( $variant ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo self::html( $variant );
 	}
 }

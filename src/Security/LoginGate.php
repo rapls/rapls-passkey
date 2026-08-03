@@ -10,9 +10,7 @@ namespace RaplsPasskey\Security;
 use WP_Error;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Passkey, QR, magic-link and recovery-code logins set the auth cookie directly

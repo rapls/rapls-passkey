@@ -11,9 +11,7 @@ use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\AuthenticatorNames;
 use RaplsPasskey\Credentials\CredentialRepository;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Every passkey on the site in one list, searchable by owner or name.
@@ -67,7 +65,8 @@ final class CredentialsPage {
 	 * Apply a suspend / resume / delete from the list. Always redirects.
 	 */
 	public function handle(): void {
-		$id = isset( $_REQUEST['credential'] ) ? (int) $_REQUEST['credential'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$id = isset( $_REQUEST['credential'] ) ? (int) $_REQUEST['credential'] : 0;
 		check_admin_referer( self::ACTION . '_' . $id );
 
 		$credential = $id > 0 ? $this->repository->find_by_id( $id ) : null;
@@ -82,7 +81,8 @@ final class CredentialsPage {
 		}
 
 		$actor = (int) wp_get_current_user()->ID;
-		$do    = isset( $_REQUEST['do'] ) ? sanitize_key( wp_unslash( $_REQUEST['do'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$do    = isset( $_REQUEST['do'] ) ? sanitize_key( wp_unslash( $_REQUEST['do'] ) ) : '';
 
 		if ( 'delete' === $do ) {
 			$this->repository->delete_by_id( $id );

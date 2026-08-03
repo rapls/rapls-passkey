@@ -10,9 +10,7 @@ namespace RaplsPasskey\WebAuthn;
 use Webauthn\CeremonyStep\CeremonyStepManager;
 use Webauthn\CeremonyStep\CeremonyStepManagerFactory;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Builds the verification ceremony pipelines, configured for this site's RP.

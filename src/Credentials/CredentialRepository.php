@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Credentials;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * CRUD over the custom credentials table. All queries are prepared and table
@@ -56,7 +54,8 @@ final class CredentialRepository {
 	public function used_slots( int $user_id ): ?array {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$rows  = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows  = $wpdb->get_col(
 			$wpdb->prepare( "SELECT slot_no FROM {$table} WHERE user_id = %d AND slot_no IS NOT NULL", $user_id )
 		);
 		if ( ! is_array( $rows ) ) {
@@ -95,7 +94,8 @@ final class CredentialRepository {
 		// be logged as a database error. Suppression is restored below and leaves
 		// last_error intact for the checks that follow.
 		$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
-		$ok  = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$ok  = $wpdb->insert(
 			Schema::credentials_table(),
 			array(
 				'user_id'         => $user_id,
@@ -126,7 +126,8 @@ final class CredentialRepository {
 		}
 
 		$table = Schema::credentials_table();
-		$taken = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$taken = $wpdb->get_var(
 			$wpdb->prepare( "SELECT id FROM {$table} WHERE user_id = %d AND slot_no = %d", $user_id, $slot )
 		);
 		if ( null !== $taken ) {
@@ -145,7 +146,8 @@ final class CredentialRepository {
 	public function find_by_credential_id( string $credential_id ): ?Credential {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$row   = $wpdb->get_row(
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE credential_id = %s", $credential_id ),
 			ARRAY_A
 		);
@@ -162,7 +164,8 @@ final class CredentialRepository {
 	public function find_by_user( int $user_id ): array {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows  = $wpdb->get_results(
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC", $user_id ),
 			ARRAY_A
 		);
@@ -183,7 +186,8 @@ final class CredentialRepository {
 	public function count_by_user( int $user_id ): int {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$count = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$count = $wpdb->get_var(
 			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE user_id = %d", $user_id )
 		);
 		// A successful COUNT(*) always yields a numeric string ("0" at minimum);
@@ -227,7 +231,8 @@ final class CredentialRepository {
 		$nonce = bin2hex( random_bytes( 8 ) );
 
 		if ( $sign_count > 0 ) {
-			$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$affected = $wpdb->query(
 				$wpdb->prepare(
 					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s, touch_nonce = %s WHERE id = %d AND active = 1 AND sign_count < %d",
 					$record_json,
@@ -239,7 +244,8 @@ final class CredentialRepository {
 				)
 			);
 		} else {
-			$affected = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$affected = $wpdb->query(
 				$wpdb->prepare(
 					"UPDATE {$table} SET credential_data = %s, sign_count = %d, last_used_at = %s, touch_nonce = %s WHERE id = %d AND active = 1",
 					$record_json,
@@ -269,7 +275,8 @@ final class CredentialRepository {
 	public function find_by_id( int $id ): ?Credential {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$row   = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$row   = $wpdb->get_row(
 			$wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ),
 			ARRAY_A
 		);
@@ -286,7 +293,8 @@ final class CredentialRepository {
 	 */
 	public function delete( int $id, int $user_id ): bool {
 		global $wpdb;
-		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted = $wpdb->delete(
 			Schema::credentials_table(),
 			array(
 				'id'      => $id,
@@ -340,7 +348,8 @@ final class CredentialRepository {
 			$types[]          = '%d';
 		}
 
-		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$updated = $wpdb->update(
 			Schema::credentials_table(),
 			array( 'active' => $active ? 1 : 0 ),
 			$where,
@@ -381,7 +390,8 @@ final class CredentialRepository {
 
 		if ( '' !== $search ) {
 			$like = '%' . $wpdb->esc_like( $search ) . '%';
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT c.* FROM {$table} c
 					 LEFT JOIN {$users} u ON u.ID = c.user_id
@@ -396,7 +406,8 @@ final class CredentialRepository {
 				ARRAY_A
 			);
 		} else {
-			$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$rows = $wpdb->get_results(
 				$wpdb->prepare( "SELECT * FROM {$table} ORDER BY id DESC LIMIT %d OFFSET %d", $per_page, $offset ),
 				ARRAY_A
 			);
@@ -418,7 +429,8 @@ final class CredentialRepository {
 
 		if ( '' !== $search ) {
 			$like = '%' . $wpdb->esc_like( $search ) . '%';
-			return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			return (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$table} c
 					 LEFT JOIN {$users} u ON u.ID = c.user_id
@@ -430,7 +442,8 @@ final class CredentialRepository {
 			);
 		}
 
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
 	}
 
 	/**
@@ -448,7 +461,8 @@ final class CredentialRepository {
 	public function rename( int $id, int $user_id, ?string $label ): bool {
 		global $wpdb;
 
-		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$updated = $wpdb->update(
 			Schema::credentials_table(),
 			array( 'label' => $label ),
 			array(
@@ -481,7 +495,8 @@ final class CredentialRepository {
 	 */
 	public function delete_by_id( int $id ): bool {
 		global $wpdb;
-		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted = $wpdb->delete(
 			Schema::credentials_table(),
 			array( 'id' => $id ),
 			array( '%d' )
@@ -499,7 +514,8 @@ final class CredentialRepository {
 	 */
 	public function delete_all_for_user( int $user_id ): int {
 		global $wpdb;
-		$deleted = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted = $wpdb->delete(
 			Schema::credentials_table(),
 			array( 'user_id' => $user_id ),
 			array( '%d' )
@@ -518,7 +534,8 @@ final class CredentialRepository {
 	public function counts_by_user(): array {
 		global $wpdb;
 		$table = Schema::credentials_table();
-		$rows  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows  = $wpdb->get_results(
 			"SELECT user_id, COUNT(*) AS c, MAX(last_used_at) AS last_used FROM {$table} GROUP BY user_id",
 			ARRAY_A
 		);
@@ -544,8 +561,10 @@ final class CredentialRepository {
 		$table = Schema::credentials_table();
 
 		return array(
-			'total' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-			'users' => (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$table}" ), // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			'total' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ),
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			'users' => (int) $wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$table}" ),
 		);
 	}
 

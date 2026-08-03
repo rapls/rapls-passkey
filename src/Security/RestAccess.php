@@ -12,9 +12,7 @@ use RaplsPasskey\Support\Settings;
 use WP_Error;
 use WP_REST_Request;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Several Japanese-market security plugins (CloudSecure WP Security, SiteGuard,
@@ -178,7 +176,8 @@ final class RestAccess {
 			$route = (string) $GLOBALS['wp']->query_vars['rest_route'];
 		}
 		if ( '' === $route && isset( $_SERVER['REQUEST_URI'] ) ) {
-			$route = (string) wp_unslash( $_SERVER['REQUEST_URI'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			$route = (string) wp_unslash( $_SERVER['REQUEST_URI'] );
 		}
 		return $this->route_matches( $route );
 	}

@@ -13,9 +13,7 @@ use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Credentials\UserHandle;
 use RaplsPasskey\Security\Notifications;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Hooks the WordPress privacy tools so a user's passkey data participates in
@@ -205,8 +203,10 @@ final class PersonalData {
 		// user who asked to be forgotten, and one that would be handed back if the
 		// account were ever recreated with the same id.
 		global $wpdb;
-		$deleted_lock  = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::LOCK_PREFIX . $uid ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$deleted_claim = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::CLAIM_PREFIX . $uid ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted_lock  = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::LOCK_PREFIX . $uid ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$deleted_claim = $wpdb->delete( $wpdb->options, array( 'option_name' => UserHandle::CLAIM_PREFIX . $uid ) );
 		if ( $deleted_lock || $deleted_claim ) {
 			$removed = true;
 		}

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0.2
 Requires PHP: 8.2
-Stable tag: 0.13.62
+Stable tag: 0.13.63
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,21 +57,35 @@ In an emergency, add the following to wp-config.php to temporarily disable passk
 
     define( 'RAPLS_PASSKEY_BYPASS', true );
 
+== External services ==
+
+This plugin sends nothing to any external service by default. One optional
+integration, off unless you turn it on, contacts a third party:
+
+**Google reCAPTCHA v3** — used only when you enable reCAPTCHA for password
+logins. When it is on, the visitor's browser loads
+`https://www.google.com/recaptcha/api.js`, and the plugin sends the resulting
+token together with the request IP address to
+`https://www.google.com/recaptcha/api/siteverify` so that Google can score the
+request. Nothing is sent while the option is off. This service is provided by
+Google and its use is governed by Google's terms and privacy policy:
+
+* Terms of Service: https://policies.google.com/terms
+* Privacy Policy: https://policies.google.com/privacy
+
+No other host is contacted. The plugin bundles the public suffix list it needs
+(`data/public_suffix_list.dat`) rather than fetching it, and passkey ceremonies
+happen between the browser and your own site.
+
 == Privacy ==
 
-This plugin stores authentication data on your own site and, by default, sends nothing to any external service.
+Authentication data is stored on your own site.
 
-What is stored on your site:
+What is stored:
 
 * Passkey credential records (public key, credential ID, sign counter, a label and timestamps) in a custom database table.
 * A per-user WebAuthn user handle in user meta, plus one row in the options table recording that the account has one. The handle carries nothing about the person: for accounts created from this version it is derived from the account id and a site secret, and accounts that already had a random handle keep it.
 * An optional audit log of passkey events (registration, sign-in, removal) with the acting user, IP address and timestamp.
-
-External services (used only when you enable them):
-
-* Google reCAPTCHA v3 — only if you turn on reCAPTCHA for password logins. When active, the visitor's browser loads https://www.google.com/recaptcha/api.js and the plugin sends the resulting token (and the request IP) to https://www.google.com/recaptcha/api/siteverify to score the request. Leaving reCAPTCHA off means no data goes to Google. Google's terms and privacy policy govern that use:
-    * Terms of Service: https://policies.google.com/terms
-    * Privacy Policy: https://policies.google.com/privacy
 
 Retention and removal:
 
@@ -83,136 +97,70 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.63 =
+* **Direct-access protection was missing from every file in the distributed package.** The plugin guards each file with `if ( ! defined( 'ABSPATH' ) )`, which the build rewrites to `if ( ! \defined( 'ABSPATH' ) )` — a form the WordPress Plugin Check tool does not recognise. Every shipped file therefore read as unprotected to the tooling, while the repository looked correct. The guard is now written in the form that survives the build.
+* **The code-standard exemptions in the shipped files were pointing at the wrong lines.** They were written at the end of the line they applied to, and the build moves a trailing comment onto the following line — so each one silenced the line after the one it was meant to cover. All of them are now written above the line they apply to.
+* Fixes the findings these two hid: an unescaped exception message, a missing translators comment, a database call whose exemption named the wrong rule, and the CSV export's file handle. Behaviour is unchanged; the audit-log CSV, the two-factor integrations and the passkey cap all work exactly as before.
+* Also: `Plugin URI` pointed at this plugin's WordPress.org page, which the plugin header documentation does not allow, and `Author URI` was missing. The readme's external-service disclosure (optional reCAPTCHA) is now its own section, and releases older than 0.13.46 have moved to changelog.txt.
+
 = 0.13.62 =
-* No change to the plugin itself. The rebuild check said "the two packages are identical" beside two different SHA-256s — what matches is every file inside them, not the archives — and printed an explanation for both permitted differences whether or not either was present. It is not part of this package.
+* No change to the plugin. Release-tooling only: the rebuild check reported "identical" beside two different archive checksums, when what matches is every file inside them.
 
 = 0.13.61 =
-* No change to the plugin itself. The rebuild check exempted two files from being compared at all rather than exempting two fields inside them, so a permission change or a symlink on those paths passed; its standalone comparison mode accepted two directories that were not there; and it reported "exactly two paths" whatever it found. None of it is part of this package.
+* No change to the plugin. Release-tooling only: the rebuild check exempted two whole files from comparison instead of two fields inside them.
 
 = 0.13.60 =
-* No change to the plugin itself. The rebuild check added last release could not run on the source it is about, was not called by anything, and compared packages by reading a diff tool's wording — so a path that changed from a file to a directory passed it. It now copies the source as it stands, runs in CI on every release, and compares the two packages as trees. None of it is part of this package.
+* No change to the plugin. Release-tooling only: the rebuild check now runs in CI on every release and compares the two packages as file trees.
 
 = 0.13.59 =
-* No change to the plugin itself. The verification bundle claimed a rebuild from its own source produces an identical package while the log in the same submission said otherwise; the claim is now narrower, accurate, and checked by a script that fails if anything differs beyond two named files and two named fields. None of it is part of this package.
+* No change to the plugin. Release-tooling only: the claim made by the verification bundle is now narrower, accurate, and checked by a script.
 
 = 0.13.58 =
-* No change to the plugin itself. The source shipped for review can now rebuild itself: the bundle no longer writes its dependency-tree record into the directory that record fixes, and the recorded tree is satisfiable by an export without a .git directory. The build record also carries the timestamp a reproducer needs, which the rebuild instructions had always named but the artifact never contained. None of it is part of this package.
+* No change to the plugin. Release-tooling only: the source shipped for review can now rebuild itself.
 
 = 0.13.56 =
-* No change to the plugin itself. The verification bundle no longer writes a record into the dependency directory it records — which had made the bundled source fail its own rebuild — and the bundle documentation was brought back in line with the scripts. None of it is part of this package; the build records which commit it came from, so this package is a different file from 0.13.55.
+* No change to the plugin. Release-tooling only: the bundle no longer writes a record into the directory that record describes.
 
 = 0.13.55 =
-* No change to the plugin itself. The build now verifies the recorded dependency tree on every run rather than only when one was already present — the manifest is not part of this package — and the build records which commit it came from, so this package is a different file from 0.13.54.
+* No change to the plugin. Release-tooling only: the bundled dependency tree is verified on every build, not only when a record was already present.
 
 = 0.13.54 =
-* No change to the plugin itself. The build now verifies the bundled dependency tree file by file against a recorded manifest before packaging it — the manifest is not part of this package — and the build records which commit it came from, so this package is a different file from 0.13.53.
+* No change to the plugin. Release-tooling only: the bundled dependency tree is verified file by file against a recorded manifest before packaging.
 
 = 0.13.53 =
 * **Audit CSV export: a formula hidden behind leading whitespace is now neutralised too.** The check looked at the first byte, so a username beginning with a space, a tab, a non-breaking space or a byte-order mark before `=`, `+`, `-` or `@` was written to the file unguarded — and a spreadsheet skips that whitespace before deciding whether a cell is a formula.
 * The readme now links Google's terms and privacy policy for the optional reCAPTCHA integration, and names the endpoints it contacts.
-* Release tooling: the verification bundle is assembled from the tested commit rather than from the working tree, and refuses to build from a checkout with uncommitted changes.
 
 = 0.13.52 =
-* No change to the plugin itself. CI gained a final job that requires every other job in the run to have succeeded, the release tooling was tightened further, and the provenance record now counts test results and job attestations separately — none of it is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.50.
+* No change to the plugin. Release-tooling only: CI now requires every job in a run to have succeeded before a release is assembled.
 
 = 0.13.50 =
-* No change to the plugin itself. CI now attests to the outcome of every job and the release tooling verifies it — neither is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.49 and carries its own version.
+* No change to the plugin. Release-tooling only: CI attests to the outcome of every job and the release tooling verifies it.
 
 = 0.13.49 =
-* No change to the plugin itself. The release tooling and its documentation were corrected — neither is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.48 and carries its own version.
+* No change to the plugin. Release-tooling and documentation corrections only.
 
 = 0.13.48 =
-* No change to the plugin itself. The end-to-end test procedure and the CI provenance recorded with a release were corrected — neither is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.47 and carries its own version.
+* No change to the plugin. Release-tooling only: the end-to-end test procedure and the recorded CI provenance were corrected.
 
 = 0.13.47 =
-* No change to the plugin itself. The bundled end-to-end test procedure (`docs/`) and the real-database test harness (`tests/`) were corrected — neither is part of this package — and the build records which commit it came from, so this package is a different file from 0.13.46 and carries its own version rather than reusing one.
+* No change to the plugin. Release-tooling only: the bundled test procedure and the real-database test harness were corrected.
 
 = 0.13.46 =
 * **Packaging fix: the previous package contained development files that should never have shipped** — the test suite, build scripts, CI configuration and Composer manifests. They were harmless to run but had no business being in a plugin ZIP. This release contains runtime files only, and the build now checks the finished package for them.
 
-= 0.13.45 =
-* Build only: the package is now assembled from the files git tracks, so a local file this repository ignores — an editor directory, a local CI setting — cannot be swept into it. The plugin code is unchanged.
+For the change history of 0.13.45 and earlier releases, see changelog.txt.
 
-= 0.13.44 =
-* Build provenance only: the previous package was assembled from a working copy that had uncommitted changes, so its recorded commit could not reproduce it. The plugin code is unchanged; this release is built from a clean checkout, and the build now refuses to run otherwise.
+== Upgrade Notice ==
 
-= 0.13.43 =
-* **Giving an attempt back now proves which one.** The previous release gave back "every attempt up to mine", which was still wrong: an attempt number is a position, it does not say who holds it, and it repeats in the next window — so a sign-in could cancel attempts belonging to requests that were still being checked, and more than the limit could be verified. A request now gives back only the one attempt it holds, proved by a token. Earlier mistakes stay counted for the rest of the window.
-* A two-factor answer is checked before the pending sign-in is discarded, so a correct fifth answer works.
+= 0.13.63 =
+Every file in the previous package failed the WordPress Plugin Check direct-access test: the guard was rewritten by the build into a form the tool does not recognise. Fixed, along with the code-standard findings that were hidden behind misplaced exemptions.
 
-= 0.13.42 =
-* **A successful sign-in no longer cancels attempts that other requests are still making.** Signing in cleared the whole attempt counter for the address, including slots held by requests that were on their way to being checked — so the next arrival re-used them and more than the limit could be verified in one window. On a shared address, one person signing in repeatedly erased everyone else's failed attempts with it. A success now gives back only the attempts it made itself.
-* **A second-factor challenge is no longer issued when the browser cannot be given the token for it.** The cookie's result was ignored, so the token looked present for the rest of that request and nowhere else: the first factor was already spent — a magic link consumed, a recovery code used up — and the user was sent to a screen they could not complete. The sign-in is refused instead, with nothing left half-made.
-* **Two-factor answers are counted before they are checked, not after.** Counting afterwards limited how many wrong answers were recorded rather than how many were checked, so simultaneous submissions all had their code validated first.
+= 0.13.53 =
+Fixes CSV injection in the audit-log export: a formula preceded by whitespace was not neutralised. Update if you export audit logs.
 
-= 0.13.41 =
-* Build and packaging only: the package now records "unknown" rather than "clean" when it cannot check whether the source was modified, an alternative packaging tool passed on the command line is checked against the pinned one, and the verification bundle refuses to be built if anything shaped like a credential is in it.
-
-= 0.13.40 =
-* The build now refuses to guess: without the source metadata it stops and asks for it, rather than stamping the current time into the package. Nothing about the machine that runs the build goes into the result — the same source produces the same file on PHP 8.2 and on PHP 8.5 alike — and the packaging tool is pinned by checksum.
-
-= 0.13.39 =
-* The distribution package is now built reproducibly: building the same source again produces a byte-identical file, because every timestamp inside it comes from the source itself rather than from the clock. One version number can therefore only ever mean one package, and anyone can rebuild and compare.
-
-= 0.13.38 =
-* Housekeeping only: no functional change since 0.13.36. Each of these numbers identifies exactly one package; a number is never reused for a second build.
-
-= 0.13.36 =
-* Sign-in options now answer with a proper error, rather than an unexpected one, when the record behind the ceremony could not be saved.
-* Build checks: the test runner now treats a run that produced no result — a file that stopped early, a directory with no tests in it, a process that died — as a failure instead of silence. The check that runs the suite inside the distribution package does the same, and the suites it cannot run there are named in a fixed list rather than matched by a pattern.
-
-= 0.13.35 =
-* Sign-in and registration now stop if the short-lived record behind them could not be saved, instead of handing the browser a challenge that can never be completed. Previously a failing cache or database could leave a passkey created on your device that this site would then refuse — one you would have to find and delete yourself.
-* The two-factor hand-off does the same: if the half-finished sign-in cannot be saved, you are told, rather than sent to a code screen that has nothing to check against.
-* The distribution package is now itself put through the test suite as part of the build checks, so what is shipped is exercised rather than only inspected. Each package also records the exact inputs it was built from.
-
-= 0.13.34 =
-* The plugin update now corrects an account's stored identity even when the two copies differ only in capitalisation — these identifiers are case-sensitive, while the database compares text without regard to case by default, so such a pair was previously left alone. The correction that happens as each account is used compares them byte for byte and is what guarantees this; the bulk pass is only there to get it over with sooner.
-* Cached account data is cleared on both sides of that correction, so a site with a persistent object cache cannot keep serving the outdated copy.
-
-= 0.13.33 =
-* An account whose two records of its WebAuthn identity disagreed — the registry entry and the copy kept with the account — could hand out one or the other depending on which a request happened to read. The registry entry is now the record: it decides, the copy is corrected from it, and the plugin update corrects any account where the two differ.
-* Expected collisions — a passkey slot another registration just took, a rate-limit slot, a registry entry that already exists — are no longer written to the site's error log. They were never failures, and logging them buried real database problems.
-
-= 0.13.32 =
-* More of the same audit, all about one account keeping exactly one WebAuthn identity:
-* An account whose identity was recorded by an older version now has that fact registered the first time it is used, so a later request that cannot read it can no longer start a second one. While the table update is still outstanding no new identity is created at all — an account that looks new may simply be one the update has not reached.
-* An identity whose copy in the account's profile data is lost is recovered from the record itself instead of leaving the account permanently unable to register a passkey.
-* Registration establishes the identity once per request and carries it through, rather than asking twice and risking two different answers on a database whose reads lag behind its writes.
-
-= 0.13.31 =
-* A passkey confirmation now completes. Pro's step-up held risky password sign-ins for a passkey check — and then held the passkey sign-in that answered it, so with the strictest setting nobody could get in at all. A sign-in now says what kind it is, and the confirmation is never held.
-* An account can no longer be given a second WebAuthn identity. When the handle an account already has cannot be read — a database whose reads lag behind its writes — registration is refused rather than started under a newly derived one, and the migration records every existing handle so that "does this account have one?" is answered by the database instead of by a read.
-* The table update after a plugin upgrade now also runs for the Pro QR and sign-up ceremonies, not only the free plugin's own, and at most once every few minutes on a site where it cannot complete.
-
-= 0.13.30 =
-* Fixed: a site updated without anyone opening the admin screens — a background update, or WP-CLI — could be left with the previous table layout, and a passkey sign-in would then be refused until an administrator visited the dashboard. The table is now brought up to date by the sign-in itself.
-
-= 0.13.29 =
-* Further findings from the security audit, all about not trusting a value the plugin has just read back:
-* Signing in with a username no longer tells anyone whether that account exists or holds a passkey. Sign-in now uses the browser's own passkey picker, and the answer to a username is identical whatever you type. A site that must support older security keys (which store nothing themselves and so have to be named by the server) can switch the old behaviour back on; the response is then padded to a fixed shape, and the trade-off is documented.
-* A passkey suspended or deleted while someone is signing in with it no longer completes that sign-in, even on installations that send reads to a replica database.
-* Each user's WebAuthn identifier is now derived rather than generated and stored. Concurrent first registrations, retries and lagging replicas all arrive at the same value, so an account's passkeys can no longer end up split across two identifiers.
-* Recovery codes: a site whose database is lagging could report that generation failed after the previous codes had already been replaced — and then tell the user their old codes still worked. The result now comes from the write itself, and the message no longer makes that claim.
+= 0.13.46 =
+The previous package shipped development files (tests, build scripts, CI configuration). This release contains runtime files only.
 
 = 0.13.28 =
-* Findings from a full-codebase security audit:
-* SECURITY (multisite): a user marked as spam on a network — or whose primary site is — could still sign in with a passkey, a QR approval, a magic link or a recovery code. Those methods set the login cookie directly and so never reached WordPress's own spam check, which a password login passes through. All of them now apply it, before any site filter.
-* A passkey login no longer proceeds if the credential was suspended or removed while the sign-in was in progress; the check now happens at the moment the login is committed rather than only when it started.
-* Asking for sign-in options with a username no longer reveals whether that account exists or holds a passkey: a name with nothing behind it now receives plausible decoy entries derived from the name and a site secret, so the answer looks the same either way.
-* A shared relying-party ID and Related Origins configured for a network are now actually applied to registration and sign-in. They were read before the settings that provide them had loaded, so a network-wide shared ID silently had no effect.
-* Recovery codes are no longer displayed unless the site could store them. Previously a storage failure produced codes that looked usable but none of which would have been accepted — the opposite of a way back in.
-* Adaptive step-up no longer fails open: if the record that holds a session for passkey confirmation cannot be written, that session is ended instead of continuing unchallenged. A database error while checking for held sessions now holds rather than releases.
-* Passwordless sign-up confirms the account adopted the identifier its passkey was created against, and undoes the sign-up if not, rather than leaving an account whose credential cannot resolve.
-* Enforcement's grace period no longer restarts on every request when its start time cannot be saved (which would have postponed the deadline indefinitely).
-* Uninstall and the personal-data eraser now remove the current attempt-limit rows, the per-user handle lock and per-session step-up records, which earlier versions left behind.
-
-= 0.13.27 =
-* Tenth re-review fix: the check that proves the passkey limit's constraint on the database now also requires that it could remove its own temporary rows. If those deletions keep failing — a database that accepts writes but cannot complete them — the limit is reported as unenforceable and registration refuses, instead of reporting success while leaving rows behind.
-
-= 0.13.26 =
-* Ninth re-review fixes (both about not trusting a read, and about proving it):
-* Claiming an attempt or a quota slot no longer reads anything at all. The insert either wrote the row — which, with a unique row name, means this request holds the slot — or it did not. Previously the plugin confirmed ownership with a follow-up read, and a read can be answered by a replica that is behind the writer, which could make a single request write a row for every slot and use up that key's whole allowance for the window. Each failed insert is now followed by a removal of that request's own row, so a request that ends up refused provably leaves nothing behind.
-* The test that checks the passkey limit's constraint on the write server now calls that check directly, with and without the constraint in place, and asserts it reports true only when the database really refuses a duplicate — previously the scenario could pass without the check having run.
-
-For the change history of 0.13.25 and earlier releases, see changelog.txt.
+Security (multisite): a user marked as spam on the network could still sign in with a passkey, a QR approval, a magic link or a recovery code. Update immediately on multisite.

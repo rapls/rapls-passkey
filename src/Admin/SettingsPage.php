@@ -13,9 +13,7 @@ use RaplsPasskey\Security\SecondFactor;
 use RaplsPasskey\Support\Compat;
 use RaplsPasskey\Support\Settings;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Options page under Settings → Rapls Passkey: reCAPTCHA configuration, detected
@@ -142,7 +140,9 @@ final class SettingsPage {
 				<a href="<?php echo esc_url( SetupWizard::url() ); ?>" class="page-title-action"><?php esc_html_e( 'Setup check', 'rapls-passkey' ); ?></a>
 			</h1>
 
-			<?php if ( isset( $_GET['rapls_pk_reset'] ) && 'ok' === sanitize_key( wp_unslash( $_GET['rapls_pk_reset'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php // phpcs:disable WordPress.Security.NonceVerification.Recommended ?>
+			<?php if ( isset( $_GET['rapls_pk_reset'] ) && 'ok' === sanitize_key( wp_unslash( $_GET['rapls_pk_reset'] ) ) ) : ?>
+			<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings were reset to their defaults.', 'rapls-passkey' ); ?></p></div>
 			<?php endif; ?>
 

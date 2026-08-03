@@ -11,9 +11,7 @@ use RaplsPasskey\Security\AuthSession;
 use RaplsPasskey\Security\SecondFactor;
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Shown between a successful magic-link / recovery-code login and the auth cookie:

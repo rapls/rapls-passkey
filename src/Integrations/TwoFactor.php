@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations;
 
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * A passkey is itself phishing-resistant multi-factor authentication (something

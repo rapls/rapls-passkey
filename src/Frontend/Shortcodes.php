@@ -10,9 +10,7 @@ namespace RaplsPasskey\Frontend;
 use RaplsPasskey\Credentials\CredentialRepository;
 use RaplsPasskey\Support\Help;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Exposes the passkey ceremonies outside wp-login.php / the profile screen so
@@ -150,7 +148,9 @@ final class Shortcodes {
 			</label>
 			<button type="button" class="rapls-pk-fe-btn"><?php echo esc_html( (string) $atts['label'] ); ?></button>
 			<p class="rapls-pk-fe-status" role="status" aria-live="polite"></p>
-			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo Help::html(); ?>
+			<?php // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -213,7 +213,9 @@ final class Shortcodes {
 				<button type="button" class="rapls-pk-fe-btn"><?php esc_html_e( 'Register a passkey', 'rapls-passkey' ); ?></button>
 				<span class="rapls-pk-fe-status" role="status" aria-live="polite"></span>
 			</p>
-			<?php echo Help::html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo Help::html(); ?>
+			<?php // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();

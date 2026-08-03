@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Support;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Reads the single options array with sane defaults. The admin UI lives in

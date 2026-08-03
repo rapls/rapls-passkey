@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Credentials;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Each WordPress user gets one opaque, stable user handle (the WebAuthn

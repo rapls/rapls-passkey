@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\WebAuthn;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Answers "is this domain a public suffix?" using the Mozilla Public Suffix List
@@ -132,7 +130,8 @@ final class PublicSuffixList {
 		if ( '' === $path || ! is_readable( $path ) ) {
 			return array();
 		}
-		$contents = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$contents = file_get_contents( $path );
 		if ( false === $contents || '' === $contents ) {
 			return array();
 		}

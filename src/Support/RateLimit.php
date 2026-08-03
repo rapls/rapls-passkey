@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Support;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Caps how often something may happen per key (per IP, per token, …) within a
@@ -125,7 +123,8 @@ final class RateLimit {
 		list( $end, $slot, $nonce ) = $parts;
 
 		global $wpdb;
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options} WHERE option_name = %s AND option_value = %s",
 				self::slot_name( self::RESERVE_PREFIX, $key, (int) $end, (int) $slot ),
@@ -171,7 +170,8 @@ final class RateLimit {
 		list( $end, $slot, $nonce ) = $parts;
 
 		global $wpdb;
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options} WHERE option_name = %s AND option_value = %s",
 				self::slot_name( self::ATTEMPT_PREFIX, $key, (int) $end, (int) $slot ),
@@ -193,7 +193,8 @@ final class RateLimit {
 		global $wpdb;
 		foreach ( array( self::ATTEMPT_PREFIX, self::RESERVE_PREFIX ) as $prefix ) {
 			$like = $wpdb->esc_like( $prefix . md5( $key ) . '_' ) . '%';
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query(
 				$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $like )
 			);
 		}
@@ -218,7 +219,8 @@ final class RateLimit {
 		$prefix = $quota ? self::RESERVE_PREFIX : self::ATTEMPT_PREFIX;
 		$like   = $wpdb->esc_like( $prefix . md5( $key ) . '_' . self::window_end( $window ) . '_' ) . '%';
 
-		$count = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$count = $wpdb->get_var(
 			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s", $like )
 		);
 		return null === $count ? 0 : (int) $count;
@@ -270,7 +272,8 @@ final class RateLimit {
 			// debug.log and monitoring with expected failures and buries real ones.
 			// Suppression does not hide anything from us — last_error is still set.
 			$suppressed = method_exists( $wpdb, 'suppress_errors' ) ? $wpdb->suppress_errors( true ) : null;
-			$ok         = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$ok         = $wpdb->query(
 				$wpdb->prepare( "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, $value )
 			);
 			if ( null !== $suppressed ) {
@@ -292,7 +295,8 @@ final class RateLimit {
 			// writer, and it removes our row if it is there and nothing otherwise.
 			// After it, this request provably owns no row on this slot, so moving to
 			// the next one cannot leave anything behind.
-			$cleaned = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$cleaned = $wpdb->query(
 				$wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name = %s AND option_value = %s", $name, $value )
 			);
 			if ( false === $cleaned ) {
@@ -361,7 +365,8 @@ final class RateLimit {
 		}
 		global $wpdb;
 		foreach ( array( self::ATTEMPT_PREFIX, self::RESERVE_PREFIX ) as $prefix ) {
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) <= %d",
 					$wpdb->esc_like( $prefix ) . '%',

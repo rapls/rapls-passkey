@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations\SecondFactor;
 
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adapter onto a third-party 2FA plugin.

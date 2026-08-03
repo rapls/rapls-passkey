@@ -9,9 +9,7 @@ namespace RaplsPasskey\Admin;
 
 use RaplsPasskey\Credentials\CredentialRepository;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a column to Users → All Users showing, per user, how many passkeys they

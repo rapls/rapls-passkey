@@ -11,9 +11,7 @@ use RaplsPasskey\Audit\AuditLog;
 use RaplsPasskey\Credentials\CredentialRepository;
 use WP_CLI;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * `wp rapls-passkey ...` — inspect and remove stored passkeys from the server.

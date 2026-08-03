@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations;
 
 use RaplsPasskey\Frontend\Shortcodes;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a "Passkey" tab to the WooCommerce "My account" area where customers can
@@ -105,6 +103,7 @@ final class WooCommerceAccount {
 		}
 		echo '<h3>' . esc_html__( 'Passkey', 'rapls-passkey' ) . '</h3>';
 		// render_register() returns trusted, internally-escaped markup.
-		echo $this->shortcodes->render_register( array() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->shortcodes->render_register( array() );
 	}
 }

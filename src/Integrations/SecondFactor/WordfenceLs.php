@@ -9,9 +9,7 @@ namespace RaplsPasskey\Integrations\SecondFactor;
 
 use WP_User;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Wordfence Login Security (also bundled inside Wordfence) checks its 2FA code
@@ -56,6 +54,8 @@ final class WordfenceLs implements Provider {
 			// We cannot tell whether this user has a second factor. Surface it as
 			// "unavailable" so the gate fails closed on a weak alternative login
 			// rather than silently letting it skip a 2FA the user may have.
+			// The message is a literal; $e is the previous exception, not output.
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 			throw new ProviderUnavailable( 'Wordfence Login Security 2FA status could not be read.', 0, $e );
 		}
 	}

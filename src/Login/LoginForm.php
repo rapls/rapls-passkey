@@ -9,9 +9,7 @@ namespace RaplsPasskey\Login;
 
 use RaplsPasskey\Support\Help;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Adds a "Sign in with a passkey" button to the login form and the script that
@@ -46,7 +44,8 @@ final class LoginForm {
 			true
 		);
 
-		$redirect_to = isset( $_REQUEST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_REQUEST['redirect_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$redirect_to = isset( $_REQUEST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_REQUEST['redirect_to'] ) ) : '';
 
 		wp_localize_script(
 			'rapls-passkey-login',

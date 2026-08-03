@@ -9,9 +9,7 @@ namespace RaplsPasskey\WebAuthn;
 
 use Webauthn\PublicKeyCredentialRpEntity;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Resolves the WebAuthn Relying Party (RP) identity from the site.

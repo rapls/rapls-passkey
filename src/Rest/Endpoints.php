@@ -23,9 +23,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Wires the four ceremony endpoints plus credential deletion under the
@@ -249,7 +247,8 @@ final class Endpoints {
 				// passkey; skip it (the worst case is it is missing from the exclude
 				// list) and note it for review rather than returning a 500.
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( '[rapls-passkey] register/options: skipping unreadable credential #' . $credential->id ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					error_log( '[rapls-passkey] register/options: skipping unreadable credential #' . $credential->id );
 				}
 			}
 		}
@@ -438,7 +437,8 @@ final class Endpoints {
 						// One corrupt row must not break the whole picker; skip it and
 						// note it for review rather than returning a 500.
 						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-							error_log( '[rapls-passkey] login/options: skipping unreadable credential #' . $credential->id ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+							// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+							error_log( '[rapls-passkey] login/options: skipping unreadable credential #' . $credential->id );
 						}
 					}
 				}
@@ -988,7 +988,8 @@ final class Endpoints {
 		// returned to the client, even under WP_DEBUG, so a production site left
 		// with WP_DEBUG on cannot leak credential ids or library errors to callers.
 		if ( null !== $reason && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( '[rapls-passkey] ' . $code . ' — ' . $reason ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log( '[rapls-passkey] ' . $code . ' — ' . $reason );
 		}
 		return new WP_Error( $code, $message, array( 'status' => $status ) );
 	}

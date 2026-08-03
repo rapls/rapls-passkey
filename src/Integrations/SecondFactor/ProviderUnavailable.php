@@ -7,9 +7,7 @@
 
 namespace RaplsPasskey\Integrations\SecondFactor;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Thrown by a Provider when the underlying 2FA plugin errors while we ask

@@ -9,9 +9,7 @@ namespace RaplsPasskey;
 
 use RaplsPasskey\Credentials\Schema;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Runs on plugin activation: builds the credential table and records state.

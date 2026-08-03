@@ -2,9 +2,9 @@
 Contributors: rapls
 Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
-Tested up to: 7.0.2
+Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.63
+Stable tag: 0.13.64
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,9 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.64 =
+* Readme only: `Tested up to` named a patch release (7.0.2). WordPress.org's automated scan requires the major version alone, and rejected the upload over it. It reads 7.0 now; the plugin is unchanged and was tested against 7.0.2.
 
 = 0.13.63 =
 * **Direct-access protection was missing from every file in the distributed package.** The plugin guards each file with `if ( ! defined( 'ABSPATH' ) )`, which the build rewrites to `if ( ! \defined( 'ABSPATH' ) )` — a form the WordPress Plugin Check tool does not recognise. Every shipped file therefore read as unprotected to the tooling, while the repository looked correct. The guard is now written in the form that survives the build.

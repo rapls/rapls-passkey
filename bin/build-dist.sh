@@ -54,7 +54,7 @@ cd "$ROOT"
 #
 # Checked BEFORE Composer runs, so the answer is about the source and not about
 # anything this script did to it. Explicit override for local experiments; the
-# release path never sets it, and make-bundle.sh refuses a dirty manifest too.
+# release path never sets it.
 if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
 	if [ -n "$(git -C "$ROOT" status --porcelain)" ] && [ "${ALLOW_DIRTY_BUILD:-}" != "1" ]; then
 		echo "refusing to build: the working tree has uncommitted changes (V69-01)." >&2

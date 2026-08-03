@@ -17,7 +17,7 @@
  * So the digest covers the TREE: every path, its type, whether it is
  * executable, and its contents (or, for a symlink, its target). It is computed
  * before a release, committed as vendor-manifest.json, and CHECKED — never
- * silently rewritten — by bin/build-dist.sh and bin/make-bundle.sh.
+ * silently rewritten — by bin/build-dist.sh.
  *
  *   php bin/vendor-digest.php --write     regenerate the manifest (deliberate)
  *   php bin/vendor-digest.php --check     compare; exit 1 and name what differs

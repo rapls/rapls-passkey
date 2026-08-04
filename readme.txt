@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.64
+Stable tag: 0.13.65
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,11 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.65 =
+* Clears the last of the WordPress Plugin Check warnings against the shipped package. `$_SERVER['REQUEST_METHOD']`, a `redirect_to` from the query string and the "seen device" cookie are now unslashed and sanitised on the way in rather than only validated afterwards; the uninstall script's two loop variables are prefixed, since a file that runs at global scope defines globals; and the exemption on the DROP TABLE in uninstall named the wrong rule.
+* `composer.json` ships with the package again. WordPress.org's scan asks for it wherever a `vendor/` directory is present, and it is the manifest that says what is in there. `composer.lock` stays out. Note for anyone reading the package: `vendor/` has already been namespace-prefixed by the build, so do not run `composer install` inside an installed copy.
+* No functional change.
 
 = 0.13.64 =
 * Readme only: `Tested up to` named a patch release (7.0.2). WordPress.org's automated scan requires the major version alone, and rejected the upload over it. It reads 7.0 now; the plugin is unchanged and was tested against 7.0.2.

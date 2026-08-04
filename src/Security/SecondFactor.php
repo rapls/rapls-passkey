@@ -394,7 +394,9 @@ final class SecondFactor {
 	 */
 	private static function requested_redirect(): string {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The caller has already authenticated the first factor.
-		$requested = isset( $_REQUEST['redirect_to'] ) ? trim( (string) wp_unslash( $_REQUEST['redirect_to'] ) ) : '';
+		$requested = isset( $_REQUEST['redirect_to'] )
+			? trim( (string) esc_url_raw( wp_unslash( $_REQUEST['redirect_to'] ) ) )
+			: '';
 
 		// wp_validate_redirect( '', $fallback ) returns '' rather than the fallback,
 		// and an empty Location yields a blank page.

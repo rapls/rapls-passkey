@@ -48,7 +48,10 @@ final class SecondFactorScreen {
 		}
 
 		$error = '';
-		if ( 'POST' === ( isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : '' ) ) {
+		$method = isset( $_SERVER['REQUEST_METHOD'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+			: '';
+		if ( 'POST' === $method ) {
 			$error = $this->process( $user, $provider, $pending ); // Exits on success.
 		}
 

@@ -149,6 +149,9 @@ final class AuthSession {
 		 */
 		do_action( 'rapls_passkey/before_login', $user, $context );
 
+		// WordPress core's own hook, fired on purpose: a passkey sign-in has to look
+		// like a sign-in to everything else on the site. Prefixing it would defeat it.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		do_action( 'wp_login', $user->user_login, $user );
 		self::$active_context = '';
 

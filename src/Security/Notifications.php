@@ -180,7 +180,9 @@ final class Notifications {
 		$list = get_user_meta( $user_id, self::SEEN_META, true );
 		$list = is_array( $list ) ? $list : array();
 
-		$token = isset( $_COOKIE[ self::SEEN_COOKIE ] ) ? (string) $_COOKIE[ self::SEEN_COOKIE ] : '';
+		$token = isset( $_COOKIE[ self::SEEN_COOKIE ] )
+			? sanitize_text_field( wp_unslash( $_COOKIE[ self::SEEN_COOKIE ] ) )
+			: '';
 		if ( 1 !== preg_match( '/^[a-f0-9]{32}$/', $token ) ) {
 			$token = '';
 		}

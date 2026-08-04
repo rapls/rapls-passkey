@@ -22,7 +22,9 @@ README.md
 # package, it is not part of it.
 /vendor-manifest.json
 
-/composer.json
+# composer.json ships WITH vendor/. WordPress.org's scan asks for it when a
+# vendor/ directory is present, and it is the manifest that says what is in
+# there. The lock stays out: it describes a build, not the package.
 /composer.lock
 /scoper.inc.php
 /build

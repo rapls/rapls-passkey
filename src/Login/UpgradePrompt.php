@@ -102,7 +102,7 @@ final class UpgradePrompt {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$dest = isset( $_GET['redirect_to'] )
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			? wp_validate_redirect( wp_unslash( $_GET['redirect_to'] ), admin_url() )
+			? wp_validate_redirect( esc_url_raw( wp_unslash( $_GET['redirect_to'] ) ), admin_url() )
 			: admin_url();
 		if ( '' === $dest ) {
 			$dest = admin_url();

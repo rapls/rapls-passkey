@@ -77,7 +77,7 @@ echo "Verifying: {$slug}\n";
 // supposed to cover it read the build script's text instead — it confirmed that
 // the script said `git ls-files` and `--files-from`, which it did, while rsync
 // quietly ignored .distignore for files named that way and the package shipped
-// tests/, bin/, .github/, composer.json and, on Pro, the entire licence server.
+// tests/, bin/, .github/ and, on Pro, the entire licence server.
 // A string in a script is not a property of an artifact.
 //
 // The list is not derived from .distignore: it is written out, so that a
@@ -85,7 +85,7 @@ echo "Verifying: {$slug}\n";
 $forbidden = array(
 	'.github', '.gitignore', '.distignore', '.claude', 'CLAUDE.md', 'README.md',
 	'docs', 'tests', 'bin', 'tools', 'node_modules', 'build',
-	'composer.json', 'composer.lock', 'scoper.inc.php', 'build-manifest.json.bak',
+	'composer.lock', 'scoper.inc.php', 'build-manifest.json.bak',
 	'.ci', '.idea', '.vscode', 'Thumbs.db', '.DS_Store',
 );
 $shipped = array();

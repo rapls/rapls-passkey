@@ -239,6 +239,12 @@ final class Plugin {
 		// the documented value for it — but it has to be passed to reach the third.
 		// The distribution build fully qualifies it to \false, which the sniff
 		// compares textually against "false" and so reports.
+		// Kept deliberately. Just-in-time loading searches WP_LANG_DIR/plugins and
+		// WP_LANG_DIR/themes only; a plugin's OWN languages/ directory is reached
+		// through the custom path this call registers (see
+		// WP_Textdomain_Registry::get_paths_for_domain()). Without it the bundled
+		// Japanese catalogue would never load — only wordpress.org language packs.
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
 		// phpcs:ignore WordPress.WP.DeprecatedParameters.Load_plugin_textdomainParam2Found
 		load_plugin_textdomain( 'rapls-passkey', false, dirname( RAPLS_PASSKEY_BASENAME ) . '/languages' );
 	}

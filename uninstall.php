@@ -59,13 +59,13 @@ function rapls_passkey_uninstall_site(): void {
 }
 
 // Remove per-user meta this plugin stored, for every user (global, not per-site).
-foreach ( array( 'rapls_passkey_user_handle', 'rapls_pk_seen_devices', 'rapls_pk_upgrade_seen' ) as $meta_key ) {
-	delete_metadata( 'user', 0, $meta_key, '', true );
+foreach ( array( 'rapls_passkey_user_handle', 'rapls_pk_seen_devices', 'rapls_pk_upgrade_seen' ) as $rapls_passkey_meta_key ) {
+	delete_metadata( 'user', 0, $rapls_passkey_meta_key, '', true );
 }
 
 if ( is_multisite() ) {
-	foreach ( get_sites( array( 'number' => 0, 'fields' => 'ids' ) ) as $site_id ) {
-		switch_to_blog( (int) $site_id );
+	foreach ( get_sites( array( 'number' => 0, 'fields' => 'ids' ) ) as $rapls_passkey_site_id ) {
+		switch_to_blog( (int) $rapls_passkey_site_id );
 		rapls_passkey_uninstall_site();
 		restore_current_blog();
 	}

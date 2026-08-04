@@ -163,4 +163,28 @@ check(
 	count( $late ) . ': ' . implode( ', ', array_slice( $late, 0, 6 ) )
 );
 
+// AN ANNOTATION REACHES ONE LINE. Two `phpcs:ignore` comments in a row means the
+// first one covers the second — a comment — and nothing else, so the statement
+// below them keeps only the last annotation's codes. It happened here: the
+// textdomain loader carried two, and the sniff named by the first went on being
+// reported against the shipped package. Codes belong on one line, comma-separated.
+$stacked = array();
+foreach ( $files as $path ) {
+	$lines = explode( "\n", (string) file_get_contents( $path ) );
+	foreach ( $lines as $i => $line ) {
+		if ( ! preg_match( '#^\s*//\s*phpcs:ignore\b#', $line ) ) {
+			continue;
+		}
+		$next = $lines[ $i + 1 ] ?? '';
+		if ( preg_match( '#^\s*//\s*phpcs:ignore\b#', $next ) ) {
+			$stacked[] = ltrim( str_replace( $root, '', $path ), '/' ) . ':' . ( $i + 1 );
+		}
+	}
+}
+check(
+	'no annotation is stacked on another (only the last one would reach the statement)',
+	array() === $stacked,
+	count( $stacked ) . ': ' . implode( ', ', array_slice( $stacked, 0, 6 ) )
+);
+
 finish();

@@ -244,8 +244,7 @@ final class Plugin {
 		// through the custom path this call registers (see
 		// WP_Textdomain_Registry::get_paths_for_domain()). Without it the bundled
 		// Japanese catalogue would never load — only wordpress.org language packs.
-		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
-		// phpcs:ignore WordPress.WP.DeprecatedParameters.Load_plugin_textdomainParam2Found
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound, WordPress.WP.DeprecatedParameters.Load_plugin_textdomainParam2Found
 		load_plugin_textdomain( 'rapls-passkey', false, dirname( RAPLS_PASSKEY_BASENAME ) . '/languages' );
 	}
 

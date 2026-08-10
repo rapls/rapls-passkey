@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.66
+Stable tag: 0.13.67
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -96,6 +96,9 @@ Retention and removal:
 This plugin does not use cookies for tracking. It sets only short-lived, functional cookies during a login ceremony (for example the pending second-factor login), which expire within minutes.
 
 == Changelog ==
+
+= 0.13.67 =
+* Tests only, and one that was worth finding: nothing asserted that registering a passkey for another user is on by default. The stub in the enrolment test answered the filter itself, so the shipped default was never read — flip it back to off and every test still passed. The default is now under test, on both call sites, and the source is checked for wording that ties the feature to the paid add-on.
 
 = 0.13.66 =
 * **Registering a passkey for another user is on by default.** It was implemented but switched off, and the Pro add-on turned it on — which made a built-in feature depend on a licence, and that is not allowed here. The capability check was always the real bound and it has not changed: only someone who can already edit that user, and could therefore reset their password and sign in as them, can enrol for them. Pro's setting now only turns the feature off.

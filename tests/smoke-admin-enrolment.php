@@ -51,7 +51,9 @@ function current_user_can( $cap, $target = 0 ) {
 }
 function apply_filters( $tag, $value, ...$rest ) {
 	if ( 'rapls_passkey/allow_admin_enrolment' === $tag ) {
-		return $GLOBALS['__enrol'];
+		// null means "no filter on this site": hand back the default the source
+		// actually passes, so the shipped default is under test and not the stub.
+		return null === $GLOBALS['__enrol'] ? $value : $GLOBALS['__enrol'];
 	}
 	return $value;
 }
@@ -92,8 +94,27 @@ check( 'no user param => yourself', $r instanceof WP_User && 1 === $r->ID );
 $r = resolve( $endpoints, $target, array( 'user' => 1 ) );
 check( 'your own id => yourself', $r instanceof WP_User && 1 === $r->ID );
 
-// --- Someone else, feature off. ---
-$GLOBALS['__caps'] = array( '1:2', '1:3' ); // The admin could edit both.
+// --- Someone else, NOTHING filtering: the shipped default decides. ------------
+//
+// WordPress.org pended this plugin because the feature was implemented here and
+// switched on by the Pro add-on's licence check. It is on by default now, and
+// this case is the one that says so: no filter, no licence, no Pro. The stub
+// above returns the source's own default when __enrol is null, so flipping that
+// default back to false fails here rather than passing quietly — which is what
+// happened before, when the stub answered for it.
+$GLOBALS['__enrol'] = null;
+$GLOBALS['__caps']  = array( '1:2' );
+
+$r = resolve( $endpoints, $target, array( 'user' => 2 ) );
+check( 'with no filter at all, an admin who can edit them may enrol for them', $r instanceof WP_User && 2 === $r->ID );
+
+$GLOBALS['__caps'] = array(); // Cannot edit anyone.
+$r = resolve( $endpoints, $target, array( 'user' => 2 ) );
+check( 'and the capability is still the bound, default or not', $r instanceof WP_Error );
+
+// --- Someone else, a site that filtered the feature off. ---
+$GLOBALS['__enrol'] = false;
+$GLOBALS['__caps']  = array( '1:2', '1:3' ); // The admin could edit both.
 
 $r = resolve( $endpoints, $target, array( 'user' => 2 ) );
 check( 'another user is refused while the feature is off', $r instanceof WP_Error );
@@ -122,6 +143,20 @@ check( 'a regular user cannot enrol for someone else', $r instanceof WP_Error );
 
 $r = resolve( $endpoints, $target, array( 'user' => 2 ) );
 check( 'but can still register for themselves', $r instanceof WP_User && 2 === $r->ID );
+
+// --- The other call site, and what the source says about it. -----------------
+$root = dirname( __DIR__ );
+foreach ( array( 'src/Rest/Endpoints.php', 'src/Admin/ProfileUi.php' ) as $rel ) {
+	$src = (string) file_get_contents( $root . '/' . $rel );
+	check(
+		$rel . ' passes true as the default',
+		(bool) preg_match( "#allow_admin_enrolment',\s*true\s*\)#", $src )
+	);
+	check(
+		$rel . ' does not tie the feature to the paid add-on',
+		! preg_match( '#Pro\s+(turns|enables|unlocks)#i', $src )
+	);
+}
 
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc === 0 ? 0 : 1 );

@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.65
+Stable tag: 0.13.66
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,6 +97,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.66 =
+* **Registering a passkey for another user is on by default.** It was implemented but switched off, and the Pro add-on turned it on — which made a built-in feature depend on a licence, and that is not allowed here. The capability check was always the real bound and it has not changed: only someone who can already edit that user, and could therefore reset their password and sign in as them, can enrol for them. Pro's setting now only turns the feature off.
+* The second-factor screen filters the markup its 2FA provider prints, to the form controls such a screen needs. The two bundled adapters are unaffected, byte for byte; inline JavaScript from a provider is dropped, and a provider that needs it should enqueue it.
+* The package no longer carries the Japanese catalogue or `load_plugin_textdomain()`. WordPress.org builds translations for every locale from translate.wordpress.org and loads them on demand, and a bundled copy would only shadow that.
+* Dropped two test-only directories that Composer installs inside third-party packages (`doctrine/deprecations`, `symfony/clock`).
+
 = 0.13.65 =
 * Clears the last of the WordPress Plugin Check warnings against the shipped package. `$_SERVER['REQUEST_METHOD']`, a `redirect_to` from the query string and the "seen device" cookie are now unslashed and sanitised on the way in rather than only validated afterwards; the uninstall script's two loop variables are prefixed, since a file that runs at global scope defines globals; and the exemption on the DROP TABLE in uninstall named the wrong rule.
 * `composer.json` ships with the package again. WordPress.org's scan asks for it wherever a `vendor/` directory is present, and it is the manifest that says what is in there. `composer.lock` stays out. Note for anyone reading the package: `vendor/` has already been namespace-prefixed by the build, so do not run `composer install` inside an installed copy.
@@ -160,6 +166,9 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 For the change history of 0.13.45 and earlier releases, see changelog.txt.
 
 == Upgrade Notice ==
+
+= 0.13.66 =
+Administrator enrolment is on by default instead of being unlocked by the Pro add-on. Translations now come from translate.wordpress.org rather than a bundled catalogue.
 
 = 0.13.63 =
 Every file in the previous package failed the WordPress Plugin Check direct-access test: the guard was rewritten by the build into a form the tool does not recognise. Fixed, along with the code-standard findings that were hidden behind misplaced exemptions.

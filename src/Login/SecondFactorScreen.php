@@ -119,6 +119,51 @@ final class SecondFactorScreen {
 	 * @param \RaplsPasskey\Integrations\SecondFactor\Provider $provider The 2FA plugin adapter.
 	 * @param string                                           $error    Error message, or ''.
 	 */
+	/**
+	 * The HTML a second-factor provider may print on this screen.
+	 *
+	 * Form controls and ordinary text markup. Deliberately no `script`: this
+	 * output arrives from whichever 2FA plugin is installed, and the screen sits
+	 * between a spent first factor and a session.
+	 *
+	 * @return array<string,array<string,bool>>
+	 */
+	private static function provider_html(): array {
+		$attrs = array(
+			'id' => true, 'class' => true, 'style' => true, 'title' => true, 'role' => true,
+			'name' => true, 'value' => true, 'type' => true, 'placeholder' => true,
+			'autocomplete' => true, 'autocapitalize' => true, 'autocorrect' => true,
+			'spellcheck' => true, 'inputmode' => true, 'pattern' => true, 'maxlength' => true,
+			'minlength' => true, 'size' => true, 'min' => true, 'max' => true, 'step' => true,
+			'required' => true, 'readonly' => true, 'disabled' => true, 'checked' => true,
+			'selected' => true, 'multiple' => true, 'rows' => true, 'cols' => true,
+			'for' => true, 'form' => true, 'tabindex' => true, 'autofocus' => true,
+			'aria-label' => true, 'aria-labelledby' => true, 'aria-describedby' => true,
+			'aria-hidden' => true, 'aria-live' => true, 'data-*' => true,
+		);
+
+		$tags = array(
+			'form', 'input', 'label', 'select', 'option', 'optgroup', 'textarea',
+			'button', 'fieldset', 'legend', 'datalist', 'output',
+			'p', 'div', 'span', 'br', 'hr', 'strong', 'b', 'em', 'i', 'small', 'code',
+			'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+		);
+
+		$allowed = array();
+		foreach ( $tags as $tag ) {
+			$allowed[ $tag ] = $attrs;
+		}
+		$allowed['a']   = $attrs + array( 'href' => true, 'target' => true, 'rel' => true );
+		$allowed['img'] = $attrs + array( 'src' => true, 'alt' => true, 'width' => true, 'height' => true );
+
+		/**
+		 * Filter the HTML a second-factor provider may print on the 2FA screen.
+		 *
+		 * @param array<string,array<string,bool>> $allowed Allowed tags and attributes.
+		 */
+		return (array) apply_filters( 'rapls_passkey/second_factor_allowed_html', $allowed );
+	}
+
 	private function render_screen( WP_User $user, $provider, string $error ): void {
 		// Some providers (Two-Factor's, for instance) draw their own submit button;
 		// buffer their fields so we only add ours when they did not.
@@ -144,8 +189,11 @@ final class SecondFactorScreen {
 				?>
 			</p>
 			<?php
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup comes from the 2FA plugin, which escapes it (this is what it prints on wp-login.php).
-			echo $fields;
+			// The 2FA plugin's own markup, filtered to the form controls a second
+			// factor needs. It is another plugin's output, not ours, so it is
+			// allowlisted rather than trusted: a provider that wants JavaScript on
+			// this screen should enqueue it, not print it here.
+			echo wp_kses( $fields, self::provider_html() );
 			?>
 			<?php wp_nonce_field( SecondFactor::ACTION, 'rapls_pk_2fa_nonce' ); ?>
 			<?php if ( ! $has_submit ) : ?>

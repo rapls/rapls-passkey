@@ -91,7 +91,8 @@ final class Plugin {
 		}
 		$this->booted = true;
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
+		// No load_plugin_textdomain(): translations for a WordPress.org-hosted
+		// plugin come from translate.wordpress.org and load just in time.
 
 		// Keep the schema current after plugin updates (no manual reactivation).
 		add_action( 'admin_init', array( Schema::class, 'maybe_upgrade' ) );
@@ -229,23 +230,6 @@ final class Plugin {
 		// caller must not be able to re-run a failing migration on every request.
 		Schema::maybe_upgrade_throttled();
 		return $result;
-	}
-
-	/**
-	 * Load translations.
-	 */
-	public function load_textdomain(): void {
-		// The second argument is the deprecated $deprecated parameter, and false is
-		// the documented value for it — but it has to be passed to reach the third.
-		// The distribution build fully qualifies it to \false, which the sniff
-		// compares textually against "false" and so reports.
-		// Kept deliberately. Just-in-time loading searches WP_LANG_DIR/plugins and
-		// WP_LANG_DIR/themes only; a plugin's OWN languages/ directory is reached
-		// through the custom path this call registers (see
-		// WP_Textdomain_Registry::get_paths_for_domain()). Without it the bundled
-		// Japanese catalogue would never load — only wordpress.org language packs.
-		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound, WordPress.WP.DeprecatedParameters.Load_plugin_textdomainParam2Found
-		load_plugin_textdomain( 'rapls-passkey', false, dirname( RAPLS_PASSKEY_BASENAME ) . '/languages' );
 	}
 
 	/**

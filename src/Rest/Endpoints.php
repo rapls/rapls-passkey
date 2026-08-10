@@ -662,12 +662,16 @@ final class Endpoints {
 		}
 
 		/**
-		 * Allow an administrator to register a passkey on another user's behalf.
+		 * Whether an administrator may register a passkey on another user's behalf.
 		 *
-		 * @param bool $allowed False by default. Rapls Passkey Pro turns this on from
-		 *                      its "Administrator enrolment" setting.
+		 * On by default. The capability check below is the real bound: only someone
+		 * who can already `edit_user` the target — and so could set their password
+		 * and sign in as them — can enrol for them, so this adds no privilege. Return
+		 * false to switch the path off entirely.
+		 *
+		 * @param bool $allowed True by default.
 		 */
-		if ( ! apply_filters( 'rapls_passkey/allow_admin_enrolment', false ) ) {
+		if ( ! apply_filters( 'rapls_passkey/allow_admin_enrolment', true ) ) {
 			return new WP_Error(
 				'rapls_passkey_forbidden',
 				__( 'Registering a passkey for another user is not enabled on this site.', 'rapls-passkey' ),

@@ -40,3 +40,13 @@ README.md
 /.idea
 /.vscode
 Thumbs.db
+
+# Translations are not shipped: WordPress.org builds and serves them from
+# translate.wordpress.org for every locale, and a bundled catalogue would only
+# shadow that. The sources stay in the repository.
+/languages
+
+# Test-only material inside third-party packages. Composer installs it; a plugin
+# package has no business carrying it.
+/vendor/doctrine/deprecations/src/PHPUnit
+/vendor/symfony/clock/Test

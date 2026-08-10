@@ -104,7 +104,7 @@ final class ProfileUi {
 		/** Documented in Rest\Endpoints::enrolment_target(). */
 		$can_enrol = ! $is_self
 			&& current_user_can( 'edit_user', (int) $user->ID )
-			&& apply_filters( 'rapls_passkey/allow_admin_enrolment', false );
+			&& apply_filters( 'rapls_passkey/allow_admin_enrolment', true );
 		?>
 		<h2 id="rapls-passkey"><?php esc_html_e( 'Passkey', 'rapls-passkey' ); ?></h2>
 		<table class="form-table" role="presentation">

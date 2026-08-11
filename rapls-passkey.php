@@ -3,7 +3,7 @@
  * Plugin Name:       Rapls Passkey
  * Plugin URI:        https://raplsworks.com/plugins/rapls-passkey/
  * Description:       Passwordless authentication for WordPress using passkeys (WebAuthn / FIDO2).
- * Version:           0.13.67
+ * Version:           0.13.68
  * Requires at least: 6.0
  * Requires PHP:      8.2
  * Author:            Rapls
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'RAPLS_PASSKEY_VERSION', '0.13.67' );
+define( 'RAPLS_PASSKEY_VERSION', '0.13.68' );
 define( 'RAPLS_PASSKEY_FILE', __FILE__ );
 define( 'RAPLS_PASSKEY_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAPLS_PASSKEY_URL', plugin_dir_url( __FILE__ ) );

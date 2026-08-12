@@ -30,7 +30,7 @@ msgstr "イベント"
 
 #: src/Admin/AuditExport.php:79
 msgid "User ID"
-msgstr "ユーザーID"
+msgstr "ユーザー ID"
 
 #: src/Admin/AuditExport.php:80
 msgid "Username"
@@ -176,7 +176,7 @@ msgstr "登録済みパスキー"
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
 #: src/Admin/DashboardWidget.php:74
 msgid "%1$s / %2$s (%3$d%%)"
-msgstr "%1$s / %2$s(%3$d%%)"
+msgstr "%1$s / %2$s (%3$d%%)"
 
 #: src/Admin/DashboardWidget.php:80
 msgid "Users with a passkey"
@@ -274,7 +274,7 @@ msgstr "このパスキーを削除しますか?"
 
 #: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:104
 msgid "Name for this passkey (optional):"
-msgstr "このパスキーの名前(任意):"
+msgstr "このパスキーの名前 (任意):"
 
 #: src/Admin/ProfileUi.php:81 src/Frontend/Shortcodes.php:106
 msgid "New name for this passkey:"
@@ -331,12 +331,12 @@ msgid ""
 "logins are not counted. 0 disables the limit."
 msgstr ""
 "「試行回数が多すぎます」と表示されるまでに、同一 IP アドレスから許可されるパ"
-"スキーログインの失敗回数です(下のロックアウト時間内)。成功したログインはカウ"
+"スキーログインの失敗回数です (下のロックアウト時間内)。成功したログインはカウ"
 "ントされません。0 で無効になります。"
 
 #: src/Admin/SettingsPage.php:174
 msgid "Lockout time (seconds)"
-msgstr "ロックアウト時間(秒)"
+msgstr "ロックアウト時間 (秒)"
 
 #: src/Admin/SettingsPage.php:177
 msgid ""
@@ -344,7 +344,7 @@ msgid ""
 "attempt limit is reached (default 300 seconds = 5 minutes)."
 msgstr ""
 "カウントを集計する期間であり、試行回数の上限に達した後にロックアウトが続く時"
-"間です(デフォルト 300 秒 = 5 分)。"
+"間です (デフォルト 300 秒 = 5 分)。"
 
 #: src/Admin/SettingsPage.php:182
 msgid "Session security"
@@ -412,19 +412,19 @@ msgstr "検出:"
 
 #: src/Admin/SettingsPage.php:223
 msgid "Advanced (WebAuthn)"
-msgstr "詳細設定(WebAuthn)"
+msgstr "詳細設定 (WebAuthn)"
 
 #: src/Admin/SettingsPage.php:226
 msgid "Timeout (seconds)"
-msgstr "タイムアウト(秒)"
+msgstr "タイムアウト (秒)"
 
 #: src/Admin/SettingsPage.php:229
 msgid ""
 "Timeout for the passkey registration and authentication dialogs. 0 uses the "
 "browser default (typically around 60 seconds)."
 msgstr ""
-"パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定(通常 60 秒程"
-"度)を使用します。"
+"パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定 (通常 60 秒程"
+"度) を使用します。"
 
 #: src/Admin/SettingsPage.php:233
 msgid "User verification"
@@ -432,15 +432,15 @@ msgstr "ユーザー検証"
 
 #: src/Admin/SettingsPage.php:236
 msgid "Preferred"
-msgstr "推奨(preferred)"
+msgstr "推奨 (preferred)"
 
 #: src/Admin/SettingsPage.php:237
 msgid "Required"
-msgstr "必須(required)"
+msgstr "必須 (required)"
 
 #: src/Admin/SettingsPage.php:238
 msgid "Discouraged"
-msgstr "不要(discouraged)"
+msgstr "不要 (discouraged)"
 
 #: src/Admin/SettingsPage.php:240
 msgid ""
@@ -457,22 +457,22 @@ msgstr "認証器の種類"
 
 #: src/Admin/SettingsPage.php:247
 msgid "No preference (allow all)"
-msgstr "指定なし(すべて許可)"
+msgstr "指定なし (すべて許可)"
 
 #: src/Admin/SettingsPage.php:248
 msgid "Platform only (Touch ID / Windows Hello, etc.)"
-msgstr "内蔵のみ(Touch ID / Windows Hello など)"
+msgstr "内蔵のみ (Touch ID / Windows Hello など)"
 
 #: src/Admin/SettingsPage.php:249
 msgid "Cross-platform only (security key / another device)"
-msgstr "外付けのみ(セキュリティキー / 別端末)"
+msgstr "外付けのみ (セキュリティキー / 別端末)"
 
 #: src/Admin/SettingsPage.php:251
 msgid ""
 "Which authenticator type to allow at registration (applies at registration "
 "only). No preference is usually recommended."
 msgstr ""
-"新規登録時に許可する認証器の種類(登録時のみ適用)。通常は「指定なし」を推奨し"
+"新規登録時に許可する認証器の種類 (登録時のみ適用)。通常は「指定なし」を推奨し"
 "ます。"
 
 #: src/Admin/SettingsPage.php:255
@@ -481,27 +481,27 @@ msgstr "UI ヒント"
 
 #: src/Admin/SettingsPage.php:260
 msgid "Passkey on this device (client-device)"
-msgstr "この端末のパスキー(client-device)"
+msgstr "この端末のパスキー (client-device)"
 
 #: src/Admin/SettingsPage.php:261
 msgid "Another device / QR (hybrid)"
-msgstr "別の端末 / QR(hybrid)"
+msgstr "別の端末 / QR (hybrid)"
 
 #: src/Admin/SettingsPage.php:262
 msgid "Security key (security-key)"
-msgstr "セキュリティキー(security-key)"
+msgstr "セキュリティキー (security-key)"
 
 #: src/Admin/SettingsPage.php:271
 msgid ""
 "Give supported browsers hints about which sign-in methods to suggest first "
 "(order is respected). No hints are sent if none are selected."
 msgstr ""
-"対応ブラウザに対し、優先して案内する認証方法のヒントを与えます(順序も尊重され"
-"ます)。未選択ならヒントなし。"
+"対応ブラウザに対し、優先して案内する認証方法のヒントを与えます (順序も尊重さ"
+"れます)。未選択ならヒントなし。"
 
 #: src/Admin/SettingsPage.php:276
 msgid "reCAPTCHA v3 (password login protection)"
-msgstr "reCAPTCHA v3(パスワードログイン保護)"
+msgstr "reCAPTCHA v3 (パスワードログイン保護)"
 
 #: src/Admin/SettingsPage.php:277
 msgid ""
@@ -510,7 +510,7 @@ msgid ""
 "and secret, then enable it."
 msgstr ""
 "パスワードによるログインを Google reCAPTCHA v3 で保護します。パスキーでのログ"
-"インには適用されません(総当たり攻撃が成立しないため)。サイトキーとシークレッ"
+"インには適用されません (総当たり攻撃が成立しないため)。サイトキーとシークレッ"
 "トを入力し、有効化してください。"
 
 #: src/Admin/SettingsPage.php:280
@@ -535,7 +535,7 @@ msgstr "スコアしきい値"
 
 #: src/Admin/SettingsPage.php:300
 msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
-msgstr "0.0〜1.0。これ未満のスコアは拒否します(既定 0.5)。"
+msgstr "0.0〜1.0。これ未満のスコアは拒否します (既定 0.5)。"
 
 #: src/Admin/SettingsPage.php:304
 msgid "If Google is unreachable"
@@ -544,8 +544,7 @@ msgstr "Google に接続できない場合"
 #: src/Admin/SettingsPage.php:308
 msgid "Allow the password login when reCAPTCHA cannot be verified (fail open)"
 msgstr ""
-"reCAPTCHA を検証できないときにパスワードログインを許可する（フェイルオープ"
-"ン）"
+"reCAPTCHA を検証できないときにパスワードログインを許可する (フェイルオープン)"
 
 #: src/Admin/SettingsPage.php:310
 msgid ""
@@ -553,9 +552,9 @@ msgid ""
 "Turn it off to fail closed (reject password logins that cannot be scored) — "
 "a passkey login never uses reCAPTCHA, so it stays available either way."
 msgstr ""
-"既定でオン（可用性優先）: Google の障害時に全員がロックアウトされるのを防ぎま"
-"す。オフにするとフェイルクローズ（スコアを取得できないパスワードログインを拒"
-"否）になります。パスキーログインは reCAPTCHA を使わないため、どちらの設定でも"
+"既定でオン (可用性優先): Google の障害時に全員がロックアウトされるのを防ぎま"
+"す。オフにするとフェイルクローズ (スコアを取得できないパスワードログインを拒"
+"否) になります。パスキーログインは reCAPTCHA を使わないため、どちらの設定でも"
 "利用可能です。"
 
 #: src/Admin/SettingsPage.php:315
@@ -591,8 +590,8 @@ msgid ""
 "Right after a password login, suggest creating a passkey on the spot (only "
 "for users without a passkey)"
 msgstr ""
-"パスワードでログインした直後に、パスキーの作成をその場でおすすめする(パスキー"
-"未登録のユーザーのみ)"
+"パスワードでログインした直後に、パスキーの作成をその場でおすすめする (パス"
+"キー未登録のユーザーのみ)"
 
 #: src/Admin/SettingsPage.php:342
 msgid "Audit log"
@@ -632,9 +631,9 @@ msgid ""
 msgstr ""
 "既定はオフです。セキュリティプラグインが REST API をログイン済みユーザーに限"
 "定し、パスキーでのサインインができなくなった場合にのみ有効にしてください。有"
-"効時、このプラグインは自身の匿名ログイン用ルートのみを、「ログインが必要」"
-"（HTTP 401）による制限に対してのみ再開します。ファイアウォール・IP ブロック・"
-"メンテナンスページ（HTTP 403）を上書きすることはありません。"
+"効時、このプラグインは自身の匿名ログイン用ルートのみを、「ログインが必要」 "
+"(HTTP 401) による制限に対してのみ再開します。ファイアウォール・IP ブロック・"
+"メンテナンスページ (HTTP 403) を上書きすることはありません。"
 
 #: src/Admin/SettingsPage.php:377
 msgid ""
@@ -718,7 +717,7 @@ msgstr "導入状況"
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
 #: src/Admin/SettingsPage.php:446
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
-msgstr "パスキーを登録済みのユーザー: %1$d / %2$d 人(%3$d%%)"
+msgstr "パスキーを登録済みのユーザー: %1$d / %2$d 人 (%3$d%%)"
 
 #. translators: %d: total number of registered passkeys.
 #: src/Admin/SettingsPage.php:455
@@ -750,7 +749,7 @@ msgid ""
 msgstr ""
 "Rapls Passkey は標準のログインフックのみを使用し、ログイン成功時に wp_login "
 "を発火するため、これらと共存できます。ログイン画面の CAPTCHA が重複する場合"
-"は、どちらか一方を無効にしてください(本プラグインの reCAPTCHA は上記設定で無"
+"は、どちらか一方を無効にしてください (本プラグインの reCAPTCHA は上記設定で無"
 "効化できます)。"
 
 #: src/Admin/SettingsPage.php:480
@@ -943,15 +942,15 @@ msgstr "Rapls Passkey: RP ID"
 
 #: src/Admin/SiteHealth.php:129
 msgid "The site is served over a secure context (HTTPS)."
-msgstr "サイトは安全なコンテキスト(HTTPS)で配信されています。"
+msgstr "サイトは安全なコンテキスト (HTTPS) で配信されています。"
 
 #: src/Admin/SiteHealth.php:130
 msgid ""
 "Passkeys require HTTPS (a secure context). Install an SSL certificate and "
 "serve the site over HTTPS (except on localhost)."
 msgstr ""
-"パスキーには HTTPS(安全なコンテキスト)が必要です。SSL 証明書を導入し、サイト"
-"を HTTPS で配信してください(localhost を除く)。"
+"パスキーには HTTPS (安全なコンテキスト) が必要です。SSL 証明書を導入し、サイ"
+"トを HTTPS で配信してください (localhost を除く)。"
 
 #: src/Admin/SiteHealth.php:143
 msgid "The WebAuthn library is loaded."
@@ -997,7 +996,7 @@ msgid ""
 "the scope of passkeys (changeable via the rapls_passkey_rp_id filter)."
 msgstr ""
 "現在の RP ID は「%1$s」、サイトのホストは「%2$s」です。RP ID はパスキーの有効"
-"範囲を決めます(rapls_passkey_rp_id フィルターで変更可)。"
+"範囲を決めます (rapls_passkey_rp_id フィルターで変更可)。"
 
 #: src/Admin/SiteHealth.php:238
 msgid "Security"
@@ -1199,7 +1198,7 @@ msgstr "パスキーの監査ログ"
 
 #: src/Privacy/PersonalData.php:53 src/Privacy/PersonalData.php:68
 msgid "Rapls Passkey (Passkey)"
-msgstr "Rapls Passkey(パスキー)"
+msgstr "Rapls Passkey (パスキー)"
 
 #: src/Recovery/Bypass.php:49
 msgid ""
@@ -1382,9 +1381,9 @@ msgid ""
 "(PIN) with no password. It resists phishing and avoids the risks of password "
 "reuse and leaks."
 msgstr ""
-"パスキーは、指紋・顔認証や端末のロック解除(PIN)でログインできる、パスワード不"
-"要のしくみです。フィッシングに強く、パスワードの使い回しや漏えいの心配があり"
-"ません。"
+"パスキーは、指紋・顔認証や端末のロック解除 (PIN) でログインできる、パスワード"
+"不要のしくみです。フィッシングに強く、パスワードの使い回しや漏えいの心配があ"
+"りません。"
 
 #: src/Support/Help.php:51
 msgid "What is a passkey?"

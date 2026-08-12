@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rapls-passkey\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-03 14:25+0000\n"
+"POT-Creation-Date: 2026-08-12 01:32+0000\n"
 "PO-Revision-Date: 2026-07-23 12:00+0900\n"
 "Last-Translator: Rapls <info@raplsworks.com>\n"
 "Language-Team: Japanese\n"
@@ -18,12 +18,12 @@ msgstr ""
 msgid "You do not have permission."
 msgstr "権限がありません。"
 
-#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:493
+#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:540
 #: src/Privacy/PersonalData.php:136
 msgid "Date/time (UTC)"
 msgstr "日時 (UTC)"
 
-#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:494
+#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:541
 #: src/Privacy/PersonalData.php:132
 msgid "Event"
 msgstr "イベント"
@@ -36,7 +36,7 @@ msgstr "ユーザー ID"
 msgid "Username"
 msgstr "ユーザー名"
 
-#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:496
+#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:543
 msgid "Details"
 msgstr "詳細"
 
@@ -147,7 +147,7 @@ msgstr "パスキーを一時停止しました。再開するまでログイン
 msgid "The passkey was resumed."
 msgstr "パスキーを再開しました。"
 
-#: src/Admin/CredentialsPage.php:274 src/Rest/Endpoints.php:719
+#: src/Admin/CredentialsPage.php:274 src/Rest/Endpoints.php:723
 msgid "That passkey no longer exists."
 msgstr "そのパスキーは存在しません。"
 
@@ -156,8 +156,8 @@ msgstr "そのパスキーは存在しません。"
 msgid "Passkeys"
 msgstr "パスキー"
 
-#: src/Admin/CredentialsPage.php:80 src/Rest/Endpoints.php:730
-#: src/Rest/Endpoints.php:767
+#: src/Admin/CredentialsPage.php:80 src/Rest/Endpoints.php:734
+#: src/Rest/Endpoints.php:771
 msgid "You do not have permission to change this passkey."
 msgstr "このパスキーを変更する権限がありません。"
 
@@ -649,45 +649,71 @@ msgstr "初期設定に戻す"
 msgid "Restore every setting on this page to its default value."
 msgstr "このページのすべての設定を初期値に戻します。"
 
-#: src/Admin/SettingsPage.php:411
-msgid ""
-"Cross-device sign-in: approve a login on your computer from your phone via a "
-"QR code."
-msgstr ""
-"デバイス間ログイン: パソコンでのログインを、スマートフォンから QR コードで承"
-"認できます。"
-
-#: src/Admin/SettingsPage.php:412
-msgid ""
-"Passwordless recovery: one-time recovery codes and email magic-link sign-in."
-msgstr ""
-"パスワードなしの復旧: 使い切りのリカバリーコードや、メールのマジックリンクで"
-"ログインできます。"
-
-#: src/Admin/SettingsPage.php:413
-msgid ""
-"Require passkeys for chosen roles, with a grace period, and optionally turn "
-"off password login."
-msgstr ""
-"指定した権限グループにパスキーを必須化できます。猶予期間を設けられ、必要に応"
-"じてパスワードログインを無効化することもできます。"
-
-#: src/Admin/SettingsPage.php:414
-msgid ""
-"Adaptive step-up: ask for a passkey again after a risky password sign-in."
-msgstr ""
-"アダプティブなステップアップ: リスクの高いパスワードログインのあとに、パス"
-"キーでの再確認を求めます。"
-
 #: src/Admin/SettingsPage.php:415
-msgid ""
-"Authenticator policy (FIDO Metadata Service / AAGUID allow & deny) and "
-"trusted-device management."
-msgstr ""
-"認証器ポリシー (FIDO メタデータサービス / AAGUID の許可と拒否) と信頼済みデバ"
-"イスの管理ができます。"
+msgid "Sign in from another device"
+msgstr "別の端末からログイン"
 
 #: src/Admin/SettingsPage.php:416
+msgid ""
+"Approve a login on your computer from your phone — a QR code plus a four-"
+"digit confirmation code, so a relayed code cannot be used elsewhere."
+msgstr ""
+"パソコンのログインをスマートフォンから承認します。QR コードと 4 桁の確認コー"
+"ドを組み合わせるため、中継されたコードを別の場所で使うことはできません。"
+
+#: src/Admin/SettingsPage.php:419
+msgid "A way back in that is not a password"
+msgstr "パスワードに頼らない復旧手段"
+
+#: src/Admin/SettingsPage.php:420
+msgid ""
+"One-time recovery codes and email magic-link sign-in, for the day a phone is "
+"lost or replaced."
+msgstr ""
+"使い捨てのリカバリーコードと、メールのログインリンク。端末を失くした日、買い"
+"替えた日のためのものです。"
+
+#: src/Admin/SettingsPage.php:423
+msgid "Roll out by role, at your pace"
+msgstr "ロール別に、自分のペースで移行"
+
+#: src/Admin/SettingsPage.php:424
+msgid ""
+"Require passkeys for the roles you choose, with a grace period, and turn "
+"password login off once everyone is across."
+msgstr ""
+"選んだロールにパスキーを必須化します。猶予期間を置き、全員の移行が済んだらパ"
+"スワードログインを止められます。"
+
+#: src/Admin/SettingsPage.php:427
+msgid "Ask again when it looks wrong"
+msgstr "怪しいときだけ、もう一度確認"
+
+#: src/Admin/SettingsPage.php:428
+msgid ""
+"Adaptive step-up requests a passkey after a password sign-in from somewhere "
+"unfamiliar."
+msgstr ""
+"見慣れない場所からパスワードでログインされたとき、アダプティブ・ステップアッ"
+"プがパスキーを追加で要求します。"
+
+#: src/Admin/SettingsPage.php:431
+msgid "Decide which authenticators you trust"
+msgstr "信頼する認証器を選ぶ"
+
+#: src/Admin/SettingsPage.php:432
+msgid ""
+"FIDO Metadata Service checks, AAGUID allow and deny lists, and trusted-"
+"device management."
+msgstr ""
+"FIDO メタデータサービスによる検査、AAGUID の許可・拒否リスト、信頼済み端末の"
+"管理。"
+
+#: src/Admin/SettingsPage.php:435
+msgid "Run it across a fleet"
+msgstr "複数サイトをまとめて運用"
+
+#: src/Admin/SettingsPage.php:436
 msgid ""
 "Security webhooks, adoption reports, multisite network settings and WP-CLI "
 "commands."
@@ -695,52 +721,67 @@ msgstr ""
 "セキュリティ Webhook、導入状況レポート、マルチサイトのネットワーク設定、WP-"
 "CLI コマンドに対応します。"
 
-#: src/Admin/SettingsPage.php:419
+#: src/Admin/SettingsPage.php:455
 msgid "Rapls Passkey Pro"
 msgstr "Rapls Passkey Pro"
 
-#: src/Admin/SettingsPage.php:421
+#: src/Admin/SettingsPage.php:457
+msgid "Optional add-on"
+msgstr "任意の追加プラグイン"
+
+#: src/Admin/SettingsPage.php:458
+msgid "Get everyone onto passkeys — without locking anyone out"
+msgstr "誰も締め出さずに、全員をパスキーへ"
+
+#: src/Admin/SettingsPage.php:460
 msgid ""
-"Everything here is free forever. If you want more, Rapls Passkey Pro adds:"
+"Everything on this page is free, and stays free. Pro is for what comes after "
+"the first passkey: moving a whole site across, and keeping a way in when a "
+"device goes missing."
 msgstr ""
-"ここにある機能はすべて無料で使い続けられます。さらに必要な場合は、Rapls "
-"Passkey Pro で次の機能が加わります。"
+"この画面の機能はすべて無料で、これからも無料です。Pro が受け持つのは、最初の "
+"1 本を登録したあと — サイト全体を移行させることと、端末を失ったときの入り口を"
+"確保することです。"
 
-#: src/Admin/SettingsPage.php:428
-msgid "Learn more about Pro"
-msgstr "Pro の詳細を見る"
+#: src/Admin/SettingsPage.php:472
+msgid "See what Pro adds"
+msgstr "Pro でできることを見る"
 
-#: src/Admin/SettingsPage.php:442
+#: src/Admin/SettingsPage.php:474
+msgid "One-time purchase, no subscription. 14-day refund."
+msgstr "買い切り、サブスクリプションなし。14 日間返金保証。"
+
+#: src/Admin/SettingsPage.php:489
 msgid "Adoption"
 msgstr "導入状況"
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: src/Admin/SettingsPage.php:446
+#: src/Admin/SettingsPage.php:493
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
 msgstr "パスキーを登録済みのユーザー: %1$d / %2$d 人 (%3$d%%)"
 
 #. translators: %d: total number of registered passkeys.
-#: src/Admin/SettingsPage.php:455
+#: src/Admin/SettingsPage.php:502
 msgid "Total registered passkeys: %d"
 msgstr "登録済みパスキーの総数: %d 個"
 
-#: src/Admin/SettingsPage.php:459
+#: src/Admin/SettingsPage.php:506
 msgid "Per-user status is shown in the Passkey column of the Users list."
 msgstr "各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。"
 
-#: src/Admin/SettingsPage.php:467
+#: src/Admin/SettingsPage.php:514
 msgid "Compatibility with security plugins"
 msgstr "セキュリティプラグインとの互換"
 
-#: src/Admin/SettingsPage.php:469
+#: src/Admin/SettingsPage.php:516
 msgid "No known login-security plugins were detected."
 msgstr "既知のログイン系セキュリティプラグインは検出されませんでした。"
 
-#: src/Admin/SettingsPage.php:472
+#: src/Admin/SettingsPage.php:519
 msgid "The following plugins were detected:"
 msgstr "次のプラグインを検出しました:"
 
-#: src/Admin/SettingsPage.php:473
+#: src/Admin/SettingsPage.php:520
 msgid ""
 "Rapls Passkey uses only the standard login hooks and fires wp_login on a "
 "successful sign-in, so it coexists with these. If the login screen shows a "
@@ -752,19 +793,19 @@ msgstr ""
 "は、どちらか一方を無効にしてください (本プラグインの reCAPTCHA は上記設定で無"
 "効化できます)。"
 
-#: src/Admin/SettingsPage.php:480
+#: src/Admin/SettingsPage.php:527
 msgid "Recent events"
 msgstr "最近のイベント"
 
-#: src/Admin/SettingsPage.php:483
+#: src/Admin/SettingsPage.php:530
 msgid "No events have been recorded."
 msgstr "記録されたイベントはありません。"
 
-#: src/Admin/SettingsPage.php:491
+#: src/Admin/SettingsPage.php:538
 msgid "Export CSV"
 msgstr "CSV エクスポート"
 
-#: src/Admin/SettingsPage.php:495
+#: src/Admin/SettingsPage.php:542
 msgid "Users"
 msgstr "ユーザー"
 
@@ -1091,7 +1132,7 @@ msgid "Authenticating..."
 msgstr "認証しています…"
 
 #: src/Frontend/Shortcodes.php:96 src/Login/LoginForm.php:58
-#: src/Rest/Endpoints.php:1006
+#: src/Rest/Endpoints.php:1010
 msgid "Passkey authentication failed."
 msgstr "パスキーでの認証に失敗しました。"
 
@@ -1127,28 +1168,28 @@ msgstr "reCAPTCHA の確認に失敗しました。ページを再読み込み�
 msgid "reCAPTCHA verification failed."
 msgstr "reCAPTCHA の検証に失敗しました。"
 
-#: src/Login/SecondFactorScreen.php:127
+#: src/Login/SecondFactorScreen.php:175
 msgid "Two-factor authentication"
 msgstr "2要素認証"
 
 #. translators: %s: the user's login name.
-#: src/Login/SecondFactorScreen.php:138
+#: src/Login/SecondFactorScreen.php:186
 msgid "Signed in as %s. One more step: confirm your second factor."
 msgstr "%s としてログインしています。最後に2つ目の要素を確認してください。"
 
-#: src/Login/SecondFactorScreen.php:150
+#: src/Login/SecondFactorScreen.php:201
 msgid "Confirm"
 msgstr "確認"
 
-#: src/Login/SecondFactorScreen.php:155
+#: src/Login/SecondFactorScreen.php:206
 msgid "Back to the normal login"
 msgstr "通常のログインに戻る"
 
-#: src/Login/SecondFactorScreen.php:72
+#: src/Login/SecondFactorScreen.php:75
 msgid "Your session is invalid. Please try again."
 msgstr "セッションが無効です。もう一度お試しください。"
 
-#: src/Login/SecondFactorScreen.php:96
+#: src/Login/SecondFactorScreen.php:99
 msgid "The two-factor authentication code is not correct."
 msgstr "2要素認証コードが正しくありません。"
 
@@ -1180,7 +1221,7 @@ msgstr "パスキーを作成"
 msgid "Later"
 msgstr "後で"
 
-#: src/Plugin.php:263
+#: src/Plugin.php:252
 msgid ""
 "Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to "
 "install dependencies. Passkey authentication is disabled."
@@ -1213,7 +1254,7 @@ msgstr ""
 msgid "Invalid request."
 msgstr "不正なリクエストです。"
 
-#: src/Rest/Endpoints.php:181 src/Rest/Endpoints.php:1094
+#: src/Rest/Endpoints.php:181 src/Rest/Endpoints.php:1098
 msgid "Too many attempts. Please try again later."
 msgstr "試行回数が多すぎます。しばらくしてからお試しください。"
 
@@ -1225,34 +1266,34 @@ msgstr "このパスキーはすでに登録されています。"
 msgid "Sign-in is temporarily unavailable. Please try again."
 msgstr "現在サインインをご利用いただけません。もう一度お試しください。"
 
-#: src/Rest/Endpoints.php:673
+#: src/Rest/Endpoints.php:677
 msgid "Registering a passkey for another user is not enabled on this site."
 msgstr "このサイトでは、他のユーザーのパスキー登録は有効になっていません。"
 
-#: src/Rest/Endpoints.php:681
+#: src/Rest/Endpoints.php:685
 msgid "You do not have permission to register a passkey for that user."
 msgstr "そのユーザーのパスキーを登録する権限がありません。"
 
-#: src/Rest/Endpoints.php:690
+#: src/Rest/Endpoints.php:694
 msgid "That user does not exist."
 msgstr "そのユーザーは存在しません。"
 
-#: src/Rest/Endpoints.php:739 src/Rest/Endpoints.php:751
+#: src/Rest/Endpoints.php:743 src/Rest/Endpoints.php:755
 msgid "You do not have permission to rename this passkey."
 msgstr "このパスキーの名前を変更する権限がありません。"
 
-#: src/Rest/Endpoints.php:834
+#: src/Rest/Endpoints.php:838
 msgid "You do not have permission to delete this passkey."
 msgstr "このパスキーを削除する権限がありません。"
 
-#: src/Rest/Endpoints.php:859 src/Rest/Endpoints.php:891
-#: src/Rest/Endpoints.php:900 src/Rest/Endpoints.php:913
-#: src/Rest/Endpoints.php:922
+#: src/Rest/Endpoints.php:863 src/Rest/Endpoints.php:895
+#: src/Rest/Endpoints.php:904 src/Rest/Endpoints.php:917
+#: src/Rest/Endpoints.php:926
 msgid "Failed to save the passkey."
 msgstr "パスキーの保存に失敗しました。"
 
 #. translators: %d: maximum number of passkeys.
-#: src/Rest/Endpoints.php:954
+#: src/Rest/Endpoints.php:958
 msgid ""
 "You can register at most %d passkeys. Remove an unused passkey before "
 "registering a new one."
@@ -1329,22 +1370,22 @@ msgstr ""
 "さい。"
 
 #. translators: %s: user display name.
-#: src/Security/Notifications.php:249
+#: src/Security/Notifications.php:251
 msgid "Hello %s,"
 msgstr "%s さん"
 
 #. translators: %s: date and time.
-#: src/Security/Notifications.php:277
+#: src/Security/Notifications.php:279
 msgid "Date/time: %s"
 msgstr "日時: %s"
 
 #. translators: %s: IP address.
-#: src/Security/Notifications.php:284
+#: src/Security/Notifications.php:286
 msgid "IP address: %s"
 msgstr "IP アドレス: %s"
 
 #. translators: %s: browser user agent.
-#: src/Security/Notifications.php:290
+#: src/Security/Notifications.php:292
 msgid "Browser: %s"
 msgstr "ブラウザ: %s"
 
@@ -1392,6 +1433,49 @@ msgstr "パスキーとは?"
 #: src/Support/Help.php:58
 msgid "Learn more"
 msgstr "詳しく"
+
+#~ msgid ""
+#~ "Cross-device sign-in: approve a login on your computer from your phone "
+#~ "via a QR code."
+#~ msgstr ""
+#~ "デバイス間ログイン: パソコンでのログインを、スマートフォンから QR コードで"
+#~ "承認できます。"
+
+#~ msgid ""
+#~ "Passwordless recovery: one-time recovery codes and email magic-link sign-"
+#~ "in."
+#~ msgstr ""
+#~ "パスワードなしの復旧: 使い切りのリカバリーコードや、メールのマジックリンク"
+#~ "でログインできます。"
+
+#~ msgid ""
+#~ "Require passkeys for chosen roles, with a grace period, and optionally "
+#~ "turn off password login."
+#~ msgstr ""
+#~ "指定した権限グループにパスキーを必須化できます。猶予期間を設けられ、必要に"
+#~ "応じてパスワードログインを無効化することもできます。"
+
+#~ msgid ""
+#~ "Adaptive step-up: ask for a passkey again after a risky password sign-in."
+#~ msgstr ""
+#~ "アダプティブなステップアップ: リスクの高いパスワードログインのあとに、パス"
+#~ "キーでの再確認を求めます。"
+
+#~ msgid ""
+#~ "Authenticator policy (FIDO Metadata Service / AAGUID allow & deny) and "
+#~ "trusted-device management."
+#~ msgstr ""
+#~ "認証器ポリシー (FIDO メタデータサービス / AAGUID の許可と拒否) と信頼済み"
+#~ "デバイスの管理ができます。"
+
+#~ msgid ""
+#~ "Everything here is free forever. If you want more, Rapls Passkey Pro adds:"
+#~ msgstr ""
+#~ "ここにある機能はすべて無料で使い続けられます。さらに必要な場合は、Rapls "
+#~ "Passkey Pro で次の機能が加わります。"
+
+#~ msgid "Learn more about Pro"
+#~ msgstr "Pro の詳細を見る"
 
 #~ msgid "You have reached the passkey limit. Please try again."
 #~ msgstr "パスキーの登録上限に達しました。もう一度お試しください。"

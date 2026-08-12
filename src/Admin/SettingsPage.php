@@ -407,27 +407,74 @@ final class SettingsPage {
 		/** Filter: the "learn more" URL for Rapls Passkey Pro. */
 		$url = (string) apply_filters( 'rapls_passkey/pro_url', 'https://raplsworks.com/rapls-passkey-pro/' );
 
+		// Paired lead-in and detail. A reader scanning only the bold half should
+		// still come away knowing what Pro is for; the plain half is there for
+		// the one who stops.
 		$features = array(
-			__( 'Cross-device sign-in: approve a login on your computer from your phone via a QR code.', 'rapls-passkey' ),
-			__( 'Passwordless recovery: one-time recovery codes and email magic-link sign-in.', 'rapls-passkey' ),
-			__( 'Require passkeys for chosen roles, with a grace period, and optionally turn off password login.', 'rapls-passkey' ),
-			__( 'Adaptive step-up: ask for a passkey again after a risky password sign-in.', 'rapls-passkey' ),
-			__( 'Authenticator policy (FIDO Metadata Service / AAGUID allow & deny) and trusted-device management.', 'rapls-passkey' ),
-			__( 'Security webhooks, adoption reports, multisite network settings and WP-CLI commands.', 'rapls-passkey' ),
+			array(
+				__( 'Sign in from another device', 'rapls-passkey' ),
+				__( 'Approve a login on your computer from your phone — a QR code plus a four-digit confirmation code, so a relayed code cannot be used elsewhere.', 'rapls-passkey' ),
+			),
+			array(
+				__( 'A way back in that is not a password', 'rapls-passkey' ),
+				__( 'One-time recovery codes and email magic-link sign-in, for the day a phone is lost or replaced.', 'rapls-passkey' ),
+			),
+			array(
+				__( 'Roll out by role, at your pace', 'rapls-passkey' ),
+				__( 'Require passkeys for the roles you choose, with a grace period, and turn password login off once everyone is across.', 'rapls-passkey' ),
+			),
+			array(
+				__( 'Ask again when it looks wrong', 'rapls-passkey' ),
+				__( 'Adaptive step-up requests a passkey after a password sign-in from somewhere unfamiliar.', 'rapls-passkey' ),
+			),
+			array(
+				__( 'Decide which authenticators you trust', 'rapls-passkey' ),
+				__( 'FIDO Metadata Service checks, AAGUID allow and deny lists, and trusted-device management.', 'rapls-passkey' ),
+			),
+			array(
+				__( 'Run it across a fleet', 'rapls-passkey' ),
+				__( 'Security webhooks, adoption reports, multisite network settings and WP-CLI commands.', 'rapls-passkey' ),
+			),
 		);
 
-		echo '<h2>' . esc_html__( 'Rapls Passkey Pro', 'rapls-passkey' ) . '</h2>';
-		echo '<div class="card" style="max-width:820px">';
-		echo '<p>' . esc_html__( 'Everything here is free forever. If you want more, Rapls Passkey Pro adds:', 'rapls-passkey' ) . '</p>';
-		echo '<ul style="list-style:disc;margin-left:20px">';
-		foreach ( $features as $feature ) {
-			echo '<li>' . esc_html( $feature ) . '</li>';
-		}
-		echo '</ul>';
-		echo '<p><a class="button button-primary" href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer">'
-			. esc_html__( 'Learn more about Pro', 'rapls-passkey' )
-			. '</a></p>';
-		echo '</div>';
+		// Scoped to this panel and printed only when the panel is: a site running
+		// Pro never sees the panel, and never pays for the stylesheet either.
+		?>
+		<style>
+		.rapls-pk-pro{max-width:820px;margin:12px 0 0;border:1px solid #dcdcde;border-left:4px solid #2271b1;border-radius:4px;background:#fff;padding:20px 24px}
+		.rapls-pk-pro__kicker{margin:0;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#646970}
+		.rapls-pk-pro__title{margin:6px 0 0;font-size:18px;line-height:1.4}
+		.rapls-pk-pro__lead{margin:8px 0 0;color:#50575e;max-width:62em}
+		.rapls-pk-pro__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:4px 32px;margin:18px 0 0}
+		.rapls-pk-pro__item{padding:8px 0;border-top:1px solid #f0f0f1}
+		.rapls-pk-pro__item b{display:block;color:#1d2327}
+		.rapls-pk-pro__item span{color:#50575e;font-size:13px;line-height:1.6}
+		.rapls-pk-pro__foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0 0}
+		.rapls-pk-pro__note{margin:0;color:#646970;font-size:13px}
+		</style>
+		<h2><?php esc_html_e( 'Rapls Passkey Pro', 'rapls-passkey' ); ?></h2>
+		<div class="rapls-pk-pro">
+			<p class="rapls-pk-pro__kicker"><?php esc_html_e( 'Optional add-on', 'rapls-passkey' ); ?></p>
+			<h3 class="rapls-pk-pro__title"><?php esc_html_e( 'Get everyone onto passkeys — without locking anyone out', 'rapls-passkey' ); ?></h3>
+			<p class="rapls-pk-pro__lead">
+				<?php esc_html_e( 'Everything on this page is free, and stays free. Pro is for what comes after the first passkey: moving a whole site across, and keeping a way in when a device goes missing.', 'rapls-passkey' ); ?>
+			</p>
+			<div class="rapls-pk-pro__grid">
+				<?php foreach ( $features as $feature ) : ?>
+					<div class="rapls-pk-pro__item">
+						<b><?php echo esc_html( $feature[0] ); ?></b>
+						<span><?php echo esc_html( $feature[1] ); ?></span>
+					</div>
+				<?php endforeach; ?>
+			</div>
+			<p class="rapls-pk-pro__foot">
+				<a class="button button-primary" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener noreferrer">
+					<?php esc_html_e( 'See what Pro adds', 'rapls-passkey' ); ?>
+				</a>
+				<span class="rapls-pk-pro__note"><?php esc_html_e( 'One-time purchase, no subscription. 14-day refund.', 'rapls-passkey' ); ?></span>
+			</p>
+		</div>
+		<?php
 	}
 
 	/**

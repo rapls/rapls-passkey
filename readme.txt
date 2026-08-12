@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.68
+Stable tag: 0.13.69
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -107,6 +107,9 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.69 =
+* The Pro panel on the settings screen says what Pro is for, rather than listing features. It is still only on this plugin's own screen, still hidden once Pro is active, and still switched off by the rapls_passkey/show_upsell filter — no admin-wide notice, and nothing on this page is gated.
 
 = 0.13.68 =
 * Screenshots for the plugin directory listing, and the readme section that names them. No change to the plugin.

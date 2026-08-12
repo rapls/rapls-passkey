@@ -134,9 +134,9 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 == Changelog ==
 
 = 0.13.69 =
-* The Pro panel moved into a sidebar that follows the page down, so it is visible without scrolling past the audit table. The Plugins screen gains "Settings" and "Go Pro" row links, and the adoption figure now names what closes the gap. The readme has a Pro section and an FAQ entry saying plainly that the free version is not limited.
-* Asks for a review, once. After a week of use, and only if a passkey has actually been registered, a notice on this plugin's own two screens asks for a WordPress.org review. Any of the three buttons — including "No thanks" — and the notice's own close button settle it for good, and the rapls_passkey/show_review_prompt filter turns it off entirely. It never appears anywhere else in wp-admin and never comes back.
-* The Pro panel on the settings screen says what Pro is for, rather than listing features. It is still only on this plugin's own screen, still hidden once Pro is active, and still switched off by the rapls_passkey/show_upsell filter — no admin-wide notice, and nothing on this page is gated.
+* The Rapls Passkey Pro panel moved into a sidebar that follows the page down. It sat at the very bottom of a single column, below the audit table, where nobody scrolls. It also says what the add-on is for rather than listing features, the Plugins screen gains "Settings" and "Go Pro" row links, and the adoption figure names what closes the gap. Nothing on the page is gated: the readme now has a Pro section and an FAQ entry saying plainly that the free version has no cap, trial or licence key.
+* Asks for a WordPress.org review, once. After a week of use, and only if a passkey has actually been registered, a notice on this plugin's own two screens asks for one. Every button — including the close button — settles it for good, and rapls_passkey/show_review_prompt turns it off entirely. It never appears anywhere else in wp-admin and never comes back.
+* Corrected: the readme claimed a bundled Japanese translation, which has not been true since 0.13.62. Translations come from translate.wordpress.org.
 
 = 0.13.68 =
 * Screenshots for the plugin directory listing, and the readme section that names them. No change to the plugin.

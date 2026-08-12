@@ -39,6 +39,9 @@ final class ReviewPrompt {
 	/** Query arg used to settle the prompt. */
 	private const ARG = 'rapls_pk_review';
 
+	/** admin-ajax action behind the notice's close button. */
+	private const AJAX = 'rapls_pk_review_dismiss';
+
 	/** Where the review is left. */
 	private const URL = 'https://wordpress.org/support/plugin/rapls-passkey/reviews/#new-post';
 
@@ -53,6 +56,26 @@ final class ReviewPrompt {
 	public function register(): void {
 		add_action( 'admin_notices', array( $this, 'render' ) );
 		add_action( 'admin_init', array( $this, 'handle_dismiss' ) );
+		add_action( 'wp_ajax_' . self::AJAX, array( $this, 'handle_ajax_dismiss' ) );
+	}
+
+	/**
+	 * Record a dismissal made with the notice's own close button.
+	 *
+	 * WordPress's is-dismissible only hides the notice in the page it was
+	 * clicked on; nothing is stored, so the next page load brings it back. That
+	 * would turn "asked once" into a nag, which is the whole thing this class is
+	 * trying not to be.
+	 */
+	public function handle_ajax_dismiss(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( null, 403 );
+		}
+		check_ajax_referer( self::AJAX );
+
+		update_option( self::OPTION, 'done', false );
+
+		wp_send_json_success();
 	}
 
 	/**
@@ -107,8 +130,23 @@ final class ReviewPrompt {
 			return;
 		}
 
+		// Bound to this notice only, and to the button WordPress itself adds for
+		// is-dismissible. keepalive lets the request outlive the page when the
+		// close is the last thing done before navigating.
+		$js = sprintf(
+			'(function(){var n=document.getElementById("rapls-pk-review");if(!n)return;' .
+			'n.addEventListener("click",function(e){' .
+			'if(!e.target.classList||!e.target.classList.contains("notice-dismiss"))return;' .
+			'var b=new FormData();b.append("action",%s);b.append("_ajax_nonce",%s);' .
+			'fetch(%s,{method:"POST",body:b,credentials:"same-origin",keepalive:true});});})();',
+			wp_json_encode( self::AJAX ),
+			wp_json_encode( wp_create_nonce( self::AJAX ) ),
+			wp_json_encode( admin_url( 'admin-ajax.php' ) )
+		);
+		wp_add_inline_script( 'common', $js );
+
 		?>
-		<div class="notice notice-info">
+		<div class="notice notice-info is-dismissible" id="rapls-pk-review">
 			<p>
 				<strong><?php esc_html_e( 'Rapls Passkey', 'rapls-passkey' ); ?></strong>
 				—
@@ -126,7 +164,7 @@ final class ReviewPrompt {
 				</a>
 			</p>
 			<p class="description">
-				<?php esc_html_e( 'Asked once. Whichever you choose, this will not come back.', 'rapls-passkey' ); ?>
+				<?php esc_html_e( 'Asked once. Whichever you choose — including closing this notice — it will not come back.', 'rapls-passkey' ); ?>
 			</p>
 		</div>
 		<?php

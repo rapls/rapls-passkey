@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rapls-passkey\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-12 01:44+0000\n"
+"POT-Creation-Date: 2026-08-12 01:49+0000\n"
 "PO-Revision-Date: 2026-07-23 12:00+0900\n"
 "Last-Translator: Rapls <info@raplsworks.com>\n"
 "Language-Team: Japanese\n"
@@ -292,12 +292,12 @@ msgstr ""
 "このパスキーを一時停止しますか?再開するまで使えなくなりますが、削除はされませ"
 "ん。"
 
-#: src/Admin/ReviewPrompt.php:112 src/Admin/SettingsPage.php:59
+#: src/Admin/ReviewPrompt.php:151 src/Admin/SettingsPage.php:59
 #: src/Admin/SettingsPage.php:60 src/Admin/SiteHealth.php:51
 msgid "Rapls Passkey"
 msgstr "Rapls Passkey"
 
-#: src/Admin/ReviewPrompt.php:114
+#: src/Admin/ReviewPrompt.php:153
 msgid ""
 "You have been signing in with passkeys for a week now. If it has been "
 "working out, would you leave a review? It is the main way other people find "
@@ -307,22 +307,25 @@ msgstr ""
 "ら、レビューを書いていただけませんか。ほかの方がこのプラグインを見つける、い"
 "ちばんの手がかりになります。"
 
-#: src/Admin/ReviewPrompt.php:118
+#: src/Admin/ReviewPrompt.php:157
 msgid "Write a review"
 msgstr "レビューを書く"
 
-#: src/Admin/ReviewPrompt.php:121
+#: src/Admin/ReviewPrompt.php:160
 msgid "Already did"
 msgstr "もう書いた"
 
-#: src/Admin/ReviewPrompt.php:124
+#: src/Admin/ReviewPrompt.php:163
 msgid "No thanks"
 msgstr "今回は見送る"
 
-#: src/Admin/ReviewPrompt.php:128
-msgid "Asked once. Whichever you choose, this will not come back."
+#: src/Admin/ReviewPrompt.php:167
+msgid ""
+"Asked once. Whichever you choose — including closing this notice — it will "
+"not come back."
 msgstr ""
-"お願いするのは一度きりです。どれを選んでも、この案内は二度と表示されません。"
+"お願いするのは一度きりです。この通知を閉じた場合も含め、どれを選んでも二度と"
+"表示されません。"
 
 #: src/Admin/SettingsPage.php:139
 msgid "Rapls Passkey Settings"
@@ -1460,6 +1463,11 @@ msgstr "パスキーとは?"
 #: src/Support/Help.php:58
 msgid "Learn more"
 msgstr "詳しく"
+
+#~ msgid "Asked once. Whichever you choose, this will not come back."
+#~ msgstr ""
+#~ "お願いするのは一度きりです。どれを選んでも、この案内は二度と表示されませ"
+#~ "ん。"
 
 #~ msgid ""
 #~ "Cross-device sign-in: approve a login on your computer from your phone "

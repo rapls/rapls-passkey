@@ -63,6 +63,30 @@ function remove_query_arg() {
 // handle_dismiss() exits after redirecting, which would end the test run at
 // the first case. Turn the redirect into something catchable instead.
 class Redirected extends \Exception {}
+function wp_add_inline_script( $handle, $js ) {
+	unset( $handle );
+	$GLOBALS['inline'] = $js;
+	return true;
+}
+function wp_json_encode( $v ) {
+	return json_encode( $v );
+}
+function admin_url( $p = '' ) {
+	return '/wp-admin/' . $p;
+}
+function wp_create_nonce( $a = '' ) {
+	unset( $a );
+	return 'nonce123';
+}
+function check_ajax_referer() {
+	return true;
+}
+function wp_send_json_success() {
+	throw new Redirected( 'json-ok' );
+}
+function wp_send_json_error() {
+	throw new Redirected( 'json-err' );
+}
 function wp_safe_redirect() {
 	throw new Redirected( 'safe' );
 }
@@ -205,6 +229,38 @@ $html = (string) ob_get_clean();
 check( '本文に「二度と出ない」と明記している', str_contains( $html, 'not come back' ) );
 check( '断るボタンがある', str_contains( $html, 'No thanks' ) );
 check( 'core の警告スタイルを流用していない', ! str_contains( $html, 'notice-error' ) && ! str_contains( $html, 'notice-warning' ) );
+check( '× ボタンが出る (is-dismissible)', str_contains( $html, 'is-dismissible' ) );
+check( '文面に「× でも二度と出ない」と書いてある', str_contains( $html, 'including closing this notice' ) );
+
+// The close button must persist, or is-dismissible turns "asked once" into a nag.
+$js = (string) ( $GLOBALS['inline'] ?? '' );
+check( '× 用のスクリプトを出力している', '' !== $js );
+check( '  この通知にだけ結び付けている', str_contains( $js, 'rapls-pk-review' ) );
+check( '  core の .notice-dismiss を見ている', str_contains( $js, 'notice-dismiss' ) );
+check( '  nonce を送っている', str_contains( $js, 'nonce123' ) );
+check( '  admin-ajax へ送っている', str_contains( $js, 'admin-ajax.php' ) );
+
+ready();
+$went = '';
+try {
+	( new \RaplsPasskey\Admin\ReviewPrompt( $repo ) )->handle_ajax_dismiss();
+} catch ( Redirected $e ) {
+	$went = $e->getMessage();
+}
+check( '× の受け口が成功を返す', 'json-ok' === $went, $went );
+check( '× で二度と出なくなる', ! shows( $repo ) );
+
+ready();
+$GLOBALS['caps'] = false;
+$went = '';
+try {
+	( new \RaplsPasskey\Admin\ReviewPrompt( $repo ) )->handle_ajax_dismiss();
+} catch ( Redirected $e ) {
+	$went = $e->getMessage();
+}
+check( '権限が無ければ × の受け口は拒否する', 'json-err' === $went, $went );
+$GLOBALS['caps'] = true;
+check( '  拒否時は記録しない', '' === (string) get_option( 'rapls_passkey_review_prompt', '' ) );
 
 echo "\n  {$pass} passed, {$fail} failed\n";
 exit( $fail > 0 ? 1 : 0 );

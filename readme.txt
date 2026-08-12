@@ -21,7 +21,7 @@ Rapls Passkey lets users sign in to WordPress with passkeys (WebAuthn / FIDO2).
 * Rename, suspend and resume individual passkeys — a device that is temporarily out of reach can be cut off without destroying the credential
 * A site-wide passkey list for administrators (Users -> Passkeys), searchable by owner or name
 * Works with two-factor plugins (Wordfence Login Security, Two-Factor, ...): a passkey counts as the second factor, while weaker alternative logins must still pass the site's 2FA
-* Fully translatable UI (English source with a bundled Japanese translation)
+* Fully translatable UI (English source; translations come from translate.wordpress.org)
 
 = Shortcodes =
 
@@ -36,6 +36,22 @@ Embed them in any page, post, or widget. In the block editor they are also avail
 * WordPress 6.0 or later
 * HTTPS (except on localhost)
 
+= Rapls Passkey Pro =
+
+Everything above is free, and stays free. Pro is a separate add-on for the part
+that comes after the first passkey: moving a whole site across, and keeping a
+way in when a device goes missing.
+
+* **Sign in from another device** — approve a login on your computer from your phone, with a QR code and a four-digit confirmation code so a relayed code cannot be used elsewhere
+* **A way back in that is not a password** — one-time recovery codes and email magic-link sign-in
+* **Roll out by role** — require passkeys for the roles you choose, with a grace period, then turn password login off once everyone is across
+* **Adaptive step-up** — ask for a passkey again after a password sign-in from somewhere unfamiliar
+* **Authenticator policy** — FIDO Metadata Service checks, AAGUID allow and deny lists, trusted-device management
+* **Operations** — security webhooks, adoption reports, multisite network settings, WP-CLI
+
+One-time purchase, no subscription, with a year of updates and a 14-day refund.
+[Details and pricing](https://raplsworks.com/rapls-passkey-pro/)
+
 == Installation ==
 
 1. Place the plugin in `wp-content/plugins/rapls-passkey`.
@@ -43,6 +59,15 @@ Embed them in any page, post, or widget. In the block editor they are also avail
 3. Register a passkey from your profile screen.
 
 == Frequently Asked Questions ==
+
+= Is the free version limited? =
+
+No. Passkey sign-in, registration, management, the shortcodes and blocks, the
+administrator's passkey list and the two-factor integrations are all in the free
+plugin, without a cap, a trial period or a licence key. Rapls Passkey Pro is a
+separate add-on that adds different features — cross-device QR login, recovery
+codes, enforcement by role — and installing it is not required for anything
+described above to work.
 
 = What if I lose my passkey and cannot sign in? =
 
@@ -109,6 +134,7 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 == Changelog ==
 
 = 0.13.69 =
+* The Pro panel moved into a sidebar that follows the page down, so it is visible without scrolling past the audit table. The Plugins screen gains "Settings" and "Go Pro" row links, and the adoption figure now names what closes the gap. The readme has a Pro section and an FAQ entry saying plainly that the free version is not limited.
 * Asks for a review, once. After a week of use, and only if a passkey has actually been registered, a notice on this plugin's own two screens asks for a WordPress.org review. Any of the three buttons — including "No thanks" — and the notice's own close button settle it for good, and the rapls_passkey/show_review_prompt filter turns it off entirely. It never appears anywhere else in wp-admin and never comes back.
 * The Pro panel on the settings screen says what Pro is for, rather than listing features. It is still only on this plugin's own screen, still hidden once Pro is active, and still switched off by the rapls_passkey/show_upsell filter — no admin-wide notice, and nothing on this page is gated.
 

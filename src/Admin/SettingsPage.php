@@ -34,6 +34,50 @@ final class SettingsPage {
 		add_action( 'admin_menu', array( $this, 'add_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_post_' . self::RESET_ACTION, array( $this, 'handle_reset' ) );
+		add_filter( 'plugin_action_links_' . RAPLS_PASSKEY_BASENAME, array( $this, 'action_links' ) );
+	}
+
+	/**
+	 * Row links on the Plugins screen.
+	 *
+	 * Settings first, because that is what someone clicking here almost always
+	 * wants. The Pro link is the only advertising outside this plugin's own
+	 * screens, and it is one word on the plugin's own row — the place a reader
+	 * is already looking at this plugin, and the placement every other add-on
+	 * uses. It disappears once Pro is active.
+	 *
+	 * @param string[] $links Existing links.
+	 * @return string[]
+	 */
+	public function action_links( $links ): array {
+		$links = is_array( $links ) ? $links : array();
+
+		$settings = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( admin_url( 'options-general.php?page=rapls-passkey' ) ),
+			esc_html__( 'Settings', 'rapls-passkey' )
+		);
+		array_unshift( $links, $settings );
+
+		/** Filter: whether Pro is active (Pro returns true). */
+		if ( (bool) apply_filters( 'rapls_passkey/is_pro', false ) ) {
+			return $links;
+		}
+		/** Filter: whether to show the upgrade panel at all. */
+		if ( ! (bool) apply_filters( 'rapls_passkey/show_upsell', true ) ) {
+			return $links;
+		}
+
+		/** Filter: the "learn more" URL for Rapls Passkey Pro. */
+		$url = (string) apply_filters( 'rapls_passkey/pro_url', 'https://raplsworks.com/rapls-passkey-pro/' );
+
+		$links[] = sprintf(
+			'<a href="%s" target="_blank" rel="noopener noreferrer" style="color:#2271b1;font-weight:600">%s</a>',
+			esc_url( $url ),
+			esc_html__( 'Go Pro', 'rapls-passkey' )
+		);
+
+		return $links;
 	}
 
 	/**
@@ -145,6 +189,16 @@ final class SettingsPage {
 			<?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings were reset to their defaults.', 'rapls-passkey' ); ?></p></div>
 			<?php endif; ?>
+
+			<?php
+			// Two columns, WordPress's own. The settings are long — the audit table
+			// alone can fill a screen — and anything after them is never reached.
+			// A sidebar keeps the one panel that is not a setting in view without
+			// pushing it into anybody's way.
+			?>
+			<div id="poststuff">
+			<div id="post-body" class="metabox-holder columns-2">
+			<div id="post-body-content">
 
 				<?php $this->render_adoption(); ?>
 
@@ -383,7 +437,16 @@ final class SettingsPage {
 
 			<?php $this->render_compat(); ?>
 			<?php $this->render_audit(); ?>
-			<?php $this->render_upsell(); ?>
+
+			</div><?php // #post-body-content ?>
+
+			<div id="postbox-container-1" class="postbox-container">
+				<?php $this->render_upsell(); ?>
+			</div>
+
+			</div><?php // #post-body ?>
+			<br class="clear">
+			</div><?php // #poststuff ?>
 		</div>
 		<?php
 	}
@@ -441,20 +504,26 @@ final class SettingsPage {
 		// Pro never sees the panel, and never pays for the stylesheet either.
 		?>
 		<style>
-		.rapls-pk-pro{max-width:820px;margin:12px 0 0;border:1px solid #dcdcde;border-left:4px solid #2271b1;border-radius:4px;background:#fff;padding:20px 24px}
+		/* Follows the page down: the settings are long enough that a panel fixed
+		   at the top would be off screen for most of the scroll. 46px clears the
+		   admin bar. */
+		.rapls-pk-pro{position:sticky;top:46px;margin:0;border:1px solid #dcdcde;border-left:4px solid #2271b1;border-radius:4px;background:#fff;padding:18px 20px}
 		.rapls-pk-pro__kicker{margin:0;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#646970}
-		.rapls-pk-pro__title{margin:6px 0 0;font-size:18px;line-height:1.4}
-		.rapls-pk-pro__lead{margin:8px 0 0;color:#50575e;max-width:62em}
-		.rapls-pk-pro__grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:4px 32px;margin:18px 0 0}
+		.rapls-pk-pro__title{margin:6px 0 0;font-size:16px;line-height:1.45}
+		.rapls-pk-pro__lead{margin:8px 0 0;color:#50575e;font-size:13px;line-height:1.6}
+		.rapls-pk-pro__grid{display:grid;grid-template-columns:1fr;gap:0;margin:14px 0 0}
 		.rapls-pk-pro__item{padding:8px 0;border-top:1px solid #f0f0f1}
-		.rapls-pk-pro__item b{display:block;color:#1d2327}
-		.rapls-pk-pro__item span{color:#50575e;font-size:13px;line-height:1.6}
-		.rapls-pk-pro__foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0 0}
-		.rapls-pk-pro__note{margin:0;color:#646970;font-size:13px}
+		.rapls-pk-pro__item b{display:block;color:#1d2327;font-size:13px}
+		.rapls-pk-pro__item span{color:#646970;font-size:12px;line-height:1.55}
+		.rapls-pk-pro__foot{margin:16px 0 0}
+		.rapls-pk-pro__note{margin:8px 0 0;color:#646970;font-size:12px}
+		.rapls-pk-pro__foot .button{width:100%;text-align:center}
+		/* One column below the breakpoint where WordPress drops the sidebar under
+		   the content — a sticky panel there would follow the reader pointlessly. */
+		@media (max-width:850px){.rapls-pk-pro{position:static}}
 		</style>
-		<h2><?php esc_html_e( 'Rapls Passkey Pro', 'rapls-passkey' ); ?></h2>
 		<div class="rapls-pk-pro">
-			<p class="rapls-pk-pro__kicker"><?php esc_html_e( 'Optional add-on', 'rapls-passkey' ); ?></p>
+			<p class="rapls-pk-pro__kicker"><?php esc_html_e( 'Rapls Passkey Pro — optional add-on', 'rapls-passkey' ); ?></p>
 			<h3 class="rapls-pk-pro__title"><?php esc_html_e( 'Get everyone onto passkeys — without locking anyone out', 'rapls-passkey' ); ?></h3>
 			<p class="rapls-pk-pro__lead">
 				<?php esc_html_e( 'Everything on this page is free, and stays free. Pro is for what comes after the first passkey: moving a whole site across, and keeping a way in when a device goes missing.', 'rapls-passkey' ); ?>
@@ -504,6 +573,56 @@ final class SettingsPage {
 			)
 		) . '</p>';
 		echo '<p class="description">' . esc_html__( 'Per-user status is shown in the Passkey column of the Users list.', 'rapls-passkey' ) . '</p>';
+
+		$this->render_adoption_hint( $stats['users'], $total_users );
+	}
+
+	/**
+	 * A line about closing the gap, next to the number that shows it.
+	 *
+	 * Only when there is a gap to close, and only once some people are across —
+	 * a site where nobody has enrolled has a different problem, and a site where
+	 * everybody has is not being sold anything. Nothing here is disabled or
+	 * withheld: the free plugin's adoption figure is the whole figure, and this
+	 * is a sentence about what else exists.
+	 *
+	 * @param int $with  Users holding a passkey.
+	 * @param int $total Users on the site.
+	 * @return void
+	 */
+	private function render_adoption_hint( int $with, int $total ): void {
+		/** Filter: whether Pro is active (Pro returns true). */
+		if ( (bool) apply_filters( 'rapls_passkey/is_pro', false ) ) {
+			return;
+		}
+		/** Filter: whether to show the upgrade panel at all. */
+		if ( ! (bool) apply_filters( 'rapls_passkey/show_upsell', true ) ) {
+			return;
+		}
+		if ( $with < 1 || $total <= $with ) {
+			return;
+		}
+
+		/** Filter: the "learn more" URL for Rapls Passkey Pro. */
+		$url = (string) apply_filters( 'rapls_passkey/pro_url', 'https://raplsworks.com/rapls-passkey-pro/' );
+
+		printf(
+			'<p class="description">%s <a href="%s" target="_blank" rel="noopener noreferrer">%s</a></p>',
+			esc_html(
+				sprintf(
+					/* translators: %d: number of users without a passkey. */
+					_n(
+						'%d user has not enrolled yet.',
+						'%d users have not enrolled yet.',
+						$total - $with,
+						'rapls-passkey'
+					),
+					$total - $with
+				)
+			),
+			esc_url( $url ),
+			esc_html__( 'Pro can require a passkey by role, with a grace period.', 'rapls-passkey' )
+		);
 	}
 
 	/**

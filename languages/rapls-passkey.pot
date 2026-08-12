@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.13.69\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-12 01:49+0000\n"
+"POT-Creation-Date: 2026-08-12 02:06+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -12,17 +12,17 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Domain: rapls-passkey\n"
 
-#: src/Admin/AuditExport.php:38 src/Admin/SettingsPage.php:44
+#: src/Admin/AuditExport.php:38 src/Admin/SettingsPage.php:88
 #: src/Admin/SetupWizard.php:132
 msgid "You do not have permission."
 msgstr ""
 
-#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:540
+#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:659
 #: src/Privacy/PersonalData.php:136
 msgid "Date/time (UTC)"
 msgstr ""
 
-#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:541
+#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:660
 #: src/Privacy/PersonalData.php:132
 msgid "Event"
 msgstr ""
@@ -35,7 +35,7 @@ msgstr ""
 msgid "Username"
 msgstr ""
 
-#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:543
+#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:662
 msgid "Details"
 msgstr ""
 
@@ -159,7 +159,7 @@ msgstr ""
 msgid "You do not have permission to change this passkey."
 msgstr ""
 
-#: src/Admin/DashboardWidget.php:101
+#: src/Admin/DashboardWidget.php:101 src/Admin/SettingsPage.php:58
 msgid "Settings"
 msgstr ""
 
@@ -193,7 +193,7 @@ msgstr ""
 msgid "Users list"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:109 src/Admin/SettingsPage.php:153
+#: src/Admin/ProfileUi.php:109 src/Admin/SettingsPage.php:207
 #: src/Admin/UsersColumn.php:52 src/Integrations/WooCommerceAccount.php:89
 #: src/Integrations/WooCommerceAccount.php:104
 #: src/Privacy/PersonalData.php:98
@@ -279,8 +279,8 @@ msgstr ""
 msgid "Suspend this passkey? It will stop working until you resume it, but it is not deleted."
 msgstr ""
 
-#: src/Admin/ReviewPrompt.php:151 src/Admin/SettingsPage.php:59
-#: src/Admin/SettingsPage.php:60 src/Admin/SiteHealth.php:51
+#: src/Admin/ReviewPrompt.php:151 src/Admin/SettingsPage.php:103
+#: src/Admin/SettingsPage.php:104 src/Admin/SiteHealth.php:51
 msgid "Rapls Passkey"
 msgstr ""
 
@@ -304,386 +304,396 @@ msgstr ""
 msgid "Asked once. Whichever you choose — including closing this notice — it will not come back."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:139
+#: src/Admin/SettingsPage.php:183
 msgid "Rapls Passkey Settings"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:140
+#: src/Admin/SettingsPage.php:184
 msgid "Setup check"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:146
+#: src/Admin/SettingsPage.php:190
 msgid "Settings were reset to their defaults."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:156
+#: src/Admin/SettingsPage.php:210
 msgid "Per-user registration limit"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:159
+#: src/Admin/SettingsPage.php:213
 msgid "Maximum number of passkeys a user can register. 0 means unlimited. We recommend 2 or more so passkeys can be used across multiple devices."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:164
+#: src/Admin/SettingsPage.php:218
 msgid "Login rate limit"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:167
+#: src/Admin/SettingsPage.php:221
 msgid "Attempt limit"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:170
+#: src/Admin/SettingsPage.php:224
 msgid "How many failed passkey-login attempts from the same IP address are allowed within the window below before \"Too many attempts\" is shown. Successful logins are not counted. 0 disables the limit."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:174
+#: src/Admin/SettingsPage.php:228
 msgid "Lockout time (seconds)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:177
+#: src/Admin/SettingsPage.php:231
 msgid "The length of the counting window, and how long the lockout lasts once the attempt limit is reached (default 300 seconds = 5 minutes)."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:182
+#: src/Admin/SettingsPage.php:236
 msgid "Session security"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:185
+#: src/Admin/SettingsPage.php:239
 msgid "Administrator \"remember me\""
 msgstr ""
 
-#: src/Admin/SettingsPage.php:189
+#: src/Admin/SettingsPage.php:243
 msgid "Allow administrators to stay signed in (\"remember me\") after a passkey login"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:191
+#: src/Admin/SettingsPage.php:245
 msgid "Off by default for safety: administrators never get a persistent session, so a shared or stolen device cannot keep an admin logged in. Turn this on to honour the \"remember me\" checkbox for administrators too. Non-administrators are unaffected."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:195
+#: src/Admin/SettingsPage.php:249
 msgid "Two-factor on alternative logins"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:199
+#: src/Admin/SettingsPage.php:253
 msgid "Ask for the site's two-factor code on the logins that are weaker than a passkey"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:202
+#: src/Admin/SettingsPage.php:256
 msgid "Two-factor plugins (Wordfence Login Security, Two-Factor, ...) only enforce inside the wp-login.php password chain, which the email magic link and the recovery-code login do not go through — so without this they are a way around your 2FA. A passkey sign-in (including the QR cross-device flow) is itself the second factor and is never challenged. Only users who have actually set a second factor up see the challenge."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:206
+#: src/Admin/SettingsPage.php:260
 msgid "No supported two-factor plugin detected, so this setting currently has no effect."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:209
+#: src/Admin/SettingsPage.php:263
 msgid "Detected:"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:223
+#: src/Admin/SettingsPage.php:277
 msgid "Advanced (WebAuthn)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:226
+#: src/Admin/SettingsPage.php:280
 msgid "Timeout (seconds)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:229
+#: src/Admin/SettingsPage.php:283
 msgid "Timeout for the passkey registration and authentication dialogs. 0 uses the browser default (typically around 60 seconds)."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:233
+#: src/Admin/SettingsPage.php:287
 msgid "User verification"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:236
+#: src/Admin/SettingsPage.php:290
 msgid "Preferred"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:237
+#: src/Admin/SettingsPage.php:291
 msgid "Required"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:238
+#: src/Admin/SettingsPage.php:292
 msgid "Discouraged"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:240
+#: src/Admin/SettingsPage.php:294
 msgid "How strongly to require identity verification via biometrics or PIN. Required may reject authenticators that do not support it; leaving this at Preferred is usually recommended."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:244
+#: src/Admin/SettingsPage.php:298
 msgid "Authenticator type"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:247
+#: src/Admin/SettingsPage.php:301
 msgid "No preference (allow all)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:248
+#: src/Admin/SettingsPage.php:302
 msgid "Platform only (Touch ID / Windows Hello, etc.)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:249
+#: src/Admin/SettingsPage.php:303
 msgid "Cross-platform only (security key / another device)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:251
+#: src/Admin/SettingsPage.php:305
 msgid "Which authenticator type to allow at registration (applies at registration only). No preference is usually recommended."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:255
+#: src/Admin/SettingsPage.php:309
 msgid "UI hints"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:314
 msgid "Passkey on this device (client-device)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:261
+#: src/Admin/SettingsPage.php:315
 msgid "Another device / QR (hybrid)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:262
+#: src/Admin/SettingsPage.php:316
 msgid "Security key (security-key)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:271
+#: src/Admin/SettingsPage.php:325
 msgid "Give supported browsers hints about which sign-in methods to suggest first (order is respected). No hints are sent if none are selected."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:276
+#: src/Admin/SettingsPage.php:330
 msgid "reCAPTCHA v3 (password login protection)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:277
+#: src/Admin/SettingsPage.php:331
 msgid "Protect password logins with Google reCAPTCHA v3. It does not apply to passkey logins (brute force does not work against them). Enter your site key and secret, then enable it."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:280
+#: src/Admin/SettingsPage.php:334
 msgid "Enable"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:284
+#: src/Admin/SettingsPage.php:338
 msgid "Enable reCAPTCHA"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:289
+#: src/Admin/SettingsPage.php:343
 msgid "Site key"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:293
+#: src/Admin/SettingsPage.php:347
 msgid "Secret key"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:297
+#: src/Admin/SettingsPage.php:351
 msgid "Score threshold"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:300
+#: src/Admin/SettingsPage.php:354
 msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:304
+#: src/Admin/SettingsPage.php:358
 msgid "If Google is unreachable"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:308
+#: src/Admin/SettingsPage.php:362
 msgid "Allow the password login when reCAPTCHA cannot be verified (fail open)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:310
+#: src/Admin/SettingsPage.php:364
 msgid "On by default (availability): a Google outage will not lock everyone out. Turn it off to fail closed (reject password logins that cannot be scored) — a passkey login never uses reCAPTCHA, so it stays available either way."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:315
+#: src/Admin/SettingsPage.php:369
 msgid "Security notification emails"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:316
+#: src/Admin/SettingsPage.php:370
 msgid "Email the affected user about passkey registration and removal, and about passkey sign-ins from a new device. Helps detect account takeover early."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:319
+#: src/Admin/SettingsPage.php:373
 msgid "Send"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:323
+#: src/Admin/SettingsPage.php:377
 msgid "Send security notification emails"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:329
+#: src/Admin/SettingsPage.php:383
 msgid "Passkey enrolment prompt"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:332
+#: src/Admin/SettingsPage.php:386
 msgid "After login"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:336
+#: src/Admin/SettingsPage.php:390
 msgid "Right after a password login, suggest creating a passkey on the spot (only for users without a passkey)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:342
+#: src/Admin/SettingsPage.php:396
 msgid "Audit log"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:345
+#: src/Admin/SettingsPage.php:399
 msgid "Logging"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:349
+#: src/Admin/SettingsPage.php:403
 msgid "Record events such as registration, login, and removal"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:355
+#: src/Admin/SettingsPage.php:409
 msgid "REST API"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:358
+#: src/Admin/SettingsPage.php:412
 msgid "Passkey login when REST is restricted"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:362
+#: src/Admin/SettingsPage.php:416
 msgid "Allow the anonymous passkey-login endpoints when a security plugin restricts the REST API to logged-in users"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:364
+#: src/Admin/SettingsPage.php:418
 msgid "Off by default. Only turn this on if a security plugin locks the REST API to logged-in users and passkey sign-in has stopped working. When on, the plugin re-opens only its own anonymous login routes and only for a \"must be logged in\" (HTTP 401) restriction; a firewall, IP-block or maintenance page (HTTP 403) is never overridden."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:377
+#: src/Admin/SettingsPage.php:431
 msgid "Reset all Rapls Passkey settings to their defaults? This cannot be undone."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:380
+#: src/Admin/SettingsPage.php:434
 msgid "Reset to defaults"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:381
+#: src/Admin/SettingsPage.php:435
 msgid "Restore every setting on this page to its default value."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:415
+#: src/Admin/SettingsPage.php:478
 msgid "Sign in from another device"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:416
+#: src/Admin/SettingsPage.php:479
 msgid "Approve a login on your computer from your phone — a QR code plus a four-digit confirmation code, so a relayed code cannot be used elsewhere."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:419
+#: src/Admin/SettingsPage.php:482
 msgid "A way back in that is not a password"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:420
+#: src/Admin/SettingsPage.php:483
 msgid "One-time recovery codes and email magic-link sign-in, for the day a phone is lost or replaced."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:423
+#: src/Admin/SettingsPage.php:486
 msgid "Roll out by role, at your pace"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:424
+#: src/Admin/SettingsPage.php:487
 msgid "Require passkeys for the roles you choose, with a grace period, and turn password login off once everyone is across."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:427
+#: src/Admin/SettingsPage.php:490
 msgid "Ask again when it looks wrong"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:428
+#: src/Admin/SettingsPage.php:491
 msgid "Adaptive step-up requests a passkey after a password sign-in from somewhere unfamiliar."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:431
+#: src/Admin/SettingsPage.php:494
 msgid "Decide which authenticators you trust"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:432
+#: src/Admin/SettingsPage.php:495
 msgid "FIDO Metadata Service checks, AAGUID allow and deny lists, and trusted-device management."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:435
+#: src/Admin/SettingsPage.php:498
 msgid "Run it across a fleet"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:436
+#: src/Admin/SettingsPage.php:499
 msgid "Security webhooks, adoption reports, multisite network settings and WP-CLI commands."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:455
-msgid "Rapls Passkey Pro"
+#: src/Admin/SettingsPage.php:526
+msgid "Rapls Passkey Pro — optional add-on"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:457
-msgid "Optional add-on"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:458
+#: src/Admin/SettingsPage.php:527
 msgid "Get everyone onto passkeys — without locking anyone out"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:460
+#: src/Admin/SettingsPage.php:529
 msgid "Everything on this page is free, and stays free. Pro is for what comes after the first passkey: moving a whole site across, and keeping a way in when a device goes missing."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:472
+#: src/Admin/SettingsPage.php:541
 msgid "See what Pro adds"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:474
+#: src/Admin/SettingsPage.php:543
 msgid "One-time purchase, no subscription. 14-day refund."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:489
+#: src/Admin/SettingsPage.php:558
 msgid "Adoption"
 msgstr ""
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: src/Admin/SettingsPage.php:493
+#: src/Admin/SettingsPage.php:562
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
 msgstr ""
 
 #. translators: %d: total number of registered passkeys.
-#: src/Admin/SettingsPage.php:502
+#: src/Admin/SettingsPage.php:571
 msgid "Total registered passkeys: %d"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:506
+#: src/Admin/SettingsPage.php:575
 msgid "Per-user status is shown in the Passkey column of the Users list."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:514
+#. translators: %d: number of users without a passkey.
+#: src/Admin/SettingsPage.php:614
+msgid "%d user has not enrolled yet."
+msgid_plural "%d users have not enrolled yet."
+msgstr[0] ""
+
+#: src/Admin/SettingsPage.php:624
+msgid "Pro can require a passkey by role, with a grace period."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:633
 msgid "Compatibility with security plugins"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:516
+#: src/Admin/SettingsPage.php:635
 msgid "No known login-security plugins were detected."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:519
+#: src/Admin/SettingsPage.php:638
 msgid "The following plugins were detected:"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:520
+#: src/Admin/SettingsPage.php:639
 msgid "Rapls Passkey uses only the standard login hooks and fires wp_login on a successful sign-in, so it coexists with these. If the login screen shows a duplicate CAPTCHA, disable one of them (you can disable this plugin reCAPTCHA in the settings above)."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:527
+#: src/Admin/SettingsPage.php:646
 msgid "Recent events"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:530
+#: src/Admin/SettingsPage.php:649
 msgid "No events have been recorded."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:538
+#: src/Admin/SettingsPage.php:657
 msgid "Export CSV"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:542
+#: src/Admin/SettingsPage.php:661
 msgid "Users"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:77
+msgid "Go Pro"
 msgstr ""
 
 #: src/Admin/SetupWizard.php:116

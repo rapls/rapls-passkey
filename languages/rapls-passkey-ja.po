@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rapls-passkey\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-12 01:49+0000\n"
+"POT-Creation-Date: 2026-08-12 02:06+0000\n"
 "PO-Revision-Date: 2026-07-23 12:00+0900\n"
 "Last-Translator: Rapls <info@raplsworks.com>\n"
 "Language-Team: Japanese\n"
@@ -13,17 +13,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/Admin/AuditExport.php:38 src/Admin/SettingsPage.php:44
+#: src/Admin/AuditExport.php:38 src/Admin/SettingsPage.php:88
 #: src/Admin/SetupWizard.php:132
 msgid "You do not have permission."
 msgstr "権限がありません。"
 
-#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:540
+#: src/Admin/AuditExport.php:77 src/Admin/SettingsPage.php:659
 #: src/Privacy/PersonalData.php:136
 msgid "Date/time (UTC)"
 msgstr "日時 (UTC)"
 
-#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:541
+#: src/Admin/AuditExport.php:78 src/Admin/SettingsPage.php:660
 #: src/Privacy/PersonalData.php:132
 msgid "Event"
 msgstr "イベント"
@@ -36,7 +36,7 @@ msgstr "ユーザー ID"
 msgid "Username"
 msgstr "ユーザー名"
 
-#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:543
+#: src/Admin/AuditExport.php:81 src/Admin/SettingsPage.php:662
 msgid "Details"
 msgstr "詳細"
 
@@ -161,7 +161,7 @@ msgstr "パスキー"
 msgid "You do not have permission to change this passkey."
 msgstr "このパスキーを変更する権限がありません。"
 
-#: src/Admin/DashboardWidget.php:101
+#: src/Admin/DashboardWidget.php:101 src/Admin/SettingsPage.php:58
 msgid "Settings"
 msgstr "設定"
 
@@ -195,7 +195,7 @@ msgstr "ログイン %1$s 件 / 新規登録 %2$s 件"
 msgid "Users list"
 msgstr "ユーザー一覧"
 
-#: src/Admin/ProfileUi.php:109 src/Admin/SettingsPage.php:153
+#: src/Admin/ProfileUi.php:109 src/Admin/SettingsPage.php:207
 #: src/Admin/UsersColumn.php:52 src/Integrations/WooCommerceAccount.php:89
 #: src/Integrations/WooCommerceAccount.php:104 src/Privacy/PersonalData.php:98
 msgid "Passkey"
@@ -292,8 +292,8 @@ msgstr ""
 "このパスキーを一時停止しますか?再開するまで使えなくなりますが、削除はされませ"
 "ん。"
 
-#: src/Admin/ReviewPrompt.php:151 src/Admin/SettingsPage.php:59
-#: src/Admin/SettingsPage.php:60 src/Admin/SiteHealth.php:51
+#: src/Admin/ReviewPrompt.php:151 src/Admin/SettingsPage.php:103
+#: src/Admin/SettingsPage.php:104 src/Admin/SiteHealth.php:51
 msgid "Rapls Passkey"
 msgstr "Rapls Passkey"
 
@@ -327,23 +327,23 @@ msgstr ""
 "お願いするのは一度きりです。この通知を閉じた場合も含め、どれを選んでも二度と"
 "表示されません。"
 
-#: src/Admin/SettingsPage.php:139
+#: src/Admin/SettingsPage.php:183
 msgid "Rapls Passkey Settings"
 msgstr "Rapls Passkey 設定"
 
-#: src/Admin/SettingsPage.php:140
+#: src/Admin/SettingsPage.php:184
 msgid "Setup check"
 msgstr "セットアップ確認"
 
-#: src/Admin/SettingsPage.php:146
+#: src/Admin/SettingsPage.php:190
 msgid "Settings were reset to their defaults."
 msgstr "設定を初期値に戻しました。"
 
-#: src/Admin/SettingsPage.php:156
+#: src/Admin/SettingsPage.php:210
 msgid "Per-user registration limit"
 msgstr "1ユーザーあたりの登録上限"
 
-#: src/Admin/SettingsPage.php:159
+#: src/Admin/SettingsPage.php:213
 msgid ""
 "Maximum number of passkeys a user can register. 0 means unlimited. We "
 "recommend 2 or more so passkeys can be used across multiple devices."
@@ -351,15 +351,15 @@ msgstr ""
 "ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮"
 "し、2 以上を推奨します。"
 
-#: src/Admin/SettingsPage.php:164
+#: src/Admin/SettingsPage.php:218
 msgid "Login rate limit"
 msgstr "ログイン回数制限"
 
-#: src/Admin/SettingsPage.php:167
+#: src/Admin/SettingsPage.php:221
 msgid "Attempt limit"
 msgstr "試行回数の上限"
 
-#: src/Admin/SettingsPage.php:170
+#: src/Admin/SettingsPage.php:224
 msgid ""
 "How many failed passkey-login attempts from the same IP address are allowed "
 "within the window below before \"Too many attempts\" is shown. Successful "
@@ -369,11 +369,11 @@ msgstr ""
 "スキーログインの失敗回数です (下のロックアウト時間内)。成功したログインはカウ"
 "ントされません。0 で無効になります。"
 
-#: src/Admin/SettingsPage.php:174
+#: src/Admin/SettingsPage.php:228
 msgid "Lockout time (seconds)"
 msgstr "ロックアウト時間 (秒)"
 
-#: src/Admin/SettingsPage.php:177
+#: src/Admin/SettingsPage.php:231
 msgid ""
 "The length of the counting window, and how long the lockout lasts once the "
 "attempt limit is reached (default 300 seconds = 5 minutes)."
@@ -381,21 +381,21 @@ msgstr ""
 "カウントを集計する期間であり、試行回数の上限に達した後にロックアウトが続く時"
 "間です (デフォルト 300 秒 = 5 分)。"
 
-#: src/Admin/SettingsPage.php:182
+#: src/Admin/SettingsPage.php:236
 msgid "Session security"
 msgstr "セッションのセキュリティ"
 
-#: src/Admin/SettingsPage.php:185
+#: src/Admin/SettingsPage.php:239
 msgid "Administrator \"remember me\""
 msgstr "管理者の「ログイン状態を保存する」"
 
-#: src/Admin/SettingsPage.php:189
+#: src/Admin/SettingsPage.php:243
 msgid ""
 "Allow administrators to stay signed in (\"remember me\") after a passkey "
 "login"
 msgstr "パスキーログイン後、管理者もログイン状態を保存できるようにする"
 
-#: src/Admin/SettingsPage.php:191
+#: src/Admin/SettingsPage.php:245
 msgid ""
 "Off by default for safety: administrators never get a persistent session, so "
 "a shared or stolen device cannot keep an admin logged in. Turn this on to "
@@ -407,17 +407,17 @@ msgstr ""
 "と、管理者でも「ログイン状態を保存する」チェックボックスが有効になります。管"
 "理者以外には影響しません。"
 
-#: src/Admin/SettingsPage.php:195
+#: src/Admin/SettingsPage.php:249
 msgid "Two-factor on alternative logins"
 msgstr "代替ログインでの2要素認証"
 
-#: src/Admin/SettingsPage.php:199
+#: src/Admin/SettingsPage.php:253
 msgid ""
 "Ask for the site's two-factor code on the logins that are weaker than a "
 "passkey"
 msgstr "パスキーより弱いログイン方法では、サイトの2要素認証コードを要求する"
 
-#: src/Admin/SettingsPage.php:202
+#: src/Admin/SettingsPage.php:256
 msgid ""
 "Two-factor plugins (Wordfence Login Security, Two-Factor, ...) only enforce "
 "inside the wp-login.php password chain, which the email magic link and the "
@@ -433,7 +433,7 @@ msgstr ""
 "む) はそれ自体が2つ目の要素なので、確認画面は表示されません。実際に2要素認証"
 "を設定しているユーザーにのみ表示されます。"
 
-#: src/Admin/SettingsPage.php:206
+#: src/Admin/SettingsPage.php:260
 msgid ""
 "No supported two-factor plugin detected, so this setting currently has no "
 "effect."
@@ -441,19 +441,19 @@ msgstr ""
 "対応する2要素認証プラグインが見つからないため、この設定は現在効果がありませ"
 "ん。"
 
-#: src/Admin/SettingsPage.php:209
+#: src/Admin/SettingsPage.php:263
 msgid "Detected:"
 msgstr "検出:"
 
-#: src/Admin/SettingsPage.php:223
+#: src/Admin/SettingsPage.php:277
 msgid "Advanced (WebAuthn)"
 msgstr "詳細設定 (WebAuthn)"
 
-#: src/Admin/SettingsPage.php:226
+#: src/Admin/SettingsPage.php:280
 msgid "Timeout (seconds)"
 msgstr "タイムアウト (秒)"
 
-#: src/Admin/SettingsPage.php:229
+#: src/Admin/SettingsPage.php:283
 msgid ""
 "Timeout for the passkey registration and authentication dialogs. 0 uses the "
 "browser default (typically around 60 seconds)."
@@ -461,23 +461,23 @@ msgstr ""
 "パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定 (通常 60 秒程"
 "度) を使用します。"
 
-#: src/Admin/SettingsPage.php:233
+#: src/Admin/SettingsPage.php:287
 msgid "User verification"
 msgstr "ユーザー検証"
 
-#: src/Admin/SettingsPage.php:236
+#: src/Admin/SettingsPage.php:290
 msgid "Preferred"
 msgstr "推奨 (preferred)"
 
-#: src/Admin/SettingsPage.php:237
+#: src/Admin/SettingsPage.php:291
 msgid "Required"
 msgstr "必須 (required)"
 
-#: src/Admin/SettingsPage.php:238
+#: src/Admin/SettingsPage.php:292
 msgid "Discouraged"
 msgstr "不要 (discouraged)"
 
-#: src/Admin/SettingsPage.php:240
+#: src/Admin/SettingsPage.php:294
 msgid ""
 "How strongly to require identity verification via biometrics or PIN. "
 "Required may reject authenticators that do not support it; leaving this at "
@@ -486,23 +486,23 @@ msgstr ""
 "生体認証や PIN による本人確認をどの程度求めるか。「必須」は対応していない認証"
 "器を弾く可能性があります。通常は「推奨」のままを推奨します。"
 
-#: src/Admin/SettingsPage.php:244
+#: src/Admin/SettingsPage.php:298
 msgid "Authenticator type"
 msgstr "認証器の種類"
 
-#: src/Admin/SettingsPage.php:247
+#: src/Admin/SettingsPage.php:301
 msgid "No preference (allow all)"
 msgstr "指定なし (すべて許可)"
 
-#: src/Admin/SettingsPage.php:248
+#: src/Admin/SettingsPage.php:302
 msgid "Platform only (Touch ID / Windows Hello, etc.)"
 msgstr "内蔵のみ (Touch ID / Windows Hello など)"
 
-#: src/Admin/SettingsPage.php:249
+#: src/Admin/SettingsPage.php:303
 msgid "Cross-platform only (security key / another device)"
 msgstr "外付けのみ (セキュリティキー / 別端末)"
 
-#: src/Admin/SettingsPage.php:251
+#: src/Admin/SettingsPage.php:305
 msgid ""
 "Which authenticator type to allow at registration (applies at registration "
 "only). No preference is usually recommended."
@@ -510,23 +510,23 @@ msgstr ""
 "新規登録時に許可する認証器の種類 (登録時のみ適用)。通常は「指定なし」を推奨し"
 "ます。"
 
-#: src/Admin/SettingsPage.php:255
+#: src/Admin/SettingsPage.php:309
 msgid "UI hints"
 msgstr "UI ヒント"
 
-#: src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:314
 msgid "Passkey on this device (client-device)"
 msgstr "この端末のパスキー (client-device)"
 
-#: src/Admin/SettingsPage.php:261
+#: src/Admin/SettingsPage.php:315
 msgid "Another device / QR (hybrid)"
 msgstr "別の端末 / QR (hybrid)"
 
-#: src/Admin/SettingsPage.php:262
+#: src/Admin/SettingsPage.php:316
 msgid "Security key (security-key)"
 msgstr "セキュリティキー (security-key)"
 
-#: src/Admin/SettingsPage.php:271
+#: src/Admin/SettingsPage.php:325
 msgid ""
 "Give supported browsers hints about which sign-in methods to suggest first "
 "(order is respected). No hints are sent if none are selected."
@@ -534,11 +534,11 @@ msgstr ""
 "対応ブラウザに対し、優先して案内する認証方法のヒントを与えます (順序も尊重さ"
 "れます)。未選択ならヒントなし。"
 
-#: src/Admin/SettingsPage.php:276
+#: src/Admin/SettingsPage.php:330
 msgid "reCAPTCHA v3 (password login protection)"
 msgstr "reCAPTCHA v3 (パスワードログイン保護)"
 
-#: src/Admin/SettingsPage.php:277
+#: src/Admin/SettingsPage.php:331
 msgid ""
 "Protect password logins with Google reCAPTCHA v3. It does not apply to "
 "passkey logins (brute force does not work against them). Enter your site key "
@@ -548,40 +548,40 @@ msgstr ""
 "インには適用されません (総当たり攻撃が成立しないため)。サイトキーとシークレッ"
 "トを入力し、有効化してください。"
 
-#: src/Admin/SettingsPage.php:280
+#: src/Admin/SettingsPage.php:334
 msgid "Enable"
 msgstr "有効化"
 
-#: src/Admin/SettingsPage.php:284
+#: src/Admin/SettingsPage.php:338
 msgid "Enable reCAPTCHA"
 msgstr "reCAPTCHA を有効にする"
 
-#: src/Admin/SettingsPage.php:289
+#: src/Admin/SettingsPage.php:343
 msgid "Site key"
 msgstr "サイトキー"
 
-#: src/Admin/SettingsPage.php:293
+#: src/Admin/SettingsPage.php:347
 msgid "Secret key"
 msgstr "シークレットキー"
 
-#: src/Admin/SettingsPage.php:297
+#: src/Admin/SettingsPage.php:351
 msgid "Score threshold"
 msgstr "スコアしきい値"
 
-#: src/Admin/SettingsPage.php:300
+#: src/Admin/SettingsPage.php:354
 msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
 msgstr "0.0〜1.0。これ未満のスコアは拒否します (既定 0.5)。"
 
-#: src/Admin/SettingsPage.php:304
+#: src/Admin/SettingsPage.php:358
 msgid "If Google is unreachable"
 msgstr "Google に接続できない場合"
 
-#: src/Admin/SettingsPage.php:308
+#: src/Admin/SettingsPage.php:362
 msgid "Allow the password login when reCAPTCHA cannot be verified (fail open)"
 msgstr ""
 "reCAPTCHA を検証できないときにパスワードログインを許可する (フェイルオープン)"
 
-#: src/Admin/SettingsPage.php:310
+#: src/Admin/SettingsPage.php:364
 msgid ""
 "On by default (availability): a Google outage will not lock everyone out. "
 "Turn it off to fail closed (reject password logins that cannot be scored) — "
@@ -592,11 +592,11 @@ msgstr ""
 "否) になります。パスキーログインは reCAPTCHA を使わないため、どちらの設定でも"
 "利用可能です。"
 
-#: src/Admin/SettingsPage.php:315
+#: src/Admin/SettingsPage.php:369
 msgid "Security notification emails"
 msgstr "セキュリティ通知メール"
 
-#: src/Admin/SettingsPage.php:316
+#: src/Admin/SettingsPage.php:370
 msgid ""
 "Email the affected user about passkey registration and removal, and about "
 "passkey sign-ins from a new device. Helps detect account takeover early."
@@ -604,23 +604,23 @@ msgstr ""
 "パスキーの登録・削除、および新しい端末からのパスキーサインインを、対象ユー"
 "ザー本人のメールアドレスに通知します。乗っ取りの早期発見に役立ちます。"
 
-#: src/Admin/SettingsPage.php:319
+#: src/Admin/SettingsPage.php:373
 msgid "Send"
 msgstr "送信"
 
-#: src/Admin/SettingsPage.php:323
+#: src/Admin/SettingsPage.php:377
 msgid "Send security notification emails"
 msgstr "セキュリティ通知メールを送信する"
 
-#: src/Admin/SettingsPage.php:329
+#: src/Admin/SettingsPage.php:383
 msgid "Passkey enrolment prompt"
 msgstr "パスキー登録のうながし"
 
-#: src/Admin/SettingsPage.php:332
+#: src/Admin/SettingsPage.php:386
 msgid "After login"
 msgstr "ログイン後の表示"
 
-#: src/Admin/SettingsPage.php:336
+#: src/Admin/SettingsPage.php:390
 msgid ""
 "Right after a password login, suggest creating a passkey on the spot (only "
 "for users without a passkey)"
@@ -628,27 +628,27 @@ msgstr ""
 "パスワードでログインした直後に、パスキーの作成をその場でおすすめする (パス"
 "キー未登録のユーザーのみ)"
 
-#: src/Admin/SettingsPage.php:342
+#: src/Admin/SettingsPage.php:396
 msgid "Audit log"
 msgstr "監査ログ"
 
-#: src/Admin/SettingsPage.php:345
+#: src/Admin/SettingsPage.php:399
 msgid "Logging"
 msgstr "記録"
 
-#: src/Admin/SettingsPage.php:349
+#: src/Admin/SettingsPage.php:403
 msgid "Record events such as registration, login, and removal"
 msgstr "登録・ログイン・削除などのイベントを記録する"
 
-#: src/Admin/SettingsPage.php:355
+#: src/Admin/SettingsPage.php:409
 msgid "REST API"
 msgstr "REST API"
 
-#: src/Admin/SettingsPage.php:358
+#: src/Admin/SettingsPage.php:412
 msgid "Passkey login when REST is restricted"
 msgstr "REST API が制限されている場合のパスキーログイン"
 
-#: src/Admin/SettingsPage.php:362
+#: src/Admin/SettingsPage.php:416
 msgid ""
 "Allow the anonymous passkey-login endpoints when a security plugin restricts "
 "the REST API to logged-in users"
@@ -656,7 +656,7 @@ msgstr ""
 "セキュリティプラグインが REST API をログイン済みユーザーに限定している場合"
 "に、匿名のパスキーログイン用エンドポイントを許可します"
 
-#: src/Admin/SettingsPage.php:364
+#: src/Admin/SettingsPage.php:418
 msgid ""
 "Off by default. Only turn this on if a security plugin locks the REST API to "
 "logged-in users and passkey sign-in has stopped working. When on, the plugin "
@@ -670,25 +670,25 @@ msgstr ""
 "(HTTP 401) による制限に対してのみ再開します。ファイアウォール・IP ブロック・"
 "メンテナンスページ (HTTP 403) を上書きすることはありません。"
 
-#: src/Admin/SettingsPage.php:377
+#: src/Admin/SettingsPage.php:431
 msgid ""
 "Reset all Rapls Passkey settings to their defaults? This cannot be undone."
 msgstr ""
 "Rapls Passkey のすべての設定を初期値に戻しますか?この操作は元に戻せません。"
 
-#: src/Admin/SettingsPage.php:380
+#: src/Admin/SettingsPage.php:434
 msgid "Reset to defaults"
 msgstr "初期設定に戻す"
 
-#: src/Admin/SettingsPage.php:381
+#: src/Admin/SettingsPage.php:435
 msgid "Restore every setting on this page to its default value."
 msgstr "このページのすべての設定を初期値に戻します。"
 
-#: src/Admin/SettingsPage.php:415
+#: src/Admin/SettingsPage.php:478
 msgid "Sign in from another device"
 msgstr "別の端末からログイン"
 
-#: src/Admin/SettingsPage.php:416
+#: src/Admin/SettingsPage.php:479
 msgid ""
 "Approve a login on your computer from your phone — a QR code plus a four-"
 "digit confirmation code, so a relayed code cannot be used elsewhere."
@@ -696,11 +696,11 @@ msgstr ""
 "パソコンのログインをスマートフォンから承認します。QR コードと 4 桁の確認コー"
 "ドを組み合わせるため、中継されたコードを別の場所で使うことはできません。"
 
-#: src/Admin/SettingsPage.php:419
+#: src/Admin/SettingsPage.php:482
 msgid "A way back in that is not a password"
 msgstr "パスワードに頼らない復旧手段"
 
-#: src/Admin/SettingsPage.php:420
+#: src/Admin/SettingsPage.php:483
 msgid ""
 "One-time recovery codes and email magic-link sign-in, for the day a phone is "
 "lost or replaced."
@@ -708,11 +708,11 @@ msgstr ""
 "使い捨てのリカバリーコードと、メールのログインリンク。端末を失くした日、買い"
 "替えた日のためのものです。"
 
-#: src/Admin/SettingsPage.php:423
+#: src/Admin/SettingsPage.php:486
 msgid "Roll out by role, at your pace"
 msgstr "ロール別に、自分のペースで移行"
 
-#: src/Admin/SettingsPage.php:424
+#: src/Admin/SettingsPage.php:487
 msgid ""
 "Require passkeys for the roles you choose, with a grace period, and turn "
 "password login off once everyone is across."
@@ -720,11 +720,11 @@ msgstr ""
 "選んだロールにパスキーを必須化します。猶予期間を置き、全員の移行が済んだらパ"
 "スワードログインを止められます。"
 
-#: src/Admin/SettingsPage.php:427
+#: src/Admin/SettingsPage.php:490
 msgid "Ask again when it looks wrong"
 msgstr "怪しいときだけ、もう一度確認"
 
-#: src/Admin/SettingsPage.php:428
+#: src/Admin/SettingsPage.php:491
 msgid ""
 "Adaptive step-up requests a passkey after a password sign-in from somewhere "
 "unfamiliar."
@@ -732,11 +732,11 @@ msgstr ""
 "見慣れない場所からパスワードでログインされたとき、アダプティブ・ステップアッ"
 "プがパスキーを追加で要求します。"
 
-#: src/Admin/SettingsPage.php:431
+#: src/Admin/SettingsPage.php:494
 msgid "Decide which authenticators you trust"
 msgstr "信頼する認証器を選ぶ"
 
-#: src/Admin/SettingsPage.php:432
+#: src/Admin/SettingsPage.php:495
 msgid ""
 "FIDO Metadata Service checks, AAGUID allow and deny lists, and trusted-"
 "device management."
@@ -744,11 +744,11 @@ msgstr ""
 "FIDO メタデータサービスによる検査、AAGUID の許可・拒否リスト、信頼済み端末の"
 "管理。"
 
-#: src/Admin/SettingsPage.php:435
+#: src/Admin/SettingsPage.php:498
 msgid "Run it across a fleet"
 msgstr "複数サイトをまとめて運用"
 
-#: src/Admin/SettingsPage.php:436
+#: src/Admin/SettingsPage.php:499
 msgid ""
 "Security webhooks, adoption reports, multisite network settings and WP-CLI "
 "commands."
@@ -756,19 +756,15 @@ msgstr ""
 "セキュリティ Webhook、導入状況レポート、マルチサイトのネットワーク設定、WP-"
 "CLI コマンドに対応します。"
 
-#: src/Admin/SettingsPage.php:455
-msgid "Rapls Passkey Pro"
-msgstr "Rapls Passkey Pro"
+#: src/Admin/SettingsPage.php:526
+msgid "Rapls Passkey Pro — optional add-on"
+msgstr "Rapls Passkey Pro — 任意の追加プラグイン"
 
-#: src/Admin/SettingsPage.php:457
-msgid "Optional add-on"
-msgstr "任意の追加プラグイン"
-
-#: src/Admin/SettingsPage.php:458
+#: src/Admin/SettingsPage.php:527
 msgid "Get everyone onto passkeys — without locking anyone out"
 msgstr "誰も締め出さずに、全員をパスキーへ"
 
-#: src/Admin/SettingsPage.php:460
+#: src/Admin/SettingsPage.php:529
 msgid ""
 "Everything on this page is free, and stays free. Pro is for what comes after "
 "the first passkey: moving a whole site across, and keeping a way in when a "
@@ -778,45 +774,55 @@ msgstr ""
 "1 本を登録したあと — サイト全体を移行させることと、端末を失ったときの入り口を"
 "確保することです。"
 
-#: src/Admin/SettingsPage.php:472
+#: src/Admin/SettingsPage.php:541
 msgid "See what Pro adds"
 msgstr "Pro でできることを見る"
 
-#: src/Admin/SettingsPage.php:474
+#: src/Admin/SettingsPage.php:543
 msgid "One-time purchase, no subscription. 14-day refund."
 msgstr "買い切り、サブスクリプションなし。14 日間返金保証。"
 
-#: src/Admin/SettingsPage.php:489
+#: src/Admin/SettingsPage.php:558
 msgid "Adoption"
 msgstr "導入状況"
 
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
-#: src/Admin/SettingsPage.php:493
+#: src/Admin/SettingsPage.php:562
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
 msgstr "パスキーを登録済みのユーザー: %1$d / %2$d 人 (%3$d%%)"
 
 #. translators: %d: total number of registered passkeys.
-#: src/Admin/SettingsPage.php:502
+#: src/Admin/SettingsPage.php:571
 msgid "Total registered passkeys: %d"
 msgstr "登録済みパスキーの総数: %d 個"
 
-#: src/Admin/SettingsPage.php:506
+#: src/Admin/SettingsPage.php:575
 msgid "Per-user status is shown in the Passkey column of the Users list."
 msgstr "各ユーザーの登録状況は「ユーザー」一覧の「パスキー」列で確認できます。"
 
-#: src/Admin/SettingsPage.php:514
+#. translators: %d: number of users without a passkey.
+#: src/Admin/SettingsPage.php:614
+msgid "%d user has not enrolled yet."
+msgid_plural "%d users have not enrolled yet."
+msgstr[0] "%d 人がまだ登録していません。"
+
+#: src/Admin/SettingsPage.php:624
+msgid "Pro can require a passkey by role, with a grace period."
+msgstr "Pro ならロール別に、猶予期間を置いて必須化できます。"
+
+#: src/Admin/SettingsPage.php:633
 msgid "Compatibility with security plugins"
 msgstr "セキュリティプラグインとの互換"
 
-#: src/Admin/SettingsPage.php:516
+#: src/Admin/SettingsPage.php:635
 msgid "No known login-security plugins were detected."
 msgstr "既知のログイン系セキュリティプラグインは検出されませんでした。"
 
-#: src/Admin/SettingsPage.php:519
+#: src/Admin/SettingsPage.php:638
 msgid "The following plugins were detected:"
 msgstr "次のプラグインを検出しました:"
 
-#: src/Admin/SettingsPage.php:520
+#: src/Admin/SettingsPage.php:639
 msgid ""
 "Rapls Passkey uses only the standard login hooks and fires wp_login on a "
 "successful sign-in, so it coexists with these. If the login screen shows a "
@@ -828,21 +834,25 @@ msgstr ""
 "は、どちらか一方を無効にしてください (本プラグインの reCAPTCHA は上記設定で無"
 "効化できます)。"
 
-#: src/Admin/SettingsPage.php:527
+#: src/Admin/SettingsPage.php:646
 msgid "Recent events"
 msgstr "最近のイベント"
 
-#: src/Admin/SettingsPage.php:530
+#: src/Admin/SettingsPage.php:649
 msgid "No events have been recorded."
 msgstr "記録されたイベントはありません。"
 
-#: src/Admin/SettingsPage.php:538
+#: src/Admin/SettingsPage.php:657
 msgid "Export CSV"
 msgstr "CSV エクスポート"
 
-#: src/Admin/SettingsPage.php:542
+#: src/Admin/SettingsPage.php:661
 msgid "Users"
 msgstr "ユーザー"
+
+#: src/Admin/SettingsPage.php:77
+msgid "Go Pro"
+msgstr "Pro を見る"
 
 #: src/Admin/SetupWizard.php:116
 msgid "Rapls Passkey is active."
@@ -1463,6 +1473,12 @@ msgstr "パスキーとは?"
 #: src/Support/Help.php:58
 msgid "Learn more"
 msgstr "詳しく"
+
+#~ msgid "Rapls Passkey Pro"
+#~ msgstr "Rapls Passkey Pro"
+
+#~ msgid "Optional add-on"
+#~ msgstr "任意の追加プラグイン"
 
 #~ msgid "Asked once. Whichever you choose, this will not come back."
 #~ msgstr ""

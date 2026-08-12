@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rapls-passkey\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-12 01:32+0000\n"
+"POT-Creation-Date: 2026-08-12 01:44+0000\n"
 "PO-Revision-Date: 2026-07-23 12:00+0900\n"
 "Last-Translator: Rapls <info@raplsworks.com>\n"
 "Language-Team: Japanese\n"
@@ -40,123 +40,123 @@ msgstr "ユーザー名"
 msgid "Details"
 msgstr "詳細"
 
-#: src/Admin/CredentialsPage.php:151 src/Admin/CredentialsPage.php:153
+#: src/Admin/CredentialsPage.php:152 src/Admin/CredentialsPage.php:154
 msgid "Search passkeys"
 msgstr "パスキーを検索"
 
 #. translators: %s: number of passkeys.
-#: src/Admin/CredentialsPage.php:161
+#: src/Admin/CredentialsPage.php:162
 msgid "Total passkeys: %s"
 msgstr "パスキー総数: %s"
 
-#: src/Admin/CredentialsPage.php:170
+#: src/Admin/CredentialsPage.php:171
 msgid "User"
 msgstr "ユーザー"
 
-#: src/Admin/CredentialsPage.php:171 src/Admin/ProfileUi.php:117
+#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:117
 #: src/Frontend/Shortcodes.php:183 src/Privacy/PersonalData.php:102
 msgid "Name"
 msgstr "名前"
 
-#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:118
+#: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:118
 #: src/Frontend/Shortcodes.php:184
 msgid "Authenticator"
 msgstr "認証器"
 
-#: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:119
+#: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:119
 #: src/Frontend/Shortcodes.php:185 src/Privacy/PersonalData.php:106
 msgid "Registered"
 msgstr "登録日時"
 
-#: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:120
+#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:120
 #: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:110
 msgid "Last used"
 msgstr "最終使用"
 
-#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:121
+#: src/Admin/CredentialsPage.php:176 src/Admin/ProfileUi.php:121
 #: src/Frontend/Shortcodes.php:187
 msgid "Status"
 msgstr "状態"
 
-#: src/Admin/CredentialsPage.php:181
+#: src/Admin/CredentialsPage.php:182
 msgid "No passkeys found."
 msgstr "パスキーが見つかりません。"
 
-#: src/Admin/CredentialsPage.php:193
+#: src/Admin/CredentialsPage.php:194
 msgid "(deleted user)"
 msgstr "(削除されたユーザー)"
 
-#: src/Admin/CredentialsPage.php:196 src/Admin/ProfileUi.php:83
+#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:83
 #: src/Admin/ProfileUi.php:131 src/Frontend/Shortcodes.php:105
 #: src/Frontend/Shortcodes.php:197
 msgid "(no name)"
 msgstr "(名前なし)"
 
-#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:132
+#: src/Admin/CredentialsPage.php:198 src/Admin/ProfileUi.php:132
 #: src/Frontend/Shortcodes.php:198
 msgid "Unknown"
 msgstr "不明"
 
-#: src/Admin/CredentialsPage.php:199
+#: src/Admin/CredentialsPage.php:200
 msgid "Never"
 msgstr "未使用"
 
-#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:84
+#: src/Admin/CredentialsPage.php:201 src/Admin/ProfileUi.php:84
 #: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:108
 #: src/Frontend/Shortcodes.php:201
 msgid "Active"
 msgstr "有効"
 
-#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:85
+#: src/Admin/CredentialsPage.php:201 src/Admin/ProfileUi.php:85
 #: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:109
 #: src/Frontend/Shortcodes.php:201
 msgid "Suspended"
 msgstr "一時停止中"
 
-#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:86
+#: src/Admin/CredentialsPage.php:205 src/Admin/ProfileUi.php:86
 #: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:110
 #: src/Frontend/Shortcodes.php:204
 msgid "Suspend"
 msgstr "一時停止"
 
-#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:87
+#: src/Admin/CredentialsPage.php:205 src/Admin/ProfileUi.php:87
 #: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:111
 #: src/Frontend/Shortcodes.php:204
 msgid "Resume"
 msgstr "再開"
 
-#: src/Admin/CredentialsPage.php:207
+#: src/Admin/CredentialsPage.php:208
 msgid "Delete this passkey? This cannot be undone."
 msgstr "このパスキーを削除しますか?この操作は元に戻せません。"
 
-#: src/Admin/CredentialsPage.php:208 src/Admin/ProfileUi.php:146
+#: src/Admin/CredentialsPage.php:209 src/Admin/ProfileUi.php:146
 #: src/Frontend/Shortcodes.php:205
 msgid "Delete"
 msgstr "削除"
 
-#: src/Admin/CredentialsPage.php:268
+#: src/Admin/CredentialsPage.php:269
 msgid "The passkey was deleted."
 msgstr "パスキーを削除しました。"
 
-#: src/Admin/CredentialsPage.php:270
+#: src/Admin/CredentialsPage.php:271
 msgid ""
 "The passkey was suspended. It cannot be used to sign in until you resume it."
 msgstr "パスキーを一時停止しました。再開するまでログインには使えません。"
 
-#: src/Admin/CredentialsPage.php:272
+#: src/Admin/CredentialsPage.php:273
 msgid "The passkey was resumed."
 msgstr "パスキーを再開しました。"
 
-#: src/Admin/CredentialsPage.php:274 src/Rest/Endpoints.php:723
+#: src/Admin/CredentialsPage.php:275 src/Rest/Endpoints.php:723
 msgid "That passkey no longer exists."
 msgstr "そのパスキーは存在しません。"
 
-#: src/Admin/CredentialsPage.php:56 src/Admin/CredentialsPage.php:57
-#: src/Admin/CredentialsPage.php:142
+#: src/Admin/CredentialsPage.php:57 src/Admin/CredentialsPage.php:58
+#: src/Admin/CredentialsPage.php:143
 msgid "Passkeys"
 msgstr "パスキー"
 
-#: src/Admin/CredentialsPage.php:80 src/Rest/Endpoints.php:734
+#: src/Admin/CredentialsPage.php:81 src/Rest/Endpoints.php:734
 #: src/Rest/Endpoints.php:771
 msgid "You do not have permission to change this passkey."
 msgstr "このパスキーを変更する権限がありません。"
@@ -291,6 +291,38 @@ msgid ""
 msgstr ""
 "このパスキーを一時停止しますか?再開するまで使えなくなりますが、削除はされませ"
 "ん。"
+
+#: src/Admin/ReviewPrompt.php:112 src/Admin/SettingsPage.php:59
+#: src/Admin/SettingsPage.php:60 src/Admin/SiteHealth.php:51
+msgid "Rapls Passkey"
+msgstr "Rapls Passkey"
+
+#: src/Admin/ReviewPrompt.php:114
+msgid ""
+"You have been signing in with passkeys for a week now. If it has been "
+"working out, would you leave a review? It is the main way other people find "
+"the plugin."
+msgstr ""
+"パスキーでのログインを 1 週間お使いいただきました。うまく動いているようでした"
+"ら、レビューを書いていただけませんか。ほかの方がこのプラグインを見つける、い"
+"ちばんの手がかりになります。"
+
+#: src/Admin/ReviewPrompt.php:118
+msgid "Write a review"
+msgstr "レビューを書く"
+
+#: src/Admin/ReviewPrompt.php:121
+msgid "Already did"
+msgstr "もう書いた"
+
+#: src/Admin/ReviewPrompt.php:124
+msgid "No thanks"
+msgstr "今回は見送る"
+
+#: src/Admin/ReviewPrompt.php:128
+msgid "Asked once. Whichever you choose, this will not come back."
+msgstr ""
+"お願いするのは一度きりです。どれを選んでも、この案内は二度と表示されません。"
 
 #: src/Admin/SettingsPage.php:139
 msgid "Rapls Passkey Settings"
@@ -809,11 +841,6 @@ msgstr "CSV エクスポート"
 msgid "Users"
 msgstr "ユーザー"
 
-#: src/Admin/SettingsPage.php:59 src/Admin/SettingsPage.php:60
-#: src/Admin/SiteHealth.php:51
-msgid "Rapls Passkey"
-msgstr "Rapls Passkey"
-
 #: src/Admin/SetupWizard.php:116
 msgid "Rapls Passkey is active."
 msgstr "Rapls Passkey が有効になりました。"
@@ -1221,7 +1248,7 @@ msgstr "パスキーを作成"
 msgid "Later"
 msgstr "後で"
 
-#: src/Plugin.php:252
+#: src/Plugin.php:254
 msgid ""
 "Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to "
 "install dependencies. Passkey authentication is disabled."

@@ -109,6 +109,7 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 == Changelog ==
 
 = 0.13.69 =
+* Asks for a review, once. After a week of use, and only if a passkey has actually been registered, a notice on this plugin's own two screens asks for a WordPress.org review. Any of the three buttons — including "No thanks" — settles it for good, and the rapls_passkey/show_review_prompt filter turns it off entirely. It never appears anywhere else in wp-admin and never comes back.
 * The Pro panel on the settings screen says what Pro is for, rather than listing features. It is still only on this plugin's own screen, still hidden once Pro is active, and still switched off by the rapls_passkey/show_upsell filter — no admin-wide notice, and nothing on this page is gated.
 
 = 0.13.68 =

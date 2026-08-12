@@ -27,7 +27,8 @@ defined( 'ABSPATH' ) || exit;
 final class CredentialsPage {
 
 	/** Menu slug. */
-	private const SLUG = 'rapls-passkey-credentials';
+	/** Menu slug. Public so other admin code can name this screen. */
+	public const SLUG = 'rapls-passkey-credentials';
 
 	/** admin-post action for suspend / resume / delete. */
 	private const ACTION = 'rapls_passkey_credential_action';

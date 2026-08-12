@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rapls Passkey 0.13.69\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-12 01:36+0000\n"
+"POT-Creation-Date: 2026-08-12 01:44+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -39,122 +39,122 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:151 src/Admin/CredentialsPage.php:153
+#: src/Admin/CredentialsPage.php:152 src/Admin/CredentialsPage.php:154
 msgid "Search passkeys"
 msgstr ""
 
 #. translators: %s: number of passkeys.
-#: src/Admin/CredentialsPage.php:161
+#: src/Admin/CredentialsPage.php:162
 msgid "Total passkeys: %s"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:170
+#: src/Admin/CredentialsPage.php:171
 msgid "User"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:171 src/Admin/ProfileUi.php:117
+#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:117
 #: src/Frontend/Shortcodes.php:183 src/Privacy/PersonalData.php:102
 msgid "Name"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:118
+#: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:118
 #: src/Frontend/Shortcodes.php:184
 msgid "Authenticator"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:119
+#: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:119
 #: src/Frontend/Shortcodes.php:185 src/Privacy/PersonalData.php:106
 msgid "Registered"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:120
+#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:120
 #: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:110
 msgid "Last used"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:121
+#: src/Admin/CredentialsPage.php:176 src/Admin/ProfileUi.php:121
 #: src/Frontend/Shortcodes.php:187
 msgid "Status"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:181
+#: src/Admin/CredentialsPage.php:182
 msgid "No passkeys found."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:193
+#: src/Admin/CredentialsPage.php:194
 msgid "(deleted user)"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:196 src/Admin/ProfileUi.php:83
+#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:83
 #: src/Admin/ProfileUi.php:131 src/Frontend/Shortcodes.php:105
 #: src/Frontend/Shortcodes.php:197
 msgid "(no name)"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:132
+#: src/Admin/CredentialsPage.php:198 src/Admin/ProfileUi.php:132
 #: src/Frontend/Shortcodes.php:198
 msgid "Unknown"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:199
+#: src/Admin/CredentialsPage.php:200
 msgid "Never"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:84
+#: src/Admin/CredentialsPage.php:201 src/Admin/ProfileUi.php:84
 #: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:108
 #: src/Frontend/Shortcodes.php:201
 msgid "Active"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:200 src/Admin/ProfileUi.php:85
+#: src/Admin/CredentialsPage.php:201 src/Admin/ProfileUi.php:85
 #: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:109
 #: src/Frontend/Shortcodes.php:201
 msgid "Suspended"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:86
+#: src/Admin/CredentialsPage.php:205 src/Admin/ProfileUi.php:86
 #: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:110
 #: src/Frontend/Shortcodes.php:204
 msgid "Suspend"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:204 src/Admin/ProfileUi.php:87
+#: src/Admin/CredentialsPage.php:205 src/Admin/ProfileUi.php:87
 #: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:111
 #: src/Frontend/Shortcodes.php:204
 msgid "Resume"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:207
+#: src/Admin/CredentialsPage.php:208
 msgid "Delete this passkey? This cannot be undone."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:208 src/Admin/ProfileUi.php:146
+#: src/Admin/CredentialsPage.php:209 src/Admin/ProfileUi.php:146
 #: src/Frontend/Shortcodes.php:205
 msgid "Delete"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:268
+#: src/Admin/CredentialsPage.php:269
 msgid "The passkey was deleted."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:270
+#: src/Admin/CredentialsPage.php:271
 msgid "The passkey was suspended. It cannot be used to sign in until you resume it."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:272
+#: src/Admin/CredentialsPage.php:273
 msgid "The passkey was resumed."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:274 src/Rest/Endpoints.php:723
+#: src/Admin/CredentialsPage.php:275 src/Rest/Endpoints.php:723
 msgid "That passkey no longer exists."
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:56 src/Admin/CredentialsPage.php:57
-#: src/Admin/CredentialsPage.php:142
+#: src/Admin/CredentialsPage.php:57 src/Admin/CredentialsPage.php:58
+#: src/Admin/CredentialsPage.php:143
 msgid "Passkeys"
 msgstr ""
 
-#: src/Admin/CredentialsPage.php:80 src/Rest/Endpoints.php:734
+#: src/Admin/CredentialsPage.php:81 src/Rest/Endpoints.php:734
 #: src/Rest/Endpoints.php:771
 msgid "You do not have permission to change this passkey."
 msgstr ""
@@ -277,6 +277,31 @@ msgstr ""
 
 #: src/Admin/ProfileUi.php:88 src/Frontend/Shortcodes.php:112
 msgid "Suspend this passkey? It will stop working until you resume it, but it is not deleted."
+msgstr ""
+
+#: src/Admin/ReviewPrompt.php:112 src/Admin/SettingsPage.php:59
+#: src/Admin/SettingsPage.php:60 src/Admin/SiteHealth.php:51
+msgid "Rapls Passkey"
+msgstr ""
+
+#: src/Admin/ReviewPrompt.php:114
+msgid "You have been signing in with passkeys for a week now. If it has been working out, would you leave a review? It is the main way other people find the plugin."
+msgstr ""
+
+#: src/Admin/ReviewPrompt.php:118
+msgid "Write a review"
+msgstr ""
+
+#: src/Admin/ReviewPrompt.php:121
+msgid "Already did"
+msgstr ""
+
+#: src/Admin/ReviewPrompt.php:124
+msgid "No thanks"
+msgstr ""
+
+#: src/Admin/ReviewPrompt.php:128
+msgid "Asked once. Whichever you choose, this will not come back."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:139
@@ -661,11 +686,6 @@ msgstr ""
 msgid "Users"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:59 src/Admin/SettingsPage.php:60
-#: src/Admin/SiteHealth.php:51
-msgid "Rapls Passkey"
-msgstr ""
-
 #: src/Admin/SetupWizard.php:116
 msgid "Rapls Passkey is active."
 msgstr ""
@@ -1002,7 +1022,7 @@ msgstr ""
 msgid "Later"
 msgstr ""
 
-#: src/Plugin.php:252
+#: src/Plugin.php:254
 msgid "Rapls Passkey: The WebAuthn library is not loaded. Run `composer install` to install dependencies. Passkey authentication is disabled."
 msgstr ""
 

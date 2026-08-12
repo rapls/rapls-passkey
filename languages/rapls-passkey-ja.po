@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rapls-passkey\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-12 02:06+0000\n"
+"POT-Creation-Date: 2026-08-12 07:25+0000\n"
 "PO-Revision-Date: 2026-07-23 12:00+0900\n"
 "Last-Translator: Rapls <info@raplsworks.com>\n"
 "Language-Team: Japanese\n"
@@ -12,6 +12,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+
+#. translators: 1: required PHP version, 2: the PHP version this server runs.
+#: rapls-passkey.php:50
+msgid ""
+"Rapls Passkey requires PHP %1$s or later. This server is running PHP %2$s, "
+"so the plugin is not running. Everything else on the site is unaffected."
+msgstr ""
+"Rapls Passkey の動作には PHP %1$s 以降が必要です。このサーバーは PHP %2$s の"
+"ため、プラグインは動作していません。サイトのほかの部分には影響ありません。"
 
 #: src/Admin/AuditExport.php:38 src/Admin/SettingsPage.php:88
 #: src/Admin/SetupWizard.php:132

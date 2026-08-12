@@ -4,7 +4,7 @@ Tags: passkey, webauthn, fido2, login, passwordless
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.69
+Stable tag: 0.13.70
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -132,6 +132,9 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.70 =
+* **Fixed: on PHP older than 8.2 the whole site went down, front end included.** The bundled dependencies require 8.2, and Composer's platform check throws the moment the autoloader is read — inside WordPress's plugin loading, where nothing catches it. The plugin now checks the version first and steps aside with an admin notice, leaving the rest of the site alone. The `Requires PHP` header does not cover this on its own: WordPress reads it when activating and when offering an update, so a server whose PHP is lowered afterwards, or a WP-CLI running an older PHP than the web server, went straight past it.
 
 = 0.13.69 =
 * The Rapls Passkey Pro panel moved into a sidebar that follows the page down. It sat at the very bottom of a single column, below the audit table, where nobody scrolls. It also says what the add-on is for rather than listing features, the Plugins screen gains "Settings" and "Go Pro" row links, and the adoption figure names what closes the gap. Nothing on the page is gated: the readme now has a Pro section and an FAQ entry saying plainly that the free version has no cap, trial or licence key.

@@ -24,6 +24,11 @@ on:
       # required file from the ZIP, sweep a development file into it, or alter
       # what is kept out on purpose, and every one of those is exactly what the
       # distribution checks exist to catch (V67-03).
+  # Kept, but every job below refuses a pull request that came from a fork.
+  # This repository is public and each run costs about eleven runner-minutes;
+  # without the guard anyone could spend them at will. A branch pushed here
+  # still gets the full suite, and a fork's work can be checked by pulling it
+  # into a branch or by workflow_dispatch.
   pull_request:
   workflow_dispatch:
 
@@ -35,6 +40,11 @@ concurrency:
 
 jobs:
   smoke:
+    # Push and dispatch always run. A pull request runs only when it comes
+    # from a branch in this repository, not from a fork.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     name: smoke tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
     strategy:
@@ -62,6 +72,11 @@ jobs:
         run: bash bin/run-tests.sh
 
   concurrency:
+    # Push and dispatch always run. A pull request runs only when it comes
+    # from a branch in this repository, not from a fork.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     name: real-DB concurrency (${{ matrix.db.name }})
     runs-on: ubuntu-latest
     # RESULTS ARE NOT WRITTEN INTO THE CHECKOUT. They were, and the reproduction

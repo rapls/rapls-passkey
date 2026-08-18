@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       Rapls Passkey
+ * Plugin Name:       Rapls Passkey – Passwordless Login with WebAuthn
  * Plugin URI:        https://raplsworks.com/plugins/rapls-passkey/
- * Description:       Passwordless authentication for WordPress using passkeys (WebAuthn / FIDO2).
- * Version:           0.13.70
+ * Description:       Touch ID, Windows Hello and security keys sign users in. No extra PHP extension, no external service, and password sign-in keeps working.
+ * Version:           0.13.71
  * Requires at least: 6.0
  * Requires PHP:      8.2
  * Author:            Rapls
@@ -63,7 +63,7 @@ if ( PHP_VERSION_ID < 80200 ) {
 	return;
 }
 
-define( 'RAPLS_PASSKEY_VERSION', '0.13.70' );
+define( 'RAPLS_PASSKEY_VERSION', '0.13.71' );
 define( 'RAPLS_PASSKEY_FILE', __FILE__ );
 define( 'RAPLS_PASSKEY_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAPLS_PASSKEY_URL', plugin_dir_url( __FILE__ ) );

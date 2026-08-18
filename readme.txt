@@ -1,26 +1,40 @@
-=== Rapls Passkey ===
+=== Rapls Passkey – Passwordless Login with WebAuthn ===
 Contributors: rapls
-Tags: passkey, webauthn, fido2, login, passwordless
+Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.70
+Stable tag: 0.13.71
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Passwordless authentication for WordPress using passkeys (WebAuthn / FIDO2).
+Touch ID, Windows Hello and security keys sign users in. No extra PHP extension, no external service, and password sign-in keeps working.
 
 == Description ==
 
-Rapls Passkey lets users sign in to WordPress with passkeys (WebAuthn / FIDO2).
+Rapls Passkey adds passkey sign-in to WordPress. Touch ID, Windows Hello, Face
+ID or a security key takes the place of the password, and your server never
+holds a shared secret — only a public key, which is useless to anyone who
+steals it.
 
-* Passwordless, phishing-resistant sign-in
-* Same-device passkeys (Touch ID / Windows Hello)
+It is built to run where most WordPress sites actually run:
+
+* **No PHP extension to install.** Nothing beyond what WordPress itself already needs. In particular `gmp` is not required, so there is nothing to ask your shared host for and nothing that stops working when the server's PHP is upgraded.
+* **Nothing leaves your site.** The passkey ceremony happens between the browser and your own server. No account, no API key, no third-party service in the login path.
+* **Passwords keep working.** Password login is never switched off in the free plugin. Nobody gets locked out while a site moves across.
+* **Japanese UI included.** Fully translated, alongside the English source.
+
+= What the free plugin does =
+
+* Passwordless, phishing-resistant sign-in (WebAuthn / FIDO2)
+* Same-device passkeys (Touch ID / Windows Hello / Face ID)
 * Cross-device sign-in using the browser's native passkey flow when the browser offers it (scan with your phone). A custom QR approval flow is available in Pro.
 * Shortcodes and Gutenberg blocks (login / passkey management) you can embed on any page
 * Rename, suspend and resume individual passkeys — a device that is temporarily out of reach can be cut off without destroying the credential
 * A site-wide passkey list for administrators (Users -> Passkeys), searchable by owner or name
 * Works with two-factor plugins (Wordfence Login Security, Two-Factor, ...): a passkey counts as the second factor, while weaker alternative logins must still pass the site's 2FA
+* An audit log of registrations, sign-ins and removals, exportable as CSV
+* WP-CLI commands, a first-run configuration check, and an emergency bypass constant
 * Fully translatable UI (English source; translations come from translate.wordpress.org)
 
 = Shortcodes =
@@ -32,9 +46,11 @@ Embed them in any page, post, or widget. In the block editor they are also avail
 
 = Requirements =
 
-* PHP 8.2 or later
 * WordPress 6.0 or later
-* HTTPS (except on localhost)
+* PHP 8.2 or later
+* HTTPS, except on localhost — browsers refuse WebAuthn without it
+
+No PHP extension beyond WordPress's own requirements.
 
 = Rapls Passkey Pro =
 
@@ -58,7 +74,29 @@ One-time purchase, no subscription, with a year of updates and a 14-day refund.
 2. Activate "Rapls Passkey" from the Plugins screen.
 3. Register a passkey from your profile screen.
 
+Nothing else is required: no account, no API key, no configuration before the
+first passkey. The settings screen shows a first-run check (HTTPS, the
+relying-party ID, the WebAuthn library) so you can see the site is ready.
+
 == Frequently Asked Questions ==
+
+= Does this need any PHP extensions? =
+
+No. It runs on what WordPress itself already requires. Some WebAuthn plugins
+need `gmp` compiled into PHP, which is not present on every shared host and can
+disappear when the host upgrades PHP; this plugin does not use it.
+
+= Does it work on shared hosting? =
+
+Yes. There is no extension to install, no persistent process, and nothing
+written outside the plugin's own table and options. 
+
+= Which browsers and devices work? =
+
+Any current browser with a built-in authenticator — Touch ID, Windows Hello,
+Face ID — or a FIDO2 security key. If the machine in front of you has no
+passkey for the site, the browser's own cross-device flow lets you scan with
+your phone instead.
 
 = Is the free version limited? =
 
@@ -68,6 +106,20 @@ plugin, without a cap, a trial period or a licence key. Rapls Passkey Pro is a
 separate add-on that adds different features — cross-device QR login, recovery
 codes, enforcement by role — and installing it is not required for anything
 described above to work.
+
+= Does it work with my security plugin? =
+
+It is built to sit alongside them rather than replace them. Plugins that change
+the login URL or add an image CAPTCHA keep doing so; the passkey button appears
+on whatever login screen your site actually serves. With Wordfence Login
+Security or Two-Factor, a passkey satisfies the second factor, and a weaker
+alternative login still has to pass the site's own 2FA.
+
+= Is the plugin available in Japanese? =
+
+Yes. The Japanese translation is complete, and WordPress.org serves it as a
+language pack — no bundled catalogue, so it updates independently of the
+plugin.
 
 = What if I lose my passkey and cannot sign in? =
 
@@ -133,6 +185,9 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.71 =
+* Display name updated: the plugin is listed as "Rapls Passkey – Passwordless Login with WebAuthn" so that the directory search finds it by what it does, not only by its brand name. The short description on the Plugins screen now names Touch ID, Windows Hello and security keys instead of repeating the title. No functional change.
+
 = 0.13.70 =
 * **Fixed: on PHP older than 8.2 the whole site went down, front end included.** The bundled dependencies require 8.2, and Composer's platform check throws the moment the autoloader is read — inside WordPress's plugin loading, where nothing catches it. The plugin now checks the version first and steps aside with an admin notice, leaving the rest of the site alone. The `Requires PHP` header does not cover this on its own: WordPress reads it when activating and when offering an update, so a server whose PHP is lowered afterwards, or a WP-CLI running an older PHP than the web server, went straight past it.
 
@@ -167,55 +222,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * Fixes the findings these two hid: an unescaped exception message, a missing translators comment, a database call whose exemption named the wrong rule, and the CSV export's file handle. Behaviour is unchanged; the audit-log CSV, the two-factor integrations and the passkey cap all work exactly as before.
 * Also: `Plugin URI` pointed at this plugin's WordPress.org page, which the plugin header documentation does not allow, and `Author URI` was missing. The readme's external-service disclosure (optional reCAPTCHA) is now its own section, and releases older than 0.13.46 have moved to changelog.txt.
 
-= 0.13.62 =
-* No change to the plugin. Release-tooling only: the rebuild check reported "identical" beside two different archive checksums, when what matches is every file inside them.
-
-= 0.13.61 =
-* No change to the plugin. Release-tooling only: the rebuild check exempted two whole files from comparison instead of two fields inside them.
-
-= 0.13.60 =
-* No change to the plugin. Release-tooling only: the rebuild check now runs in CI on every release and compares the two packages as file trees.
-
-= 0.13.59 =
-* No change to the plugin. Release-tooling only: the claim made by the verification bundle is now narrower, accurate, and checked by a script.
-
-= 0.13.58 =
-* No change to the plugin. Release-tooling only: the source shipped for review can now rebuild itself.
-
-= 0.13.56 =
-* No change to the plugin. Release-tooling only: the bundle no longer writes a record into the directory that record describes.
-
-= 0.13.55 =
-* No change to the plugin. Release-tooling only: the bundled dependency tree is verified on every build, not only when a record was already present.
-
-= 0.13.54 =
-* No change to the plugin. Release-tooling only: the bundled dependency tree is verified file by file against a recorded manifest before packaging.
-
-= 0.13.53 =
-* **Audit CSV export: a formula hidden behind leading whitespace is now neutralised too.** The check looked at the first byte, so a username beginning with a space, a tab, a non-breaking space or a byte-order mark before `=`, `+`, `-` or `@` was written to the file unguarded — and a spreadsheet skips that whitespace before deciding whether a cell is a formula.
-* The readme now links Google's terms and privacy policy for the optional reCAPTCHA integration, and names the endpoints it contacts.
-
-= 0.13.52 =
-* No change to the plugin. Release-tooling only: CI now requires every job in a run to have succeeded before a release is assembled.
-
-= 0.13.50 =
-* No change to the plugin. Release-tooling only: CI attests to the outcome of every job and the release tooling verifies it.
-
-= 0.13.49 =
-* No change to the plugin. Release-tooling and documentation corrections only.
-
-= 0.13.48 =
-* No change to the plugin. Release-tooling only: the end-to-end test procedure and the recorded CI provenance were corrected.
-
-= 0.13.47 =
-* No change to the plugin. Release-tooling only: the bundled test procedure and the real-database test harness were corrected.
-
-= 0.13.46 =
-* **Packaging fix: the previous package contained development files that should never have shipped** — the test suite, build scripts, CI configuration and Composer manifests. They were harmless to run but had no business being in a plugin ZIP. This release contains runtime files only, and the build now checks the finished package for them.
-
-For the change history of 0.13.45 and earlier releases, see changelog.txt.
+For the change history of 0.13.62 and earlier releases, see changelog.txt.
 
 == Upgrade Notice ==
+
+= 0.13.70 =
+On PHP older than 8.2 the previous release took the whole site down, front end included. The plugin now steps aside with an admin notice instead.
 
 = 0.13.66 =
 Administrator enrolment is on by default instead of being unlocked by the Pro add-on. Translations now come from translate.wordpress.org rather than a bundled catalogue.
@@ -225,9 +237,6 @@ Every file in the previous package failed the WordPress Plugin Check direct-acce
 
 = 0.13.53 =
 Fixes CSV injection in the audit-log export: a formula preceded by whitespace was not neutralised. Update if you export audit logs.
-
-= 0.13.46 =
-The previous package shipped development files (tests, build scripts, CI configuration). This release contains runtime files only.
 
 = 0.13.28 =
 Security (multisite): a user marked as spam on the network could still sign in with a passkey, a QR approval, a magic link or a recovery code. Update immediately on multisite.

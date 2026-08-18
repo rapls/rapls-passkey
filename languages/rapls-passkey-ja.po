@@ -136,7 +136,7 @@ msgstr "再開"
 
 #: src/Admin/CredentialsPage.php:208
 msgid "Delete this passkey? This cannot be undone."
-msgstr "このパスキーを削除しますか?この操作は元に戻せません。"
+msgstr "このパスキーを削除しますか ? この操作は元に戻せません。"
 
 #: src/Admin/CredentialsPage.php:209 src/Admin/ProfileUi.php:146
 #: src/Frontend/Shortcodes.php:205
@@ -279,7 +279,7 @@ msgstr "この認証器にはすでにパスキーが登録されています。
 
 #: src/Admin/ProfileUi.php:79 src/Frontend/Shortcodes.php:103
 msgid "Delete this passkey?"
-msgstr "このパスキーを削除しますか?"
+msgstr "このパスキーを削除しますか ?"
 
 #: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:104
 msgid "Name for this passkey (optional):"
@@ -298,8 +298,8 @@ msgid ""
 "Suspend this passkey? It will stop working until you resume it, but it is "
 "not deleted."
 msgstr ""
-"このパスキーを一時停止しますか?再開するまで使えなくなりますが、削除はされませ"
-"ん。"
+"このパスキーを一時停止しますか ? 再開するまで使えなくなりますが、削除はされま"
+"せん。"
 
 #: src/Admin/ReviewPrompt.php:151 src/Admin/SettingsPage.php:103
 #: src/Admin/SettingsPage.php:104 src/Admin/SiteHealth.php:51
@@ -683,7 +683,7 @@ msgstr ""
 msgid ""
 "Reset all Rapls Passkey settings to their defaults? This cannot be undone."
 msgstr ""
-"Rapls Passkey のすべての設定を初期値に戻しますか?この操作は元に戻せません。"
+"Rapls Passkey のすべての設定を初期値に戻しますか ? この操作は元に戻せません。"
 
 #: src/Admin/SettingsPage.php:434
 msgid "Reset to defaults"
@@ -1477,7 +1477,7 @@ msgstr ""
 
 #: src/Support/Help.php:51
 msgid "What is a passkey?"
-msgstr "パスキーとは?"
+msgstr "パスキーとは ?"
 
 #: src/Support/Help.php:58
 msgid "Learn more"

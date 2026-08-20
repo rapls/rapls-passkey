@@ -2,7 +2,7 @@
 Contributors: rapls
 Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.2
 Stable tag: 0.13.74
 License: GPL-2.0-or-later

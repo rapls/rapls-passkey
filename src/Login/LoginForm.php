@@ -58,6 +58,9 @@ final class LoginForm {
 					'failed'         => __( 'Passkey authentication failed.', 'rapls-passkey' ),
 					'unsupported'    => __( 'This browser does not support passkeys.', 'rapls-passkey' ),
 					'cancelled'      => __( 'Authentication was cancelled or timed out. Please try again.', 'rapls-passkey' ),
+					'busy'           => __( 'Another sign-in attempt is still running. Wait a moment and try again.', 'rapls-passkey' ),
+					'network'        => __( 'Could not reach the site. Check your connection and try again.', 'rapls-passkey' ),
+					'insecure'       => __( 'Passkeys need a secure (HTTPS) connection on this site\'s own address.', 'rapls-passkey' ),
 					'needUsername'   => __( 'Please enter your username or email address.', 'rapls-passkey' ),
 				),
 			)

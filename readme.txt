@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.71
+Stable tag: 0.13.72
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.72 =
+* Signing in with a passkey no longer fails at random. The browser allows one credential request at a time, and the page keeps a background one open so passkeys appear in the username field. Pressing the button while that one was still being cancelled was answered with "a request is already pending", which is why the same passkey worked one moment and failed the next; the button now waits for the background request to actually be released, and cannot be pressed twice into the same prompt.
+* A passkey chosen from the username field's autofill list no longer fails silently. Once the authenticator has answered, the sign-in is finished and reported instead of being cancelled halfway or abandoned without a word — the case where touching the sensor appeared to do nothing at all.
+* A login page left open for a long time still works. The sign-in attempt the page holds open is refreshed before the server stops recognising it, rather than failing the next time a passkey is picked.
+* Failures now say what went wrong: a connection problem, a cancelled prompt, or a site that is not on HTTPS each get their own message instead of a single "authentication failed", and internal browser text is no longer shown.
 
 = 0.13.71 =
 * Display name updated: the plugin is listed as "Rapls Passkey – Passwordless Login with WebAuthn" so that the directory search finds it by what it does, not only by its brand name. The short description on the Plugins screen now names Touch ID, Windows Hello and security keys instead of repeating the title. No functional change.

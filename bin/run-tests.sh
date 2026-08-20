@@ -59,6 +59,48 @@ for t in "$ROOT"/tests/smoke-*.php; do
 done
 echo "  -> ${ok}/${files} smoke files passed"
 
+# The browser-side ceremony code carries its own smoke tests (node, same PASS /
+# FAIL shape). They are part of the gate, not an optional extra: the login client
+# is where a passkey sign-in actually fails, and a green PHP suite says nothing
+# about it. A missing node is reported rather than skipped — a check that quietly
+# does not run is indistinguishable from one that passed.
+js_files=0; js_ok=0
+if compgen -G "$ROOT/tests/smoke-*.js" >/dev/null; then
+	echo "== ${SLUG}: browser smoke tests =="
+	if ! command -v node >/dev/null 2>&1; then
+		echo "  FAIL  node not found — the browser-side tests could not run"
+		bad=$((bad+1))
+	else
+		for t in "$ROOT"/tests/smoke-*.js; do
+			js_files=$((js_files+1))
+			out="$(node "$t" 2>&1)"
+			code=$?
+			name="$(basename "$t")"
+			summary="$(printf '%s' "$out" | grep -oE '[0-9]+ passed, [0-9]+ failed' | tail -1)"
+			reason=""
+			if [ "$code" -ne 0 ]; then
+				reason="exit code ${code}"
+			elif printf '%s' "$out" | grep -qE '^  FAIL '; then
+				reason="reported a failure"
+			elif [ -z "$summary" ]; then
+				reason="no assertion summary (the file asserted nothing, or stopped early)"
+			elif ! printf '%s' "$summary" | grep -qE ', 0 failed$'; then
+				reason="$summary"
+			fi
+
+			if [ -n "$reason" ]; then
+				bad=$((bad+1))
+				echo "  FAIL  ${name}  (${reason})"
+				printf '%s\n' "$out" | grep -E '^  FAIL ' | sed 's/^/          /' | head -5
+			else
+				js_ok=$((js_ok+1))
+				echo "  PASS  ${name}  (${summary})"
+			fi
+		done
+		echo "  -> ${js_ok}/${js_files} browser smoke files passed"
+	fi
+fi
+
 # A suite that found no files has not passed — it has not run. This is the state
 # a bad path, a failed checkout or a renamed directory produces, and it must not
 # look like success.

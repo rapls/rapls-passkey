@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later license.
 msgid ""
 msgstr ""
-"Project-Id-Version: Rapls Passkey – Passwordless Login with WebAuthn 0.13.71\n"
+"Project-Id-Version: Rapls Passkey – Passwordless Login with WebAuthn 0.13.72\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-08-18 10:13+0000\n"
+"POT-Creation-Date: 2026-08-20 03:53+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -58,27 +58,27 @@ msgid "User"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:172 src/Admin/ProfileUi.php:117
-#: src/Frontend/Shortcodes.php:183 src/Privacy/PersonalData.php:102
+#: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:102
 msgid "Name"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:173 src/Admin/ProfileUi.php:118
-#: src/Frontend/Shortcodes.php:184
+#: src/Frontend/Shortcodes.php:187
 msgid "Authenticator"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:174 src/Admin/ProfileUi.php:119
-#: src/Frontend/Shortcodes.php:185 src/Privacy/PersonalData.php:106
+#: src/Frontend/Shortcodes.php:188 src/Privacy/PersonalData.php:106
 msgid "Registered"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:175 src/Admin/ProfileUi.php:120
-#: src/Frontend/Shortcodes.php:186 src/Privacy/PersonalData.php:110
+#: src/Frontend/Shortcodes.php:189 src/Privacy/PersonalData.php:110
 msgid "Last used"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:176 src/Admin/ProfileUi.php:121
-#: src/Frontend/Shortcodes.php:187
+#: src/Frontend/Shortcodes.php:190
 msgid "Status"
 msgstr ""
 
@@ -91,13 +91,13 @@ msgid "(deleted user)"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:197 src/Admin/ProfileUi.php:83
-#: src/Admin/ProfileUi.php:131 src/Frontend/Shortcodes.php:105
-#: src/Frontend/Shortcodes.php:197
+#: src/Admin/ProfileUi.php:131 src/Frontend/Shortcodes.php:108
+#: src/Frontend/Shortcodes.php:200
 msgid "(no name)"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:198 src/Admin/ProfileUi.php:132
-#: src/Frontend/Shortcodes.php:198
+#: src/Frontend/Shortcodes.php:201
 msgid "Unknown"
 msgstr ""
 
@@ -106,26 +106,26 @@ msgid "Never"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:201 src/Admin/ProfileUi.php:84
-#: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:108
-#: src/Frontend/Shortcodes.php:201
+#: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:111
+#: src/Frontend/Shortcodes.php:204
 msgid "Active"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:201 src/Admin/ProfileUi.php:85
-#: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:109
-#: src/Frontend/Shortcodes.php:201
+#: src/Admin/ProfileUi.php:136 src/Frontend/Shortcodes.php:112
+#: src/Frontend/Shortcodes.php:204
 msgid "Suspended"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:205 src/Admin/ProfileUi.php:86
-#: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:110
-#: src/Frontend/Shortcodes.php:204
+#: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:113
+#: src/Frontend/Shortcodes.php:207
 msgid "Suspend"
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:205 src/Admin/ProfileUi.php:87
-#: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:111
-#: src/Frontend/Shortcodes.php:204
+#: src/Admin/ProfileUi.php:144 src/Frontend/Shortcodes.php:114
+#: src/Frontend/Shortcodes.php:207
 msgid "Resume"
 msgstr ""
 
@@ -134,7 +134,7 @@ msgid "Delete this passkey? This cannot be undone."
 msgstr ""
 
 #: src/Admin/CredentialsPage.php:209 src/Admin/ProfileUi.php:146
-#: src/Frontend/Shortcodes.php:205
+#: src/Frontend/Shortcodes.php:208
 msgid "Delete"
 msgstr ""
 
@@ -209,15 +209,15 @@ msgstr ""
 msgid "Your registered passkeys"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:127 src/Frontend/Shortcodes.php:193
+#: src/Admin/ProfileUi.php:127 src/Frontend/Shortcodes.php:196
 msgid "No passkeys are registered."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:140 src/Frontend/Shortcodes.php:203
+#: src/Admin/ProfileUi.php:140 src/Frontend/Shortcodes.php:206
 msgid "Rename"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:157 src/Frontend/Shortcodes.php:213
+#: src/Admin/ProfileUi.php:157 src/Frontend/Shortcodes.php:216
 msgid "Register a passkey"
 msgstr ""
 
@@ -259,28 +259,28 @@ msgstr ""
 msgid "Registration was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:78 src/Frontend/Shortcodes.php:102
+#: src/Admin/ProfileUi.php:78 src/Frontend/Shortcodes.php:105
 #: src/Login/UpgradePrompt.php:131
 msgid "This authenticator already has a passkey registered."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:79 src/Frontend/Shortcodes.php:103
+#: src/Admin/ProfileUi.php:79 src/Frontend/Shortcodes.php:106
 msgid "Delete this passkey?"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:104
+#: src/Admin/ProfileUi.php:80 src/Frontend/Shortcodes.php:107
 msgid "Name for this passkey (optional):"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:81 src/Frontend/Shortcodes.php:106
+#: src/Admin/ProfileUi.php:81 src/Frontend/Shortcodes.php:109
 msgid "New name for this passkey:"
 msgstr ""
 
-#: src/Admin/ProfileUi.php:82 src/Frontend/Shortcodes.php:107
+#: src/Admin/ProfileUi.php:82 src/Frontend/Shortcodes.php:110
 msgid "Could not rename the passkey."
 msgstr ""
 
-#: src/Admin/ProfileUi.php:88 src/Frontend/Shortcodes.php:112
+#: src/Admin/ProfileUi.php:88 src/Frontend/Shortcodes.php:115
 msgid "Suspend this passkey? It will stop working until you resume it, but it is not deleted."
 msgstr ""
 
@@ -934,20 +934,32 @@ msgstr ""
 msgid "The operation was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:128 src/Integrations/LoginForms.php:111
-#: src/Integrations/WooCommerce.php:63 src/Login/LoginForm.php:74
+#: src/Frontend/Shortcodes.php:102 src/Login/LoginForm.php:61
+msgid "Another sign-in attempt is still running. Wait a moment and try again."
+msgstr ""
+
+#: src/Frontend/Shortcodes.php:103 src/Login/LoginForm.php:62
+msgid "Could not reach the site. Check your connection and try again."
+msgstr ""
+
+#: src/Frontend/Shortcodes.php:104 src/Login/LoginForm.php:63
+msgid "Passkeys need a secure (HTTPS) connection on this site's own address."
+msgstr ""
+
+#: src/Frontend/Shortcodes.php:131 src/Integrations/LoginForms.php:111
+#: src/Integrations/WooCommerce.php:63 src/Login/LoginForm.php:77
 msgid "Sign in with a passkey"
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:135
+#: src/Frontend/Shortcodes.php:138
 msgid "You are already signed in."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:146
+#: src/Frontend/Shortcodes.php:149
 msgid "Username or email address"
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:169
+#: src/Frontend/Shortcodes.php:172
 msgid "Please sign in to manage your passkeys."
 msgstr ""
 
@@ -976,7 +988,7 @@ msgstr ""
 msgid "Authentication was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Login/LoginForm.php:61
+#: src/Login/LoginForm.php:64
 msgid "Please enter your username or email address."
 msgstr ""
 

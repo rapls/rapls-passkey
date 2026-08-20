@@ -1539,3 +1539,15 @@ msgstr "詳しく"
 
 #~ msgid "You have reached the passkey limit. Please try again."
 #~ msgstr "パスキーの登録上限に達しました。もう一度お試しください。"
+
+#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
+msgid "Another sign-in attempt is still running. Wait a moment and try again."
+msgstr "別のログイン処理がまだ実行中です。少し待ってからもう一度お試しください。"
+
+#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
+msgid "Could not reach the site. Check your connection and try again."
+msgstr "サイトに接続できませんでした。通信状況を確認してもう一度お試しください。"
+
+#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
+msgid "Passkeys need a secure (HTTPS) connection on this site's own address."
+msgstr "パスキーを使うには、このサイト自身のアドレスへの安全な接続 (HTTPS) が必要です。"

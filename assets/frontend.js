@@ -25,21 +25,92 @@
 		}
 	}
 
-	function loginFriendly( e ) {
-		if ( e && e.name === 'NotAllowedError' ) {
+	/**
+	 * The WebAuthn slot is per PAGE, not per shortcode: the browser allows exactly
+	 * one outstanding credentials.get(), so two login shortcodes on one page share
+	 * this state and take turns. `current` is the ceremony holding the slot.
+	 */
+	let current = null;
+	let busy = false;
+	let leaving = false;
+	let rearmTimer = null;
+
+	/**
+	 * The server forgets a ceremony a few minutes after issuing it, so a page left
+	 * open would answer the autofill request with a challenge that no longer
+	 * exists — the user touches the sensor and nothing happens. Replace the
+	 * background request well inside that window.
+	 */
+	const REARM_MS = 4 * 60 * 1000;
+	const REARM_RETRY_MS = 30 * 1000;
+	/**
+	 * How long to let the browser finish releasing a cancelled request. abort()
+	 * only asks: the slot is freed promptly, but the promise from a cancelled
+	 * CONDITIONAL request is not guaranteed ever to settle (the call may be handled
+	 * by a password-manager extension rather than the browser), so waiting for it
+	 * can wait for ever. Every wait here is bounded by this instead.
+	 */
+	const RELEASE_GRACE_MS = 300;
+
+	function delay( ms ) {
+		return new Promise( function ( resolve ) {
+			setTimeout( resolve, ms );
+		} );
+	}
+
+	function ignore() {}
+
+	/** An error carrying a message the SERVER wrote (already translated). */
+	function serverError( message, code ) {
+		const e = new Error( message );
+		e.raplsServer = true;
+		e.raplsCode = code || '';
+		return e;
+	}
+
+	/**
+	 * Map a rejection onto a sentence the user can act on. Browser exceptions carry
+	 * internal English text, so they are matched by name and never shown raw; only
+	 * a server message (which is translated) is passed through.
+	 *
+	 * @param {*}      e        The rejection value.
+	 * @param {string} fallback Message when nothing more specific is known.
+	 * @return {string} Message to display.
+	 */
+	function describe( e, fallback ) {
+		if ( e && e.raplsServer && e.message ) {
+			return e.message;
+		}
+		const name = e && e.name;
+		if ( 'NotAllowedError' === name || 'AbortError' === name || 'TimeoutError' === name ) {
 			return cfg.i18n.cancelled;
 		}
-		return ( e && e.message ) || cfg.i18n.loginFailed;
+		if ( 'OperationError' === name || 'NotReadableError' === name ) {
+			return cfg.i18n.busy;
+		}
+		if ( 'SecurityError' === name ) {
+			return cfg.i18n.insecure;
+		}
+		if ( 'NotSupportedError' === name ) {
+			return cfg.i18n.unsupported;
+		}
+		if ( window.console && window.console.warn ) {
+			window.console.warn( '[rapls-passkey] passkey operation failed:', e );
+		}
+		return fallback;
+	}
+
+	function loginFriendly( e ) {
+		return describe( e, cfg.i18n.loginFailed );
 	}
 
 	function registerFriendly( e ) {
-		if ( e && e.name === 'NotAllowedError' ) {
-			return cfg.i18n.cancelled;
-		}
-		if ( e && e.name === 'InvalidStateError' ) {
+		// A duplicate enrolment is the one InvalidStateError worth naming: the
+		// authenticator is refusing because it already holds a passkey for this site.
+		if ( e && 'InvalidStateError' === e.name ) {
 			return cfg.i18n.duplicate;
 		}
-		return ( e && e.message ) || cfg.i18n.registerFailed;
+		return describe( e, cfg.i18n.registerFailed );
 	}
 
 	async function postJson( path, body, opts ) {
@@ -47,31 +118,52 @@
 		if ( opts && opts.nonce ) {
 			headers['X-WP-Nonce'] = opts.nonce;
 		}
-		const res = await fetch( cfg.restUrl + path, {
-			method: ( opts && opts.method ) || 'POST',
-			credentials: 'same-origin',
-			headers: headers,
-			body: body ? JSON.stringify( body ) : undefined,
-			signal: opts && opts.signal,
-		} );
-		const data = await res.json().catch( function () {
-			return {};
-		} );
+
+		let res;
+		try {
+			res = await fetch( cfg.restUrl + path, {
+				method: ( opts && opts.method ) || 'POST',
+				credentials: 'same-origin',
+				headers: headers,
+				body: body ? JSON.stringify( body ) : undefined,
+				signal: ( opts && opts.signal ) || undefined,
+			} );
+		} catch ( e ) {
+			if ( e && 'AbortError' === e.name ) {
+				throw e;
+			}
+			throw serverError( cfg.i18n.network, 'network' );
+		}
+
+		let data = {};
+		try {
+			data = await res.json();
+		} catch ( e ) {
+			data = {};
+		}
+
 		if ( ! res.ok ) {
 			// A passkey login that skipped user verification must still clear the
 			// site's 2FA: the server returns the challenge URL — navigate there.
-			if ( data && data.code === 'rapls_passkey_2fa_required' && data.data && data.data.redirect ) {
+			if ( data && 'rapls_passkey_2fa_required' === data.code && data.data && data.data.redirect ) {
+				leaving = true;
 				window.location.href = data.data.redirect;
 				return new Promise( function () {} );
 			}
-			throw new Error( ( data && data.message ) || '' );
+			// A REST error always carries a translated message. A response that is not
+			// one (a gateway error page, an empty body) carries nothing worth showing,
+			// so it is reported as the transport problem it is.
+			throw serverError(
+				( data && data.message ) || cfg.i18n.network,
+				( data && data.code ) || 'http_' + res.status
+			);
 		}
 		return data;
 	}
 
 	// --- Login --------------------------------------------------------------
 
-	async function runLogin( root, mediation, signal ) {
+	async function runLogin( root, mediation, signal, run ) {
 		const field = root.querySelector( '.rapls-pk-fe-username' );
 		const username = field ? field.value.trim() : '';
 
@@ -84,61 +176,170 @@
 			getOptions.signal = signal;
 		}
 
-		const assertion = await navigator.credentials.get( getOptions );
+		const assertion = await getAssertion( getOptions );
+		run.answered = true;
+
+		// No abort signal from here on: the authenticator has already signed, and
+		// cancelling the verification would discard a sign-in the server is about to
+		// complete, leaving the page looking inert.
 		const result = await postJson( 'login/verify', {
 			state: options.state,
 			credential: wa.assertionToJson( assertion ),
 			redirect_to: root.getAttribute( 'data-redirect' ) || '',
-		}, { signal: signal } );
+		}, {} );
 
+		leaving = true;
 		window.location.href = result.redirect || window.location.href;
 	}
 
-	function abortConditional( root ) {
-		if ( root._raplsAbort ) {
+	/**
+	 * Hand the WebAuthn slot back, then give the browser a moment to finish the
+	 * release. A get() issued too soon is refused with "A request is already
+	 * pending", so the wait is real — but capped, because a cancelled conditional
+	 * request is not guaranteed ever to settle.
+	 */
+	async function releaseSlot() {
+		if ( rearmTimer ) {
+			clearTimeout( rearmTimer );
+			rearmTimer = null;
+		}
+		const held = current;
+		if ( ! held ) {
+			return;
+		}
+		current = null;
+		if ( held.abort ) {
 			try {
-				root._raplsAbort.abort();
+				held.abort.abort();
 			} catch ( e ) {}
-			root._raplsAbort = null;
+		}
+		await Promise.race( [ held.promise.then( ignore, ignore ), delay( RELEASE_GRACE_MS ) ] );
+	}
+
+	/**
+	 * Ask the authenticator, forgiving one "already pending": the browser had not
+	 * quite let go of the previous request, which is a reason to wait and ask
+	 * again rather than to tell the user their passkey failed. The options are
+	 * unchanged and their challenge unused, so the retry is the same ceremony.
+	 *
+	 * @param {Object} getOptions Argument for navigator.credentials.get().
+	 * @return {Promise<Object>} The assertion.
+	 */
+	async function getAssertion( getOptions ) {
+		try {
+			return await navigator.credentials.get( getOptions );
+		} catch ( e ) {
+			if ( ! e || 'OperationError' !== e.name ) {
+				throw e;
+			}
+			await delay( RELEASE_GRACE_MS );
+			return navigator.credentials.get( getOptions );
 		}
 	}
 
 	async function explicitLogin( root ) {
+		if ( busy ) {
+			return;
+		}
 		if ( ! wa || ! wa.isSupported() ) {
 			status( root, cfg.i18n.unsupported );
 			return;
 		}
-		abortConditional( root );
+
+		busy = true;
+		const btn = root.querySelector( '.rapls-pk-fe-btn' );
+		if ( btn ) {
+			btn.disabled = true;
+		}
 		status( root, cfg.i18n.authenticating );
+
+		let mine = null;
 		try {
-			await runLogin( root, '', null );
+			await releaseSlot();
+			const ctrl = new AbortController();
+			mine = { promise: runLogin( root, '', ctrl.signal, { answered: false } ), abort: ctrl };
+			current = mine;
+			await mine.promise;
 		} catch ( e ) {
 			status( root, loginFriendly( e ) );
+		} finally {
+			if ( current === mine ) {
+				current = null;
+			}
+			busy = false;
+			if ( btn ) {
+				btn.disabled = false;
+			}
+			// Put autofill back; it was given up to make room for this attempt.
+			armConditional( root );
 		}
 	}
 
-	async function startConditional( root ) {
+	function scheduleRearm( root, ms ) {
+		if ( rearmTimer ) {
+			clearTimeout( rearmTimer );
+		}
+		rearmTimer = setTimeout( function () {
+			rearmTick( root );
+		}, ms );
+	}
+
+	async function rearmTick( root ) {
+		rearmTimer = null;
+		if ( leaving ) {
+			return;
+		}
+		if ( busy ) {
+			scheduleRearm( root, REARM_RETRY_MS );
+			return;
+		}
+		const field = root.querySelector( '.rapls-pk-fe-username' );
+		if ( field && document.activeElement === field ) {
+			// The passkey list may be open in this field; replacing the request now
+			// would close it under the user's hands.
+			scheduleRearm( root, REARM_RETRY_MS );
+			return;
+		}
+		await releaseSlot();
+		armConditional( root );
+	}
+
+	function armConditional( root ) {
+		if ( leaving || busy || current ) {
+			return;
+		}
 		if ( ! wa || ! wa.isSupported() || ! root.querySelector( '.rapls-pk-fe-username' ) ) {
 			return;
 		}
 		if ( ! window.PublicKeyCredential || ! window.PublicKeyCredential.isConditionalMediationAvailable ) {
 			return;
 		}
-		let available = false;
-		try {
-			available = await window.PublicKeyCredential.isConditionalMediationAvailable();
-		} catch ( e ) {
-			return;
-		}
-		if ( ! available ) {
-			return;
-		}
-		root._raplsAbort = new AbortController();
-		try {
-			await runLogin( root, 'conditional', root._raplsAbort.signal );
-		} catch ( e ) {
-			// Background flow: stay silent on abort / no-selection.
-		}
+
+		window.PublicKeyCredential.isConditionalMediationAvailable().then( function ( available ) {
+			if ( ! available || leaving || busy || current ) {
+				return;
+			}
+
+			const ctrl = new AbortController();
+			const run = { answered: false };
+			const mine = { promise: runLogin( root, 'conditional', ctrl.signal, run ), abort: ctrl };
+			current = mine;
+			scheduleRearm( root, REARM_MS );
+
+			mine.promise.catch( function ( e ) {
+				// Silence is right only while nothing has happened: an unused or
+				// cancelled background request is how conditional UI normally ends. Once
+				// the authenticator has answered, a failure has to be visible, or the
+				// page appears to have ignored the user entirely.
+				if ( run.answered && ! leaving && e && 'AbortError' !== e.name ) {
+					status( root, loginFriendly( e ) );
+				}
+			} ).then( function () {
+				if ( current === mine ) {
+					current = null;
+				}
+			} );
+		} ).catch( function () {} );
 	}
 
 	// --- Registration -------------------------------------------------------

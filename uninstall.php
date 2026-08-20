@@ -51,11 +51,15 @@ function rapls_passkey_uninstall_site(): void {
 	// rapls_passkey_rl_ below is the counter this plugin used before them and may
 	// still be present on a site that upgraded. Both go.
 	$attempt_rows = $wpdb->esc_like( 'rapls_passkey_ra_' ) . '%';
+	// Ceremony state (Support\OneTimeStore): WebAuthn challenges and parked
+	// second-factor logins. Plain option rows on purpose — a transient would go to
+	// the object cache, which is not guaranteed to be shared between PHP workers.
+	$ceremony    = $wpdb->esc_like( 'rapls_pk_ot_' ) . '%';
 	$reg_lock    = $wpdb->esc_like( 'rapls_pk_reg_lock_' ) . '%';
 	$rate_rows   = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';
 	$slot_rows   = $wpdb->esc_like( 'rapls_passkey_rs_' ) . '%';
 	// phpcs:ignore WordPress.DB
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s", $handle_lock, $handle_claim, $migrate_rows, $reg_lock, $rate_rows, $slot_rows, $attempt_rows ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s OR option_name LIKE %s", $handle_lock, $handle_claim, $migrate_rows, $reg_lock, $rate_rows, $slot_rows, $attempt_rows, $ceremony ) );
 }
 
 // Remove per-user meta this plugin stored, for every user (global, not per-site).

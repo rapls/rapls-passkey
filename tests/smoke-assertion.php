@@ -14,15 +14,25 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-$GLOBALS['__t'] = array();
 $GLOBALS['__store_fails'] = false;
-function set_transient( $k, $v, $ttl ) {
-	if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }   // a store that refuses
-	$GLOBALS['__t'][ $k ] = $v;
-	return true;
+
+// The ceremony is kept in wp_options through Support\OneTimeStore, not in a
+// transient: a transient goes to the object cache when one is installed, and an
+// object cache is not guaranteed to be shared between PHP workers — the
+// challenge written while answering login/options was then missing for the
+// worker answering login/verify. The double enforces the two things that
+// matter: option_name is unique, and a DELETE reports the rows it removed.
+require_once __DIR__ . '/lib/wpdb-options.php';
+class WPDB_Ceremony extends WPDB_Options {
+	/** Let a test make the ceremony write fail, as a store that refuses would. */
+	public function query( $q ) {
+		if ( ! empty( $GLOBALS['__store_fails'] ) && false !== strpos( $q, 'rapls_pk_ot_' ) ) {
+			return false;
+		}
+		return parent::query( $q );
+	}
 }
-function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
-function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
+$GLOBALS['wpdb'] = new WPDB_Ceremony();
 function get_option( $k, $d = false ) {
 	if ( 'rapls_passkey_settings' === $k ) { return array( 'webauthn_hints' => array( 'hybrid' ) ); }
 	return $d;

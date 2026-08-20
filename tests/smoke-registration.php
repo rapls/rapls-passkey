@@ -15,15 +15,7 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 define( 'ABSPATH', __DIR__ . '/' );
 
 // --- WP stubs -------------------------------------------------------------
-$GLOBALS['__t'] = array();
 $GLOBALS['__store_fails'] = false;
-function set_transient( $k, $v, $ttl ) {
-	if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }   // a store that refuses
-	$GLOBALS['__t'][ $k ] = $v;
-	return true;
-}
-function get_transient( $k ) { return $GLOBALS['__t'][ $k ] ?? false; }
-function delete_transient( $k ) { unset( $GLOBALS['__t'][ $k ] ); return true; }
 
 $GLOBALS['__m'] = array();
 function wp_salt( $scheme = 'auth' ) { return 'unit-test-salt'; }
@@ -41,28 +33,18 @@ function get_option( $k, $d = false ) {
 }
 function apply_filters( $tag, $value ) { return $value; }
 
-// Minimal $wpdb: UserHandle mints the handle under an atomic wp_options insert.
-class WPDB_Reg {
-	public $options = 'wp_options';
-	public $store   = array();
+// One $wpdb double for both wp_options users here: UserHandle mints the handle
+// under an atomic insert, and Support\OneTimeStore holds the ceremony. The
+// ceremony is deliberately not a transient — see Support\OneTimeStore.
+require_once __DIR__ . '/lib/wpdb-options.php';
+class WPDB_Reg extends WPDB_Options {
 	public function suppress_errors( $s = null ) { return false; }
-	public function prepare( $q, ...$a ) {
-		foreach ( $a as $x ) {
-			$rep = is_int( $x ) ? (string) $x : "'" . str_replace( "'", "''", (string) $x ) . "'";
-			$q   = preg_replace( '/%[dsf]/', $rep, $q, 1 );
-		}
-		return $q;
-	}
+	/** Let a test make the ceremony write fail, as a store that refuses would. */
 	public function query( $q ) {
-		if ( preg_match( "/INSERT INTO .*VALUES \\('([^']*)', '([^']*)'/", $q, $m ) ) {
-			if ( array_key_exists( $m[1], $this->store ) ) { return false; }
-			$this->store[ $m[1] ] = $m[2];
-			return 1;
+		if ( ! empty( $GLOBALS['__store_fails'] ) && false !== strpos( $q, 'rapls_pk_ot_' ) ) {
+			return false;
 		}
-		return 0;
-	}
-	public function get_var( $q ) {
-		return ( preg_match( "/option_name = '([^']*)'/", $q, $m ) ) ? ( $this->store[ $m[1] ] ?? null ) : null;
+		return parent::query( $q );
 	}
 }
 $GLOBALS['wpdb'] = new WPDB_Reg();

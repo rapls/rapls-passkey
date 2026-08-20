@@ -37,22 +37,29 @@ namespace {
 	function home_url() { return $GLOBALS['__home'] ?? 'https://example.test'; }
 	function wp_parse_url( $url, $c = -1 ) { return parse_url( $url, $c ); }
 
-	class FakeWpdb {
-		public $prefix = 'wp_';
-		public function prepare( $sql, ...$a ) {
-			foreach ( $a as $x ) { $sql = preg_replace( '/%s|%d/', is_int( $x ) ? (string) $x : "'$x'", $sql, 1 ); }
-			return $sql;
-		}
+	// The object-cache check leaves a marker in the database and looks for it in
+	// the cache on the next run, so both have to be present here.
+	define( 'HOUR_IN_SECONDS', 3600 );
+	$GLOBALS['__ext_cache'] = false;
+	$GLOBALS['__cache']     = array();
+	function wp_using_ext_object_cache() { return (bool) ( $GLOBALS['__ext_cache'] ?? false ); }
+	function wp_cache_get( $k, $g = '' ) { return $GLOBALS['__cache'][ "$g:$k" ] ?? false; }
+	function wp_cache_set( $k, $v, $g = '', $ttl = 0 ) { $GLOBALS['__cache'][ "$g:$k" ] = $v; return true; }
+	function wp_rand( $min = 0, $max = 1 ) { return 1; } // never trigger the sweep
+
+	require_once __DIR__ . '/lib/wpdb-options.php';
+	class FakeWpdb extends WPDB_Options {
 		public function get_var( $sql ) {
 			if ( false !== strpos( $sql, 'SHOW TABLES LIKE' ) ) {
 				return preg_match( "/'([^']+)'/", $sql, $m ) ? $m[1] : null;
 			}
 			if ( false !== strpos( $sql, 'COUNT(*)' ) ) { return 5; }
-			return null;
+			return parent::get_var( $sql );
 		}
 	}
 	$GLOBALS['wpdb'] = new FakeWpdb();
 
+	require dirname( __DIR__ ) . '/src/Support/OneTimeStore.php';
 	require dirname( __DIR__ ) . '/src/Admin/SiteHealth.php';
 
 	use RaplsPasskey\Admin\SiteHealth;
@@ -77,8 +84,34 @@ namespace {
 	// --- registration ----------------------------------------------------------
 	$tests = $sh->add_tests( array() );
 	$direct = $tests['direct'] ?? array();
-	check( 'registers four direct tests', count( $direct ) === 4 );
+	check( 'registers five direct tests', count( $direct ) === 5 );
 	check( 'each test has a callable', ! in_array( false, array_map( function ( $t ) { return is_callable( $t['test'] ); }, $direct ), true ) );
+	check( 'the object-cache check is one of them', isset( $direct['rapls_passkey_cache'] ) );
+
+	// --- the object cache -------------------------------------------------------
+	// With no persistent cache installed there is nothing between two requests, so
+	// there is nothing to warn about.
+	$GLOBALS['__ext_cache'] = false;
+	$r = $sh->test_object_cache();
+	check( 'no object cache is reported as fine', 'good' === $r['status'] );
+
+	// With one installed, the first run has nothing to compare against and must
+	// not cry wolf; it leaves a marker instead.
+	$GLOBALS['__ext_cache'] = true;
+	$GLOBALS['__cache']     = array();
+	$r = $sh->test_object_cache();
+	check( 'the first run reports nothing and seeds a marker', 'good' === $r['status'] );
+
+	// A cache that carried the marker across is behaving as WordPress assumes.
+	$r = $sh->test_object_cache();
+	check( 'a cache that carries the marker is fine', 'good' === $r['status'] );
+
+	// A cache that lost it is the fault being looked for: per-worker caches make
+	// anything spanning two requests fail at random.
+	$GLOBALS['__cache'] = array();
+	$r = $sh->test_object_cache();
+	check( 'a cache that lost the marker is flagged', 'recommended' === $r['status'] );
+	check( 'and the advice names the fix', false !== strpos( $r['description'], 'Redis' ) );
 
 	// --- result shape (https critical on a public host without SSL) ------------
 	$GLOBALS['__ssl']  = false;

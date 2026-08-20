@@ -7,6 +7,8 @@
 
 namespace RaplsPasskey\Admin;
 
+use RaplsPasskey\Support\OneTimeStore;
+
 use RaplsPasskey\Credentials\Schema;
 use RaplsPasskey\Support\Compat;
 use RaplsPasskey\WebAuthn\RelyingParty;
@@ -20,6 +22,9 @@ defined( 'ABSPATH' ) || exit;
  * users get locked out, instead of opening a support ticket.
  */
 final class SiteHealth {
+
+	/** Key of the marker used to prove the object cache spans two requests. */
+	private const CACHE_CANARY = 'cachecanary';
 
 	/**
 	 * Hook the Site Health tests.
@@ -112,6 +117,10 @@ final class SiteHealth {
 			'label' => __( 'Rapls Passkey: RP ID', 'rapls-passkey' ),
 			'test'  => array( $this, 'test_rp' ),
 		);
+		$tests['direct']['rapls_passkey_cache']   = array(
+			'label' => __( 'Rapls Passkey: Object cache', 'rapls-passkey' ),
+			'test'  => array( $this, 'test_object_cache' ),
+		);
 
 		return $tests;
 	}
@@ -193,6 +202,75 @@ final class SiteHealth {
 	 * @param bool $secure Secure context.
 	 * @return string
 	 */
+	/**
+	 * Whether the object cache actually carries a value from one request to the
+	 * next.
+	 *
+	 * WordPress treats an installed `object-cache.php` as shared between PHP
+	 * processes. Some are not: APCu, a common choice, is per-worker, so a value
+	 * written while answering one request is simply absent when a different
+	 * worker answers the next. Sign-ins then fail at random — which passkey it
+	 * was, or how correct it was, makes no difference; only which worker
+	 * answered. This plugin no longer depends on that (login state goes straight
+	 * to the database), but the rest of the site still does, so it is worth
+	 * saying out loud.
+	 *
+	 * The check leaves a value behind and looks for it on the next run, because
+	 * the two have to happen in different requests to prove anything. Nothing is
+	 * reported until a miss has actually been seen.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function test_object_cache(): array {
+		$label = __( 'Rapls Passkey: Object cache', 'rapls-passkey' );
+		$key   = 'rapls_passkey_cache';
+
+		if ( ! function_exists( 'wp_using_ext_object_cache' ) || ! wp_using_ext_object_cache() ) {
+			return $this->result(
+				$key,
+				$label,
+				'good',
+				__( 'No persistent object cache is installed, so nothing sits between one request and the next.', 'rapls-passkey' )
+			);
+		}
+
+		// The database is the reference: it is the same for every worker.
+		$expected = OneTimeStore::peek( self::CACHE_CANARY );
+		$seen     = wp_cache_get( self::CACHE_CANARY, 'rapls_passkey' );
+
+		// Leave a fresh marker for the next run before answering.
+		$nonce = bin2hex( random_bytes( 8 ) );
+		OneTimeStore::put( self::CACHE_CANARY, $nonce, HOUR_IN_SECONDS );
+		wp_cache_set( self::CACHE_CANARY, $nonce, 'rapls_passkey', HOUR_IN_SECONDS );
+
+		if ( null === $expected ) {
+			return $this->result(
+				$key,
+				$label,
+				'good',
+				__( 'A persistent object cache is installed. Reload this page once to confirm that it carries values between requests.', 'rapls-passkey' )
+			);
+		}
+
+		if ( is_string( $seen ) && hash_equals( $expected, $seen ) ) {
+			return $this->result(
+				$key,
+				$label,
+				'good',
+				__( 'The object cache carries values between requests, which is what WordPress expects of it.', 'rapls-passkey' )
+			);
+		}
+
+		return $this->result(
+			$key,
+			$label,
+			'recommended',
+			__( 'The object cache did not return a value written by an earlier request. A cache that is not shared between PHP workers (APCu is the usual one) makes sign-ins, two-factor challenges and anything else that spans two requests fail at random, depending on which worker answers. Use a cache that is shared across processes, such as Redis or Memcached, or remove wp-content/object-cache.php.', 'rapls-passkey' )
+		);
+	}
+
+	// --- Status helpers ------------------------------------------------------
+
 	public static function https_status( bool $secure ): string {
 		return $secure ? 'good' : 'critical';
 	}

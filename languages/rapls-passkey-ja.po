@@ -1551,3 +1551,23 @@ msgstr "サイトに接続できませんでした。通信状況を確認して
 #: src/Frontend/Shortcodes.php src/Login/LoginForm.php
 msgid "Passkeys need a secure (HTTPS) connection on this site's own address."
 msgstr "パスキーを使うには、このサイト自身のアドレスへの安全な接続 (HTTPS) が必要です。"
+
+#: src/Admin/SiteHealth.php
+msgid "Rapls Passkey: Object cache"
+msgstr "Rapls Passkey: オブジェクトキャッシュ"
+
+#: src/Admin/SiteHealth.php
+msgid "No persistent object cache is installed, so nothing sits between one request and the next."
+msgstr "永続オブジェクトキャッシュは導入されていないため、リクエストとリクエストの間に挟まるものはありません。"
+
+#: src/Admin/SiteHealth.php
+msgid "A persistent object cache is installed. Reload this page once to confirm that it carries values between requests."
+msgstr "永続オブジェクトキャッシュが導入されています。リクエストをまたいで値が保持されるかを確認するため、このページを一度再読み込みしてください。"
+
+#: src/Admin/SiteHealth.php
+msgid "The object cache carries values between requests, which is what WordPress expects of it."
+msgstr "オブジェクトキャッシュはリクエストをまたいで値を保持しています。WordPress が前提としている動作です。"
+
+#: src/Admin/SiteHealth.php
+msgid "The object cache did not return a value written by an earlier request. A cache that is not shared between PHP workers (APCu is the usual one) makes sign-ins, two-factor challenges and anything else that spans two requests fail at random, depending on which worker answers. Use a cache that is shared across processes, such as Redis or Memcached, or remove wp-content/object-cache.php."
+msgstr "オブジェクトキャッシュが、以前のリクエストで書き込んだ値を返しませんでした。PHP ワーカー間で共有されないキャッシュ (よくあるのは APCu) では、ログインや2要素認証のチャレンジなど、2つのリクエストにまたがる処理が、どのワーカーが応答したかによってランダムに失敗します。Redis や Memcached のようにプロセス間で共有されるキャッシュを使うか、wp-content/object-cache.php を削除してください。"

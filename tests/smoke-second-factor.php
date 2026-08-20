@@ -46,7 +46,6 @@ class WP_User {
 }
 
 $GLOBALS['__opt']        = array();
-$GLOBALS['__transients'] = array();
 $GLOBALS['__filters']    = array();
 $GLOBALS['__auth']       = null;
 
@@ -62,14 +61,34 @@ function sanitize_text_field( $s ) { return trim( (string) $s ); }
 function wp_unslash( $s ) { return $s; }
 function wp_salt( $s = 'auth' ) { return 'unit-test-salt'; }
 function is_ssl() { return true; }
-function get_transient( $k ) { return $GLOBALS['__transients'][ $k ] ?? false; }
+function wp_json_encode( $v, $flags = 0 ) { return json_encode( $v, (int) $flags ); }
 $GLOBALS['__store_fails'] = false;
-function set_transient( $k, $v, $ttl ) {
-	if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }
-	$GLOBALS['__transients'][ $k ] = $v;
-	return true;
+
+/**
+ * The rows Support\OneTimeStore owns, which is where a parked login now lives.
+ * It is deliberately NOT a transient: a transient goes to the object cache when
+ * one is installed, and an object cache is not guaranteed to be shared between
+ * PHP workers, so the parked login written by one worker was missing for the
+ * next. See Support\OneTimeStore.
+ *
+ * @return array<string,string>
+ */
+function ot_rows() {
+	$out = array();
+	foreach ( $GLOBALS['wpdb']->store as $name => $value ) {
+		if ( 0 === strpos( (string) $name, 'rapls_pk_ot_' ) ) {
+			$out[ $name ] = $value;
+		}
+	}
+	return $out;
 }
-function delete_transient( $k ) { unset( $GLOBALS['__transients'][ $k ] ); return true; }
+
+/** Drop every parked login, leaving the rate-limit rows alone. */
+function ot_clear() {
+	foreach ( array_keys( ot_rows() ) as $name ) {
+		unset( $GLOBALS['wpdb']->store[ $name ] );
+	}
+}
 function wp_login_url() { return 'https://example.test/wp-login.php'; }
 function admin_url( $p = '' ) { return 'https://example.test/wp-admin/' . $p; }
 function add_query_arg( $k, $v, $url ) { return $url . ( strpos( $url, '?' ) === false ? '?' : '&' ) . $k . '=' . $v; }
@@ -82,7 +101,15 @@ function wp_rand( $min = 0, $max = 1 ) { return 1; } // never trigger RateLimit 
 
 // Shared $wpdb double: option_name is UNIQUE, which is what caps the attempts.
 require_once __DIR__ . '/lib/wpdb-options.php';
-class WPDB_SF extends WPDB_Options {}
+class WPDB_SF extends WPDB_Options {
+	/** Let a test make the parked-login write fail, as a full disk would. */
+	public function query( $q ) {
+		if ( ! empty( $GLOBALS['__store_fails'] ) && false !== strpos( $q, 'rapls_pk_ot_' ) ) {
+			return false;
+		}
+		return parent::query( $q );
+	}
+}
 $GLOBALS['wpdb'] = new WPDB_SF();
 
 spl_autoload_register( function ( $class ) {
@@ -195,7 +222,7 @@ check( 'the parked login remembers the context', is_array( $pending ) && 'magic-
 check( 'the parked login remembers "remember me"', is_array( $pending ) && true === $pending['remember'] );
 
 // The raw token must never be what is stored.
-$stored_keys = implode( '|', array_keys( $GLOBALS['__transients'] ) );
+$stored_keys = implode( '|', array_keys( ot_rows() ) );
 check( 'the token is stored only as a hash', false === strpos( $stored_keys, $_COOKIE[ SecondFactor::COOKIE ] ) );
 
 // --- Wrong answers are capped, then the parked login is destroyed. ---------
@@ -282,16 +309,16 @@ $GLOBALS['__store_fails'] = false;
 // the user was sent to a screen they could not complete, with the code gone.
 $GLOBALS['__cookie_fails'] = true;
 $_COOKIE                   = array();
-$GLOBALS['__transients']   = array();
+ot_clear();
 $url = SecondFactor::begin( new WP_User( 21 ), 'login', false );
 check( 'a challenge whose cookie cannot be sent is not issued (V49-A06)', '' === $url );
-check( 'and no pending record is left behind', array() === $GLOBALS['__transients'] );
+check( 'and no pending record is left behind', array() === ot_rows() );
 check( 'and nothing pretends the browser holds a token', ! isset( $_COOKIE[ SecondFactor::COOKIE ] ) );
 
 // With the cookie going out, the same call works.
 $GLOBALS['__cookie_fails'] = false;
 $_COOKIE                   = array();
-$GLOBALS['__transients']   = array();
+ot_clear();
 $url2 = SecondFactor::begin( new WP_User( 21 ), 'login', false );
 check( 'and with a cookie that does go out, the challenge is issued', '' !== $url2 && isset( $_COOKIE[ SecondFactor::COOKIE ] ) );
 

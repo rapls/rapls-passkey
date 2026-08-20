@@ -58,16 +58,22 @@ eval( 'namespace RaplsPasskey\\Support; class Cookies {
 		public $code; public $data;
 		public function __construct( $code = '', $m = '', $d = array() ) { $this->code = $code; $this->data = $d; }
 	}
-	// The parked-login store, with a switch for "the store refuses".
-	$GLOBALS['__transients']  = array();
+	// The parked-login store, with a switch for "the store refuses". It lives in
+	// wp_options (Support\OneTimeStore), not in a transient: a transient goes to
+	// the object cache when one is installed, and an object cache is not
+	// guaranteed to be shared between PHP workers.
 	$GLOBALS['__store_fails'] = false;
-	function set_transient( $k, $v, $ttl = 0 ) {
-		if ( ! empty( $GLOBALS['__store_fails'] ) ) { return false; }
-		$GLOBALS['__transients'][ $k ] = $v;
-		return true;
+	function wp_json_encode( $v, $flags = 0 ) { return json_encode( $v, (int) $flags ); }
+	require_once __DIR__ . '/lib/wpdb-options.php';
+	class WPDB_AuthSession extends WPDB_Options {
+		public function query( $q ) {
+			if ( ! empty( $GLOBALS['__store_fails'] ) && false !== strpos( $q, 'rapls_pk_ot_' ) ) {
+				return false;
+			}
+			return parent::query( $q );
+		}
 	}
-	function get_transient( $k ) { return $GLOBALS['__transients'][ $k ] ?? false; }
-	function delete_transient( $k ) { unset( $GLOBALS['__transients'][ $k ] ); return true; }
+	$GLOBALS['wpdb'] = new WPDB_AuthSession();
 	function wp_login_url( $redirect = '' ) { return 'https://example.test/wp-login.php'; }
 	function add_query_arg( ...$a ) {
 		$url = array_pop( $a );
@@ -84,6 +90,7 @@ eval( 'namespace RaplsPasskey\\Support; class Cookies {
 	function site_url( $p = '' ) { return 'https://example.test/' . ltrim( (string) $p, '/' ); }
 	function home_url( $p = '' ) { return 'https://example.test/' . ltrim( (string) $p, '/' ); }
 
+	require dirname( __DIR__ ) . '/src/Support/OneTimeStore.php';
 	require dirname( __DIR__ ) . '/src/Support/Settings.php';
 	require dirname( __DIR__ ) . '/src/Security/LoginGate.php';
 	// No 2FA plugin is registered here, so the second-factor gate stays open (see

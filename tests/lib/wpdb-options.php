@@ -1,11 +1,17 @@
 <?php
 /**
- * Shared $wpdb double for the wp_options-backed primitives (Support\RateLimit).
+ * Shared $wpdb double for the wp_options-backed primitives (Support\RateLimit,
+ * Support\OneTimeStore).
  *
- * The only behaviour that matters is the one the plugin relies on: option_name is
- * UNIQUE, so inserting a slot row that already exists FAILS rather than
- * overwriting. That constraint — not any counter — is what caps attempts and
- * quotas, so a double that quietly overwrote would test nothing.
+ * Two behaviours matter, and both are the ones the plugin actually relies on:
+ *
+ *  - option_name is UNIQUE, so inserting a slot row that already exists FAILS
+ *    rather than overwriting. That constraint — not any counter — is what caps
+ *    attempts and quotas, so a double that quietly overwrote would test nothing.
+ *  - a DELETE reports how many rows it actually removed, so exactly one of
+ *    several callers racing for the same row is told it got it. A double that
+ *    always answered "1" would let a single-use challenge pass a test it fails
+ *    in production.
  *
  * Used by both plugins' smoke tests; the real thing is exercised against a live
  * MySQL/MariaDB in tests/db/.
@@ -49,10 +55,12 @@ class WPDB_Options {
 		}
 
 		// Claim one slot: a plain INSERT that the unique index must reject when the
-		// row is already there.
+		// row is already there. An upsert (ON DUPLICATE KEY UPDATE) is the other
+		// intent — replacing your own ceremony — and must succeed.
 		if ( 0 === strpos( ltrim( $q ), 'INSERT INTO' )
 			&& preg_match( "/VALUES \\('([^']*)', '([^']*)', 'no'\\)/", $q, $m ) ) {
-			if ( isset( $this->store[ $m[1] ] ) ) {
+			$upsert = false !== stripos( $q, 'ON DUPLICATE KEY UPDATE' );
+			if ( isset( $this->store[ $m[1] ] ) && ! $upsert ) {
 				$this->last_error = 'Duplicate entry';
 				return false;
 			}
@@ -74,20 +82,33 @@ class WPDB_Options {
 
 		// clear() / gc(): DELETE ... WHERE option_name LIKE '<prefix>%' [AND window].
 		if ( 0 === strpos( ltrim( $q ), 'DELETE' ) && preg_match( "/option_name LIKE '([^']*)%'/", $q, $m ) ) {
-			$expired = null;
-			if ( preg_match( "/AS UNSIGNED\\) <= (\\d+)/", $q, $n ) ) {
-				$expired = (int) $n[1];
+			$expired  = null;
+			$strictly = false;
+			if ( preg_match( "/AS UNSIGNED\\) (<=?) (\\d+)/", $q, $n ) ) {
+				$expired  = (int) $n[2];
+				$strictly = '<' === $n[1];
+			}
+			// RateLimit writes "<window>:<token>", OneTimeStore "<expires>|<payload>".
+			$limit = null;
+			if ( preg_match( '/LIMIT (\\d+)/', $q, $l ) ) {
+				$limit = (int) $l[1];
 			}
 			$gone = 0;
 			foreach ( $this->store as $name => $value ) {
 				if ( 0 !== strpos( $name, $m[1] ) ) {
 					continue;
 				}
-				if ( null !== $expired && (int) explode( ':', (string) $value )[0] > $expired ) {
-					continue; // still inside its window
+				if ( null !== $expired ) {
+					$stamp = (int) preg_split( '/[:|]/', (string) $value )[0];
+					if ( $strictly ? $stamp >= $expired : $stamp > $expired ) {
+						continue; // still inside its window
+					}
 				}
 				unset( $this->store[ $name ] );
 				++$gone;
+				if ( null !== $limit && $gone >= $limit ) {
+					break;
+				}
 			}
 			$this->rows_affected = $gone;
 			return $gone;
@@ -119,7 +140,21 @@ class WPDB_Options {
 	}
 
 	public function delete( $table, $where ) {
-		unset( $this->store[ $where['option_name'] ?? '' ] );
+		$this->last_error = '';
+		if ( $this->fail_next || $this->fail_all ) {
+			$this->fail_next  = false;
+			$this->last_error = 'simulated DB error';
+			return false;
+		}
+		$name = $where['option_name'] ?? '';
+		// Answer with the rows actually removed. Of several callers racing for one
+		// row, exactly one gets 1 — which is how single use is decided.
+		if ( ! array_key_exists( $name, $this->store ) ) {
+			$this->rows_affected = 0;
+			return 0;
+		}
+		unset( $this->store[ $name ] );
+		$this->rows_affected = 1;
 		return 1;
 	}
 }

@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 0.13.72
+Stable tag: 0.13.73
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,11 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.73 =
+* Passkey sign-in no longer depends on the object cache being shared between PHP workers. A sign-in is two requests — the browser asks for a challenge, then sends back the answer — and the challenge was kept in a transient, which WordPress stores in the object cache whenever one is installed. Some object caches are per-worker (APCu is the common one), so the challenge written while answering the first request was simply absent when a different worker answered the second, and a correct passkey was refused as expired. Which worker answered is chance, which is why the same passkey worked, then did not, then worked again. Challenges and parked two-factor logins now go straight to the database, where every worker can see them.
+* A challenge can no longer be spent twice on such a host. Single use was enforced with an atomic add on the object cache, which only decides a winner among callers that share it; on a per-worker cache two requests could both be told they had won. It is now decided by the database, which every worker does share.
+* Site Health reports an object cache that does not carry values between requests. It affects far more than this plugin, and nothing else says so.
 
 = 0.13.72 =
 * Signing in with a passkey no longer fails at random. The browser allows one credential request at a time, and the page keeps a background one open so passkeys appear in the username field. Pressing the button while that one was still being cancelled was answered with "a request is already pending", which is why the same passkey worked one moment and failed the next; the button now waits for the background request to actually be released, and cannot be pressed twice into the same prompt.

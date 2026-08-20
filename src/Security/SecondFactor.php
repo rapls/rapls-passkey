@@ -10,6 +10,7 @@ namespace RaplsPasskey\Security;
 use RaplsPasskey\Integrations\SecondFactor\Provider;
 use RaplsPasskey\Integrations\SecondFactor\TwoFactorCore;
 use RaplsPasskey\Integrations\SecondFactor\WordfenceLs;
+use RaplsPasskey\Support\OneTimeStore;
 use RaplsPasskey\Support\RateLimit;
 use RaplsPasskey\Support\Settings;
 use WP_User;
@@ -38,9 +39,6 @@ final class SecondFactor {
 
 	/** wp-login.php action for the challenge screen. */
 	public const ACTION = 'rapls_passkey_2fa';
-
-	/** Transient prefix for the pending login. */
-	private const TRANSIENT = 'rapls_passkey_2fa_';
 
 	/** Gate result: the login may proceed without a second factor. */
 	public const GATE_PASS = 'pass';
@@ -227,13 +225,15 @@ final class SecondFactor {
 	public static function begin( WP_User $user, string $context, bool $remember ): string {
 		$token = bin2hex( random_bytes( 32 ) );
 
-		$stored = set_transient(
-			self::TRANSIENT . self::hash( $token ),
-			array(
-				'user_id'  => (int) $user->ID,
-				'context'  => $context,
-				'remember' => (bool) $remember,
-				'redirect' => self::requested_redirect(),
+		$stored = OneTimeStore::put(
+			self::hash( $token ),
+			(string) wp_json_encode(
+				array(
+					'user_id'  => (int) $user->ID,
+					'context'  => $context,
+					'remember' => (bool) $remember,
+					'redirect' => self::requested_redirect(),
+				)
 			),
 			self::TTL
 		);
@@ -266,7 +266,7 @@ final class SecondFactor {
 			)
 		);
 		if ( ! $sent ) {
-			delete_transient( self::TRANSIENT . self::hash( $token ) );
+			OneTimeStore::forget( self::hash( $token ) );
 			return '';
 		}
 		$_COOKIE[ self::COOKIE ] = $token;
@@ -285,11 +285,30 @@ final class SecondFactor {
 			return null;
 		}
 
-		$pending = get_transient( self::TRANSIENT . self::hash( $token ) );
-		if ( ! is_array( $pending ) || empty( $pending['user_id'] ) ) {
+		$pending = self::decode( OneTimeStore::peek( self::hash( $token ) ) );
+		if ( null === $pending ) {
 			return null;
 		}
 		return $pending;
+	}
+
+	/**
+	 * Turn a stored parked login back into an array, or null when there is not a
+	 * usable one. A row that cannot be read is treated as absent rather than
+	 * half-trusted: the caller then refuses, which is the safe direction.
+	 *
+	 * @param string|null $raw Stored JSON.
+	 * @return array<string,mixed>|null
+	 */
+	private static function decode( ?string $raw ): ?array {
+		if ( null === $raw || '' === $raw ) {
+			return null;
+		}
+		$data = json_decode( $raw, true );
+		if ( ! is_array( $data ) || empty( $data['user_id'] ) ) {
+			return null;
+		}
+		return $data;
 	}
 
 	/**
@@ -314,9 +333,8 @@ final class SecondFactor {
 			return '';
 		}
 
-		$key     = self::TRANSIENT . self::hash( $token );
-		$pending = get_transient( $key );
-		if ( ! is_array( $pending ) ) {
+		$pending = self::decode( OneTimeStore::peek( self::hash( $token ) ) );
+		if ( null === $pending ) {
 			return '';
 		}
 
@@ -366,7 +384,7 @@ final class SecondFactor {
 	public static function forget(): void {
 		$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
 		if ( 1 === preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
-			delete_transient( self::TRANSIENT . self::hash( $token ) );
+			OneTimeStore::forget( self::hash( $token ) );
 			// The pending login is being discarded outright, so every row for it goes.
 			RateLimit::purge( '2fa_attempts|' . self::hash( $token ) );
 		}

@@ -1569,5 +1569,5 @@ msgid "The object cache carries values between requests, which is what WordPress
 msgstr "オブジェクトキャッシュはリクエストをまたいで値を保持しています。WordPress が前提としている動作です。"
 
 #: src/Admin/SiteHealth.php
-msgid "The object cache did not return a value written by an earlier request. A cache that is not shared between PHP workers (APCu is the usual one) makes sign-ins, two-factor challenges and anything else that spans two requests fail at random, depending on which worker answers. Use a cache that is shared across processes, such as Redis or Memcached, or remove wp-content/object-cache.php."
-msgstr "オブジェクトキャッシュが、以前のリクエストで書き込んだ値を返しませんでした。PHP ワーカー間で共有されないキャッシュ (よくあるのは APCu) では、ログインや2要素認証のチャレンジなど、2つのリクエストにまたがる処理が、どのワーカーが応答したかによってランダムに失敗します。Redis や Memcached のようにプロセス間で共有されるキャッシュを使うか、wp-content/object-cache.php を削除してください。"
+msgid "The object cache did not return a value written by an earlier request. Anything that spans two requests — signing in, a two-factor challenge, a form token — can then fail at random. Common causes are an APCu cache too small for the site (entries are evicted), and more than one PHP-FPM instance or server, which do not share one APCu segment. Check the cache size and hit rate, or remove wp-content/object-cache.php."
+msgstr "オブジェクトキャッシュが、以前のリクエストで書き込んだ値を返しませんでした。ログイン、2要素認証のチャレンジ、フォームのトークンなど、2 つのリクエストにまたがる処理がランダムに失敗することがあります。よくある原因は、サイトに対して APCu の容量が小さくエントリが追い出されていること、および PHP-FPM のインスタンスやサーバーが複数あり 1 つの APCu 領域を共有していないことです。キャッシュの容量とヒット率を確認するか、wp-content/object-cache.php を削除してください。"

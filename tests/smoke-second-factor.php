@@ -67,9 +67,8 @@ $GLOBALS['__store_fails'] = false;
 /**
  * The rows Support\OneTimeStore owns, which is where a parked login now lives.
  * It is deliberately NOT a transient: a transient goes to the object cache when
- * one is installed, and an object cache is not guaranteed to be shared between
- * PHP workers, so the parked login written by one worker was missing for the
- * next. See Support\OneTimeStore.
+ * one is installed, and an object cache is not guaranteed to hand the next
+ * request what this one wrote. See Support\OneTimeStore.
  *
  * @return array<string,string>
  */

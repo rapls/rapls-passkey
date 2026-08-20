@@ -18,10 +18,10 @@ $GLOBALS['__store_fails'] = false;
 
 // The ceremony is kept in wp_options through Support\OneTimeStore, not in a
 // transient: a transient goes to the object cache when one is installed, and an
-// object cache is not guaranteed to be shared between PHP workers — the
-// challenge written while answering login/options was then missing for the
-// worker answering login/verify. The double enforces the two things that
-// matter: option_name is unique, and a DELETE reports the rows it removed.
+// object cache is not guaranteed to hand the next request what this one wrote —
+// the challenge stored while answering login/options was then not there for
+// login/verify. The double enforces the two things that matter: option_name is
+// unique, and a DELETE reports the rows it removed.
 require_once __DIR__ . '/lib/wpdb-options.php';
 class WPDB_Ceremony extends WPDB_Options {
 	/** Let a test make the ceremony write fail, as a store that refuses would. */

@@ -6,10 +6,10 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
  * Two properties are the whole point of the class and are asserted here:
  *
  *  - it never touches the transient API, because a transient goes to the object
- *    cache when one is installed and an object cache is not guaranteed to be
- *    shared between PHP workers (APCu is per-worker). A ceremony written while
- *    answering login/options was then missing for the worker answering
- *    login/verify, and a correct passkey was refused as expired;
+ *    cache when one is installed, and an object cache is not guaranteed to hand
+ *    the next request what this one wrote. A ceremony stored while answering
+ *    login/options was then not there for login/verify, and a correct passkey
+ *    was refused as expired;
  *  - take() is single use, decided by the DELETE and not by a read, so of two
  *    requests presenting the same challenge exactly one is answered.
  *
@@ -22,8 +22,8 @@ if ( ! defined( 'ABSPATH' ) && 'cli' !== PHP_SAPI ) { exit; } // Dev/CLI-only fi
 
 define( 'ABSPATH', __DIR__ . '/' );
 
-// If any of these is ever called, the class has gone back to a store that can
-// be invisible to the next worker. They fail the test rather than the site.
+// If any of these is ever called, the class has gone back to a store the next
+// request may not be able to read. They fail the test rather than the site.
 $GLOBALS['__transient_calls'] = array();
 function set_transient( $k, $v, $t = 0 ) { $GLOBALS['__transient_calls'][] = 'set:' . $k; return true; }
 function get_transient( $k ) { $GLOBALS['__transient_calls'][] = 'get:' . $k; return false; }

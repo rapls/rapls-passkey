@@ -106,12 +106,15 @@ namespace {
 	$r = $sh->test_object_cache();
 	check( 'a cache that carries the marker is fine', 'good' === $r['status'] );
 
-	// A cache that lost it is the fault being looked for: per-worker caches make
-	// anything spanning two requests fail at random.
+	// A cache that lost it is the fault being looked for: anything spanning two
+	// requests then fails at random.
 	$GLOBALS['__cache'] = array();
 	$r = $sh->test_object_cache();
 	check( 'a cache that lost the marker is flagged', 'recommended' === $r['status'] );
-	check( 'and the advice names the fix', false !== strpos( $r['description'], 'Redis' ) );
+	// The advice has to be actionable: name the usual cause and the file to look
+	// at. A description that only says "something is wrong" sends nobody anywhere.
+	check( 'and the advice names the usual cause', false !== strpos( $r['description'], 'APCu' ) );
+	check( 'and the file to look at', false !== strpos( $r['description'], 'object-cache.php' ) );
 
 	// --- result shape (https critical on a public host without SSL) ------------
 	$GLOBALS['__ssl']  = false;

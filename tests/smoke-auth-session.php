@@ -61,7 +61,7 @@ eval( 'namespace RaplsPasskey\\Support; class Cookies {
 	// The parked-login store, with a switch for "the store refuses". It lives in
 	// wp_options (Support\OneTimeStore), not in a transient: a transient goes to
 	// the object cache when one is installed, and an object cache is not
-	// guaranteed to be shared between PHP workers.
+	// guaranteed to hand the next request what this one wrote.
 	$GLOBALS['__store_fails'] = false;
 	function wp_json_encode( $v, $flags = 0 ) { return json_encode( $v, (int) $flags ); }
 	require_once __DIR__ . '/lib/wpdb-options.php';

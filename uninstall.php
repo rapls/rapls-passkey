@@ -53,7 +53,8 @@ function rapls_passkey_uninstall_site(): void {
 	$attempt_rows = $wpdb->esc_like( 'rapls_passkey_ra_' ) . '%';
 	// Ceremony state (Support\OneTimeStore): WebAuthn challenges and parked
 	// second-factor logins. Plain option rows on purpose — a transient would go to
-	// the object cache, which is not guaranteed to be shared between PHP workers.
+	// the object cache, which is not guaranteed to hand the next request what the
+	// last one wrote.
 	$ceremony    = $wpdb->esc_like( 'rapls_pk_ot_' ) . '%';
 	$reg_lock    = $wpdb->esc_like( 'rapls_pk_reg_lock_' ) . '%';
 	$rate_rows   = $wpdb->esc_like( 'rapls_passkey_rl_' ) . '%';

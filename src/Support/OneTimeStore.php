@@ -16,20 +16,25 @@ defined( 'ABSPATH' ) || exit;
  * channel. Rows live in `wp_options`, written and read with `$wpdb` directly.
  *
  * WHY NOT TRANSIENTS. `set_transient()` stores in the object cache whenever a
- * persistent one is installed, and WordPress assumes such a cache is shared
- * between PHP processes. That assumption is not always true — APCu, a common
- * choice for `object-cache.php`, is per-worker — and when it does not hold, two
- * separate things break at once:
+ * persistent one is installed, and WordPress then assumes the cache will hand
+ * the next request what this one wrote. That is not something a plugin can rely
+ * on. `object-cache.php` is a drop-in the host chooses: separate PHP-FPM
+ * instances and separate servers do not share an APCu segment, and any cache
+ * can evict an entry, lose a generation counter, or be replaced under load. It
+ * was seen failing on a live site — state written while answering one request
+ * was not what came back a few seconds later — and when it does, two separate
+ * things break at once:
  *
- *  - The ceremony written by the worker that handled `login/options` is simply
- *    not there for the worker that handles `login/verify`, so a correct passkey
- *    is refused as an expired ceremony. Which worker answers is chance, so the
- *    same passkey works, then does not, then works again.
+ *  - The ceremony stored while answering `login/options` is not there for
+ *    `login/verify`, so a correct passkey is refused as an expired ceremony.
+ *    Whether it survives is chance, so the same passkey works, then does not,
+ *    then works again.
  *  - Worse, single use was enforced with `wp_cache_add()` on a lock key, which
- *    is atomic only across callers that share the cache. On a per-worker cache
- *    two requests can both be told they won, and the challenge is no longer
- *    single-use. A guarantee that quietly disappears because of how the host is
- *    configured is not a guarantee, so nothing here depends on the cache at all.
+ *    decides a winner only among callers the cache actually serializes. Where
+ *    it does not, two requests can both be told they won, and the challenge is
+ *    no longer single-use. A guarantee that quietly disappears because of how
+ *    the host is configured is not a guarantee, so nothing here depends on the
+ *    cache at all.
  *
  * These rows are therefore addressed with `$wpdb` and never through
  * `get_option()` / `update_option()` / the transient API, so no cache sits in

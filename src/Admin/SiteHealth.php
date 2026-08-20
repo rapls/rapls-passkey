@@ -206,14 +206,14 @@ final class SiteHealth {
 	 * Whether the object cache actually carries a value from one request to the
 	 * next.
 	 *
-	 * WordPress treats an installed `object-cache.php` as shared between PHP
-	 * processes. Some are not: APCu, a common choice, is per-worker, so a value
-	 * written while answering one request is simply absent when a different
-	 * worker answers the next. Sign-ins then fail at random — which passkey it
-	 * was, or how correct it was, makes no difference; only which worker
-	 * answered. This plugin no longer depends on that (login state goes straight
-	 * to the database), but the rest of the site still does, so it is worth
-	 * saying out loud.
+	 * WordPress treats an installed `object-cache.php` as one store that carries
+	 * a value from one request to the next. Whether it does is up to the host:
+	 * separate PHP-FPM instances and separate servers do not share an APCu
+	 * segment, and any cache can evict an entry or lose the generation counter a
+	 * drop-in namespaces by. When it does not carry, anything spanning two
+	 * requests fails at random — sign-ins among them. This plugin no longer
+	 * depends on it (login state goes straight to the database), but the rest of
+	 * the site still does, so it is worth saying out loud.
 	 *
 	 * The check leaves a value behind and looks for it on the next run, because
 	 * the two have to happen in different requests to prove anything. Nothing is
@@ -265,7 +265,7 @@ final class SiteHealth {
 			$key,
 			$label,
 			'recommended',
-			__( 'The object cache did not return a value written by an earlier request. A cache that is not shared between PHP workers (APCu is the usual one) makes sign-ins, two-factor challenges and anything else that spans two requests fail at random, depending on which worker answers. Use a cache that is shared across processes, such as Redis or Memcached, or remove wp-content/object-cache.php.', 'rapls-passkey' )
+			__( 'The object cache did not return a value written by an earlier request. Anything that spans two requests — signing in, a two-factor challenge, a form token — can then fail at random. Common causes are an APCu cache too small for the site (entries are evicted), and more than one PHP-FPM instance or server, which do not share one APCu segment. Check the cache size and hit rate, or remove wp-content/object-cache.php.', 'rapls-passkey' )
 		);
 	}
 

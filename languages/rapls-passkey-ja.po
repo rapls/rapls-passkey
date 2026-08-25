@@ -265,7 +265,7 @@ msgstr "パスキーの登録に失敗しました。"
 #: src/Admin/ProfileUi.php:76 src/Frontend/Shortcodes.php:100
 #: src/Login/LoginForm.php:59 src/Login/UpgradePrompt.php:129
 msgid "This browser does not support passkeys."
-msgstr "このブラウザはパスキーに対応していません。"
+msgstr "このブラウザーはパスキーに対応していません。"
 
 #: src/Admin/ProfileUi.php:77
 msgid "Registration was cancelled or timed out. Please try again."
@@ -312,7 +312,7 @@ msgid ""
 "working out, would you leave a review? It is the main way other people find "
 "the plugin."
 msgstr ""
-"パスキーでのログインを 1 週間お使いいただきました。うまく動いているようでした"
+"パスキーでのログインを1週間お使いいただきました。うまく動いているようでした"
 "ら、レビューを書いていただけませんか。ほかの方がこのプラグインを見つける、い"
 "ちばんの手がかりになります。"
 
@@ -357,8 +357,8 @@ msgid ""
 "Maximum number of passkeys a user can register. 0 means unlimited. We "
 "recommend 2 or more so passkeys can be used across multiple devices."
 msgstr ""
-"ユーザーが登録できるパスキーの最大数。0 は無制限です。複数端末での利用を考慮"
-"し、2 以上を推奨します。"
+"ユーザーが登録できるパスキーの最大数。0は無制限です。複数端末での利用を考慮"
+"し、2以上を推奨します。"
 
 #: src/Admin/SettingsPage.php:218
 msgid "Login rate limit"
@@ -376,7 +376,7 @@ msgid ""
 msgstr ""
 "「試行回数が多すぎます」と表示されるまでに、同一 IP アドレスから許可されるパ"
 "スキーログインの失敗回数です (下のロックアウト時間内)。成功したログインはカウ"
-"ントされません。0 で無効になります。"
+"ントされません。0で無効になります。"
 
 #: src/Admin/SettingsPage.php:228
 msgid "Lockout time (seconds)"
@@ -388,7 +388,7 @@ msgid ""
 "attempt limit is reached (default 300 seconds = 5 minutes)."
 msgstr ""
 "カウントを集計する期間であり、試行回数の上限に達した後にロックアウトが続く時"
-"間です (デフォルト 300 秒 = 5 分)。"
+"間です (デフォルト300秒 = 5分)。"
 
 #: src/Admin/SettingsPage.php:236
 msgid "Session security"
@@ -467,7 +467,7 @@ msgid ""
 "Timeout for the passkey registration and authentication dialogs. 0 uses the "
 "browser default (typically around 60 seconds)."
 msgstr ""
-"パスキーの登録・認証ダイアログのタイムアウト。0 はブラウザ既定 (通常 60 秒程"
+"パスキーの登録・認証ダイアログのタイムアウト。0はブラウザー既定 (通常60秒程"
 "度) を使用します。"
 
 #: src/Admin/SettingsPage.php:287
@@ -540,8 +540,8 @@ msgid ""
 "Give supported browsers hints about which sign-in methods to suggest first "
 "(order is respected). No hints are sent if none are selected."
 msgstr ""
-"対応ブラウザに対し、優先して案内する認証方法のヒントを与えます (順序も尊重さ"
-"れます)。未選択ならヒントなし。"
+"対応ブラウザーに対し、優先して案内する認証方法のヒントを与えます (順序も尊重"
+"されます)。未選択ならヒントなし。"
 
 #: src/Admin/SettingsPage.php:330
 msgid "reCAPTCHA v3 (password login protection)"
@@ -563,7 +563,7 @@ msgstr "有効化"
 
 #: src/Admin/SettingsPage.php:338
 msgid "Enable reCAPTCHA"
-msgstr "reCAPTCHA を有効にする"
+msgstr "Google reCAPTCHA を有効にする"
 
 #: src/Admin/SettingsPage.php:343
 msgid "Site key"
@@ -579,7 +579,7 @@ msgstr "スコアしきい値"
 
 #: src/Admin/SettingsPage.php:354
 msgid "0.0 to 1.0. Scores below this are rejected (default 0.5)."
-msgstr "0.0〜1.0。これ未満のスコアは拒否します (既定 0.5)。"
+msgstr "0.0〜1.0。これ未満のスコアは拒否します (既定0.5)。"
 
 #: src/Admin/SettingsPage.php:358
 msgid "If Google is unreachable"
@@ -588,7 +588,8 @@ msgstr "Google に接続できない場合"
 #: src/Admin/SettingsPage.php:362
 msgid "Allow the password login when reCAPTCHA cannot be verified (fail open)"
 msgstr ""
-"reCAPTCHA を検証できないときにパスワードログインを許可する (フェイルオープン)"
+"Google reCAPTCHA を検証できないときにパスワードログインを許可する (フェイル"
+"オープン)"
 
 #: src/Admin/SettingsPage.php:364
 msgid ""
@@ -702,8 +703,8 @@ msgid ""
 "Approve a login on your computer from your phone — a QR code plus a four-"
 "digit confirmation code, so a relayed code cannot be used elsewhere."
 msgstr ""
-"パソコンのログインをスマートフォンから承認します。QR コードと 4 桁の確認コー"
-"ドを組み合わせるため、中継されたコードを別の場所で使うことはできません。"
+"パソコンのログインをスマートフォンから承認します。QR コードと4桁の確認コード"
+"を組み合わせるため、中継されたコードを別の場所で使うことはできません。"
 
 #: src/Admin/SettingsPage.php:482
 msgid "A way back in that is not a password"
@@ -779,9 +780,9 @@ msgid ""
 "the first passkey: moving a whole site across, and keeping a way in when a "
 "device goes missing."
 msgstr ""
-"この画面の機能はすべて無料で、これからも無料です。Pro が受け持つのは、最初の "
-"1 本を登録したあと — サイト全体を移行させることと、端末を失ったときの入り口を"
-"確保することです。"
+"この画面の機能はすべて無料で、これからも無料です。Pro が受け持つのは、最初の1"
+"本を登録したあと — サイト全体を移行させることと、端末を失ったときの入り口を確"
+"保することです。"
 
 #: src/Admin/SettingsPage.php:541
 msgid "See what Pro adds"
@@ -789,7 +790,7 @@ msgstr "Pro でできることを見る"
 
 #: src/Admin/SettingsPage.php:543
 msgid "One-time purchase, no subscription. 14-day refund."
-msgstr "買い切り、サブスクリプションなし。14 日間返金保証。"
+msgstr "買い切り、サブスクリプションなし。14日間返金保証。"
 
 #: src/Admin/SettingsPage.php:558
 msgid "Adoption"
@@ -798,12 +799,12 @@ msgstr "導入状況"
 #. translators: 1: users with a passkey, 2: total users, 3: percentage.
 #: src/Admin/SettingsPage.php:562
 msgid "Users with a passkey: %1$d / %2$d (%3$d%%)"
-msgstr "パスキーを登録済みのユーザー: %1$d / %2$d 人 (%3$d%%)"
+msgstr "パスキーを登録済みのユーザー: %1$d / %2$d人 (%3$d%%)"
 
 #. translators: %d: total number of registered passkeys.
 #: src/Admin/SettingsPage.php:571
 msgid "Total registered passkeys: %d"
-msgstr "登録済みパスキーの総数: %d 個"
+msgstr "登録済みパスキーの総数: %d個"
 
 #: src/Admin/SettingsPage.php:575
 msgid "Per-user status is shown in the Passkey column of the Users list."
@@ -813,7 +814,7 @@ msgstr "各ユーザーの登録状況は「ユーザー」一覧の「パスキ
 #: src/Admin/SettingsPage.php:614
 msgid "%d user has not enrolled yet."
 msgid_plural "%d users have not enrolled yet."
-msgstr[0] "%d 人がまだ登録していません。"
+msgstr[0] "%d人がまだ登録していません。"
 
 #: src/Admin/SettingsPage.php:624
 msgid "Pro can require a passkey by role, with a grace period."
@@ -885,7 +886,7 @@ msgstr "閉じる"
 
 #: src/Admin/SetupWizard.php:161
 msgid "Step 1: can this site use passkeys?"
-msgstr "ステップ 1: このサイトでパスキーは使えるか"
+msgstr "ステップ1: このサイトでパスキーは使えるか"
 
 #: src/Admin/SetupWizard.php:165
 msgid "Secure connection"
@@ -955,7 +956,7 @@ msgstr ""
 
 #: src/Admin/SetupWizard.php:209
 msgid "Step 2: register your own passkey"
-msgstr "ステップ 2: 自分のパスキーを登録する"
+msgstr "ステップ2: 自分のパスキーを登録する"
 
 #: src/Admin/SetupWizard.php:211
 msgid ""
@@ -984,7 +985,7 @@ msgstr "プロフィールに移動して登録"
 
 #: src/Admin/SetupWizard.php:227
 msgid "Step 3: decide the rollout"
-msgstr "ステップ 3: 展開方針を決める"
+msgstr "ステップ3: 展開方針を決める"
 
 #: src/Admin/SetupWizard.php:229
 msgid ""
@@ -1347,8 +1348,8 @@ msgid ""
 "You can register at most %d passkeys. Remove an unused passkey before "
 "registering a new one."
 msgstr ""
-"登録できるパスキーは最大 %d 個です。不要なパスキーを削除してから登録してくだ"
-"さい。"
+"登録できるパスキーは最大%d個です。不要なパスキーを削除してから登録してくださ"
+"い。"
 
 #: src/Security/AuthSession.php:107
 msgid ""
@@ -1407,8 +1408,8 @@ msgid ""
 "Your account was signed into with a passkey from a device or browser not "
 "seen before."
 msgstr ""
-"これまでに記録のない端末またはブラウザから、パスキーでアカウントにサインイン"
-"しました。"
+"これまでに記録のない端末またはブラウザーから、パスキーでアカウントにサインイ"
+"ンしました。"
 
 #: src/Security/Notifications.php:165
 msgid ""
@@ -1436,7 +1437,7 @@ msgstr "IP アドレス: %s"
 #. translators: %s: browser user agent.
 #: src/Security/Notifications.php:292
 msgid "Browser: %s"
-msgstr "ブラウザ: %s"
+msgstr "ブラウザー: %s"
 
 #. translators: %s: site name.
 #: src/Security/Notifications.php:69
@@ -1482,6 +1483,67 @@ msgstr "パスキーとは ?"
 #: src/Support/Help.php:58
 msgid "Learn more"
 msgstr "詳しく"
+
+#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
+msgid "Another sign-in attempt is still running. Wait a moment and try again."
+msgstr ""
+"別のログイン処理がまだ実行中です。少し待ってからもう一度お試しください。"
+
+#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
+msgid "Could not reach the site. Check your connection and try again."
+msgstr ""
+"サイトに接続できませんでした。通信状況を確認してもう一度お試しください。"
+
+#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
+msgid "Passkeys need a secure (HTTPS) connection on this site's own address."
+msgstr ""
+"パスキーを使うには、このサイト自身のアドレスへの安全な接続 (HTTPS) が必要で"
+"す。"
+
+#: src/Admin/SiteHealth.php
+msgid "Rapls Passkey: Object cache"
+msgstr "Rapls Passkey: オブジェクトキャッシュ"
+
+#: src/Admin/SiteHealth.php
+msgid ""
+"No persistent object cache is installed, so nothing sits between one request "
+"and the next."
+msgstr ""
+"永続オブジェクトキャッシュは導入されていないため、リクエストとリクエストの間"
+"に挟まるものはありません。"
+
+#: src/Admin/SiteHealth.php
+msgid ""
+"A persistent object cache is installed. Reload this page once to confirm "
+"that it carries values between requests."
+msgstr ""
+"永続オブジェクトキャッシュが導入されています。リクエストをまたいで値が保持さ"
+"れるかを確認するため、このページを一度再読み込みしてください。"
+
+#: src/Admin/SiteHealth.php
+msgid ""
+"The object cache carries values between requests, which is what WordPress "
+"expects of it."
+msgstr ""
+"オブジェクトキャッシュはリクエストをまたいで値を保持しています。WordPress が"
+"前提としている動作です。"
+
+#: src/Admin/SiteHealth.php
+msgid ""
+"The object cache did not return a value written by an earlier request. "
+"Anything that spans two requests — signing in, a two-factor challenge, a "
+"form token — can then fail at random. Common causes are an APCu cache too "
+"small for the site (entries are evicted), and more than one PHP-FPM instance "
+"or server, which do not share one APCu segment. Check the cache size and hit "
+"rate, or remove wp-content/object-cache.php."
+msgstr ""
+"オブジェクトキャッシュが、以前のリクエストで書き込んだ値を返しませんでした。"
+"ログイン、2要素認証のチャレンジ、フォームのトークンなど、2つのリクエストにま"
+"たがる処理がランダムに失敗することがあります。よくある原因は、サイトに対して "
+"APCu の容量が小さくエントリが追い出されていること、および PHP-FPM のインスタ"
+"ンスやサーバーが複数あり、1つの APCu 領域を共有していないことです。キャッシュ"
+"の容量とヒット率を確認するか、wp-content/object-cache.php を削除してくださ"
+"い。"
 
 #~ msgid "Rapls Passkey Pro"
 #~ msgstr "Rapls Passkey Pro"
@@ -1539,35 +1601,3 @@ msgstr "詳しく"
 
 #~ msgid "You have reached the passkey limit. Please try again."
 #~ msgstr "パスキーの登録上限に達しました。もう一度お試しください。"
-
-#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
-msgid "Another sign-in attempt is still running. Wait a moment and try again."
-msgstr "別のログイン処理がまだ実行中です。少し待ってからもう一度お試しください。"
-
-#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
-msgid "Could not reach the site. Check your connection and try again."
-msgstr "サイトに接続できませんでした。通信状況を確認してもう一度お試しください。"
-
-#: src/Frontend/Shortcodes.php src/Login/LoginForm.php
-msgid "Passkeys need a secure (HTTPS) connection on this site's own address."
-msgstr "パスキーを使うには、このサイト自身のアドレスへの安全な接続 (HTTPS) が必要です。"
-
-#: src/Admin/SiteHealth.php
-msgid "Rapls Passkey: Object cache"
-msgstr "Rapls Passkey: オブジェクトキャッシュ"
-
-#: src/Admin/SiteHealth.php
-msgid "No persistent object cache is installed, so nothing sits between one request and the next."
-msgstr "永続オブジェクトキャッシュは導入されていないため、リクエストとリクエストの間に挟まるものはありません。"
-
-#: src/Admin/SiteHealth.php
-msgid "A persistent object cache is installed. Reload this page once to confirm that it carries values between requests."
-msgstr "永続オブジェクトキャッシュが導入されています。リクエストをまたいで値が保持されるかを確認するため、このページを一度再読み込みしてください。"
-
-#: src/Admin/SiteHealth.php
-msgid "The object cache carries values between requests, which is what WordPress expects of it."
-msgstr "オブジェクトキャッシュはリクエストをまたいで値を保持しています。WordPress が前提としている動作です。"
-
-#: src/Admin/SiteHealth.php
-msgid "The object cache did not return a value written by an earlier request. Anything that spans two requests — signing in, a two-factor challenge, a form token — can then fail at random. Common causes are an APCu cache too small for the site (entries are evicted), and more than one PHP-FPM instance or server, which do not share one APCu segment. Check the cache size and hit rate, or remove wp-content/object-cache.php."
-msgstr "オブジェクトキャッシュが、以前のリクエストで書き込んだ値を返しませんでした。ログイン、2要素認証のチャレンジ、フォームのトークンなど、2 つのリクエストにまたがる処理がランダムに失敗することがあります。よくある原因は、サイトに対して APCu の容量が小さくエントリが追い出されていること、および PHP-FPM のインスタンスやサーバーが複数あり 1 つの APCu 領域を共有していないことです。キャッシュの容量とヒット率を確認するか、wp-content/object-cache.php を削除してください。"

@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.74
+Stable tag: 0.13.75
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,10 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.75 =
+* Translation only: the Japanese catalogue now follows the WordPress Japanese style guide where it had drifted from it. A half-width number takes no space around it in Japanese, so "0 は無制限です" becomes "0は無制限です"; and the glossary settles ブラウザー, サーバー and ユーザー over the shorter forms the 長音 rule would otherwise produce. 293 strings, no code change.
+* tests/smoke-ja-style.php now checks both, and one more thing: translate.wordpress.org warns when a translation opens in a different letter case from the original. Japanese word order produces that on its own — "Enable reCAPTCHA" becomes "reCAPTCHA を有効にする" — so it is worth catching here rather than at upload time.
 
 = 0.13.74 =
 * Passkey sign-in no longer depends on the object cache. A sign-in is two requests — the browser asks for a challenge, then sends back the answer — and the challenge was kept in a transient, which WordPress stores in the object cache whenever one is installed. WordPress then assumes the cache will hand the second request what the first one wrote, and that is up to the host, not the plugin: separate PHP-FPM instances and separate servers do not share an APCu segment, and any cache can evict an entry or lose the counter a drop-in namespaces its keys by. Seen on a live site, the challenge was not what came back seconds later, and a correct passkey was refused as expired — which is why the same passkey worked, then did not, then worked again. Challenges and parked two-factor logins now go straight to the database.

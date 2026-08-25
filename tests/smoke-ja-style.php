@@ -116,6 +116,54 @@ foreach ( $pairs as $to ) {
 }
 check( '半角括弧の内側にスペースがない', array() === $inner, implode( ' / ', array_slice( $inner, 0, 3 ) ) );
 
+/*
+ * Rule 1-9, which runs the opposite way to the spacing rule above it: a
+ * half-width number takes no space on either side. The guide's own wrong
+ * example is "%d 件の投稿" — a numeric placeholder counts as the number it
+ * stands for, so it is put back as a digit before the pattern runs.
+ *
+ * Quantities only. A digit that follows a letter, digit, hyphen or underscore
+ * is the tail of an identifier — h6, --depth-0 — and closing the space there
+ * would read as "h6見出し".
+ */
+$jp     = 'ぁ-ゖァ-ヺー一-鿿';
+$number = '(?:[0-9]+(?:\.[0-9]+)?|%(?:\d+\$)?d)';
+$spaced = array();
+foreach ( $pairs as $to ) {
+	$probe = preg_replace( '/%(?:\d+\$)?[sx]/u', '', $to );
+	$bad   = '/(?<![A-Za-z0-9_-])' . $number . ' [' . $jp . ']'
+		. '|[' . $jp . '] ' . $number . '(?![A-Za-z0-9_-])/u';
+	if ( preg_match( $bad, $probe ) ) {
+		$spaced[] = $to;
+	}
+}
+check( '半角数字の前後に半角スペースを入れていない', array() === $spaced, implode( ' / ', array_slice( $spaced, 0, 3 ) ) );
+
+/*
+ * translate.wordpress.org warns when the original and the translation disagree
+ * about the case of their first letter. Japanese word order puts the object
+ * first, so "Enable reCAPTCHA" becomes "reCAPTCHA を有効にする" and trips it —
+ * a lowercase brand name landing at the front of an uppercase original.
+ *
+ * Only checked when both sides open with a cased letter. A translation that
+ * starts with a Japanese character has no case, and is never the problem.
+ */
+$case = array();
+foreach ( $pairs as $id => $to ) {
+	// Explicit ASCII ranges, not ctype_*: those follow LC_CTYPE, and under a
+	// UTF-8 locale the lead byte of 権 is reported as a letter — which made
+	// every ordinary Japanese translation look like a mismatch.
+	$a = preg_match( '/^[A-Za-z]/', $id ) ? preg_match( '/^[A-Z]/', $id ) : null;
+	$b = preg_match( '/^[A-Za-z]/', $to ) ? preg_match( '/^[A-Z]/', $to ) : null;
+	if ( null === $a || null === $b ) {
+		continue;
+	}
+	if ( $a !== $b ) {
+		$case[] = "{$id} -> {$to}";
+	}
+}
+check( '原文と訳文で先頭文字の大小が一致する', array() === $case, implode( ' / ', array_slice( $case, 0, 2 ) ) );
+
 // Placeholders must survive translation, or the string breaks at runtime and
 // GlotPress refuses it besides.
 $dropped = array();
@@ -155,6 +203,26 @@ foreach ( $kanji as $wrong => $right ) {
 		}
 	}
 	check( "「{$wrong}」ではなく「{$right}」", array() === $hits, implode( ' / ', array_slice( $hits, 0, 2 ) ) );
+}
+
+/*
+ * The glossary decides these, and rule 6 puts it above the 長音 rule in
+ * section 4 — so "browser" is ブラウザー even though ブラウザ is the shorter
+ * form section 4 would otherwise produce.
+ */
+$glossary = array(
+	'ブラウザ' => 'ブラウザー',
+	'サーバ'   => 'サーバー',
+	'ユーザ'   => 'ユーザー',
+);
+foreach ( $glossary as $wrong => $right ) {
+	$hits = array();
+	foreach ( $pairs as $to ) {
+		if ( preg_match( '/' . $wrong . '(?!ー)/u', $to ) ) {
+			$hits[] = $to;
+		}
+	}
+	check( "用語集は「{$right}」", array() === $hits, implode( ' / ', array_slice( $hits, 0, 2 ) ) );
 }
 
 // WordPress is never translated, and never written ワードプレス.

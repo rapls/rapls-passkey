@@ -140,10 +140,17 @@ $allowed_skips = array(
 	// smoke-vendor-digest drives bin/vendor-digest.php, which a distribution does
 	// not carry — source-only, and it says so rather than passing on nothing.
 	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php', 'smoke-dist-inputs.php', 'smoke-vendor-digest.php' ),
-	// smoke-mds names the bundled library; the other two exercise operator tooling
-	// under tools/, which is deliberately NOT part of the plugin artifact — it is
-	// shipped in the verification bundle instead, where the source-tree run covers
-	// both. Skipping them here says that, rather than hiding it.
+	// These exercise operator tooling under tools/, which is deliberately NOT part
+	// of the plugin artifact — it is shipped in the verification bundle instead,
+	// where the source-tree run covers both. Skipping them here says that, rather
+	// than hiding it.
+	// smoke-mds was on this list, excused as "names the bundled library". It does
+	// not: it reaches the library only through Mds, and the sibling free artifact
+	// extracted above brings the scoped autoloader with it, so the suite runs here
+	// exactly as shipped. The excuse cost what excuses cost — PHP-Scoper mangled
+	// the ASN.1 UTCTime format string, every certificate signature failed in the
+	// build and only in the build, and the one suite that would have said so was
+	// being skipped. It runs now.
 	// smoke-docs-endpoints reads the licence server's router and E2E-TESTING.md,
 	// neither of which is in a plugin artifact — it is a SOURCE-ONLY suite, and
 	// it said so by asserting nothing here. Counted honestly as a skip now
@@ -152,7 +159,7 @@ $allowed_skips = array(
 	// smoke-runbook-rq runs the runbook's own helper against a loopback (V79-01);
 	// the document is not in a plugin artifact either, so it is source-only for
 	// the same reason and named here for the same reason.
-	'rapls-passkey-pro' => array( 'smoke-mds.php', 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php', 'smoke-runbook-rq.php', 'smoke-vendor-digest.php' ),
+	'rapls-passkey-pro' => array( 'smoke-rotation-check.php', 'smoke-seen-versions.php', 'smoke-license-store.php', 'smoke-license-api.php', 'smoke-docs-endpoints.php', 'smoke-dist-inputs.php', 'smoke-runbook-rq.php', 'smoke-vendor-digest.php' ),
 );
 $expected_skips = $allowed_skips[ $slug ] ?? array();
 

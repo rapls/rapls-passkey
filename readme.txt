@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.75
+Stable tag: 0.13.76
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -184,6 +184,10 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.76 =
+* Packaging fix: in the released package, and only there, every certificate signature check failed. Building this plugin rewrites the bundled libraries into a private namespace so that another plugin carrying the same library cannot collide with ours, and that step rewrites any text shaped like a namespaced class name. One piece of text has that shape without being a class name: `ymdHis\Z`, the format a certificate's validity dates are written in. Certificates were then rewritten with those dates expanded into something else, the bytes stopped matching what the certificate authority had signed, and every certificate was reported as not verifying. Sign-in and registration verify no certificates, so passkeys themselves were unaffected; the Pro add-on's FIDO metadata refresh does, and it reported "Certificate chain does not validate to a trusted FIDO root" while naming trust anchors that had been correct all along.
+* The check that would have caught this was being skipped. Running the suite against the built package excused it as needing the bundled libraries under their original names — it does not; it reaches them only through the plugin's own code. It runs against the package now, and the packaging step's rewrites are exercised directly as well, so a string it should not touch failing to survive is a test failure rather than a release.
 
 = 0.13.75 =
 * Translation only: the Japanese catalogue now follows the WordPress Japanese style guide where it had drifted from it. A half-width number takes no space around it in Japanese, so "0 は無制限です" becomes "0は無制限です"; and the glossary settles ブラウザー, サーバー and ユーザー over the shorter forms the 長音 rule would otherwise produce. 293 strings, no code change.

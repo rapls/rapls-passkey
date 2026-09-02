@@ -151,5 +151,73 @@ $composer_at = strpos( $script, 'install --no-dev --optimize-autoloader' );
 check( 'the clean-tree gate is still in the build (V69-01)', false !== $gate_at );
 check( 'and it runs before Composer, so it judges the source and not the build', false !== $gate_at && false !== $composer_at && $gate_at < $composer_at );
 
+// --- 5. The scoper patchers, run for real -----------------------------------
+/*
+ * PHP-Scoper prefixes any string literal shaped like a namespaced symbol. A date
+ * format is that shape when it escapes a letter: 'ymdHis\Z', the DER form of an
+ * ASN.1 UTCTime, shipped as format('<prefix>\ymdHis\Z'). Every certificate then
+ * re-encoded its validity dates as expanded format characters, the bytes stopped
+ * matching what the CA signed, and every certificate signature failed — in the
+ * build only, which is why the source tree said nothing was wrong.
+ *
+ * The config is executed here rather than read, so what is asserted is the
+ * patcher itself. Its one dependency is php-scoper's bundled Finder, which is
+ * only in the PHAR; a stub stands in for it, since nothing below calls it.
+ */
+$scoper = $root . '/scoper.inc.php';
+if ( is_readable( $scoper ) ) {
+	if ( ! class_exists( 'Isolated\Symfony\Component\Finder\Finder' ) ) {
+		eval(
+			'namespace Isolated\Symfony\Component\Finder;
+			class Finder {
+				public static function create() { return new self(); }
+				public function __call( $name, $args ) { return $this; }
+			}'
+		);
+	}
+
+	$config   = require $scoper;
+	$prefix   = (string) ( $config['prefix'] ?? '' );
+	$patchers = (array) ( $config['patchers'] ?? array() );
+	$in_file  = str_replace( '\\', '\\\\', $prefix );
+
+	// What PHP-Scoper hands a patcher, and what it must hand back.
+	$apply = static function ( string $file, string $contents ) use ( $patchers, $prefix ) {
+		foreach ( $patchers as $patcher ) {
+			$contents = $patcher( $file, $prefix, $contents );
+		}
+		return $contents;
+	};
+
+	check( 'the config declares a prefix', '' !== $prefix );
+	check( 'and at least one patcher', array() !== $patchers );
+
+	$mangled = "return \$dt->format('" . $in_file . "\\\\ymdHis\\\\Z');";
+	check(
+		'a date format loses the prefix PHP-Scoper put on it',
+		"return \$dt->format('ymdHis\\\\Z');" === $apply( 'UTCTime.php', $mangled )
+	);
+
+	// The same shape, and it must survive: these strings are prefixed on purpose,
+	// and stripping them would break the Symfony polyfills instead.
+	$polyfill = "if (!\\function_exists('" . $in_file . "\\\\json_validate')) {";
+	check( 'a prefixed function_exists() guard is left alone', $polyfill === $apply( 'bootstrap.php', $polyfill ) );
+
+	$alias = "\\class_alias('" . $in_file . "\\\\Normalizer', 'Normalizer', \\false);";
+	check( 'and so is a prefixed class_alias()', $alias === $apply( 'Normalizer.php', $alias ) );
+
+	$other = "\$x = \$obj->update('" . $in_file . "\\\\Foo\\\\Bar');";
+	check( 'a prefixed class name in some other call is left alone', $other === $apply( 'Whatever.php', $other ) );
+
+	// The Composer bootstrap guard, pinned where the date patcher is pinned.
+	$guard = "if ('Composer\\\\Autoload\\\\ClassLoader' === \$class) {";
+	check(
+		'the composer autoloader guard is still prefixed',
+		false !== strpos( $apply( 'autoload_real.php', $guard ), "'" . $in_file . "\\\\Composer\\\\Autoload\\\\ClassLoader'" )
+	);
+} else {
+	skip( 'no scoper.inc.php here, so the patchers cannot be run' );
+}
+
 echo "\n  {$pass} passed, {$failc} failed, {$skips} skipped\n";
 exit( $failc === 0 ? 0 : 1 );

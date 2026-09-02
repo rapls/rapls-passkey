@@ -112,5 +112,32 @@ return array(
 				$contents
 			);
 		},
+
+		/*
+		 * A date format string is not a class name, but one can look exactly like
+		 * one. PHP-Scoper prefixes any string literal shaped like a namespaced
+		 * symbol, and `'ymdHis\Z'` — the DER format for an ASN.1 UTCTime, where the
+		 * `\Z` escapes a literal Z — is that shape. It shipped as
+		 * `format('RaplsPasskey\Vendor\ymdHis\Z')`, so every certificate re-encoded
+		 * its validity dates as a run of expanded format characters. The bytes then
+		 * differ from the ones the CA signed, and pki-framework verifies signatures
+		 * over a re-encoding of the parsed certificate — so EVERY certificate
+		 * signature failed, in the build only. The FIDO metadata refresh reported
+		 * that as "Certificate chain does not validate to a trusted FIDO root",
+		 * naming anchors that were correct all along.
+		 *
+		 * The first argument of a date-formatting call is never a class name, so
+		 * the prefix comes back off there and nowhere else. A blanket rule cannot
+		 * do this: `function_exists('<prefix>\json_validate')` in the Symfony
+		 * polyfills is a lowercase prefixed string that is meant to stay.
+		 */
+		static function ( string $file_path, string $prefix, string $contents ): string {
+			$in_file = preg_quote( str_replace( '\\', '\\\\', $prefix ), '/' );
+			return (string) preg_replace(
+				'/(->format\(|::createFromFormat\(|\b(?:date|gmdate|date_create_from_format|date_create_immutable_from_format)\()\'' . $in_file . '\\\\\\\\/',
+				'$1\'',
+				$contents
+			);
+		},
 	),
 );

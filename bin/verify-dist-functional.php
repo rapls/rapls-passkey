@@ -135,11 +135,13 @@ if ( '' !== $sibling && is_dir( $work . '/rapls-passkey' ) && ! is_dir( $work . 
  * should. Adding a name here is a deliberate act, and an unexpected skip fails.
  */
 $allowed_skips = array(
+	// smoke-ja-style reads languages/*.po, which .distignore keeps out of the
+	// package — translations come from translate.wordpress.org, not from the ZIP.
 	// smoke-dist-inputs reads the build script and the ignore files, none of which
 	// is in a plugin artifact — source-only, like smoke-docs-endpoints (V71-01).
 	// smoke-vendor-digest drives bin/vendor-digest.php, which a distribution does
 	// not carry — source-only, and it says so rather than passing on nothing.
-	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php', 'smoke-dist-inputs.php', 'smoke-vendor-digest.php' ),
+	'rapls-passkey'     => array( 'smoke-assertion.php', 'smoke-registration.php', 'smoke-wiring.php', 'smoke-dist-inputs.php', 'smoke-vendor-digest.php', 'smoke-ja-style.php' ),
 	// These exercise operator tooling under tools/, which is deliberately NOT part
 	// of the plugin artifact — it is shipped in the verification bundle instead,
 	// where the source-tree run covers both. Skipping them here says that, rather

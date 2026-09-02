@@ -150,7 +150,7 @@ foreach ( array( 'src/Rest/Endpoints.php', 'src/Admin/ProfileUi.php' ) as $rel )
 	$src = (string) file_get_contents( $root . '/' . $rel );
 	check(
 		$rel . ' passes true as the default',
-		(bool) preg_match( "#allow_admin_enrolment',\s*true\s*\)#", $src )
+		(bool) preg_match( "#allow_admin_enrolment',\s*\\\\?true\s*\)#", $src )
 	);
 	check(
 		$rel . ' does not tie the feature to the paid add-on',

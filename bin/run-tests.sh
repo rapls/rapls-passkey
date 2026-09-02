@@ -112,7 +112,7 @@ fi
 # Final-artifact check, if the distributable ZIP has been built.
 zip="$ROOT/../${SLUG}.zip"
 FUNCTIONAL="$ROOT/bin/verify-dist-functional.php"
-FUNCTIONAL_ARGS=""
+FUNCTIONAL_ARGS=()
 dist_bad=0
 if [ -f "$zip" ] && [ -f "$ROOT/bin/verify-dist.php" ]; then
 	echo "== ${SLUG}: distribution ZIP =="
@@ -129,7 +129,7 @@ if [ -f "$zip" ] && [ -f "$ROOT/bin/verify-dist.php" ]; then
 	# string — 'ymdHis\Z' prefixed as if it were a class name — reached a release
 	# with every certificate signature failing in the build and only in the build.
 	if [ -f "$FUNCTIONAL" ]; then
-		if "$PHP_BIN" "$FUNCTIONAL" "$zip" $FUNCTIONAL_ARGS; then
+		if "$PHP_BIN" "$FUNCTIONAL" "$zip" ${FUNCTIONAL_ARGS[@]+"${FUNCTIONAL_ARGS[@]}"}; then
 			echo "  -> dist functional PASS"
 		else
 			dist_bad=1

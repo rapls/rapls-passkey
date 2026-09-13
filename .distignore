@@ -1,6 +1,6 @@
 # Files excluded from the distributed plugin (WordPress.org).
-# Runtime stays: src/, assets/, vendor/, languages/, rapls-passkey.php,
-# uninstall.php, readme.txt.
+# Runtime stays: src/, assets/, vendor/, rapls-passkey.php, uninstall.php,
+# readme.txt. Not languages/ -- see the entry for it below.
 
 /.git
 /.github

@@ -4,11 +4,11 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.76
+Stable tag: 0.13.77
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Touch ID, Windows Hello and security keys sign users in. No extra PHP extension, no external service, and password sign-in keeps working.
+Touch ID, Windows Hello or a security key signs you in. Your password still works, so a lost device won't lock you out. Japanese UI fully translated.
 
 == Description ==
 
@@ -16,6 +16,10 @@ Rapls Passkey adds passkey sign-in to WordPress. Touch ID, Windows Hello, Face
 ID or a security key takes the place of the password, and your server never
 holds a shared secret — only a public key, which is useless to anyone who
 steals it.
+
+A video walkthrough (in Japanese):
+
+https://www.youtube.com/watch?v=6qeKYlZrh1M
 
 It is built to run where most WordPress sites actually run:
 
@@ -130,9 +134,28 @@ You can also manage passkeys from the server with WP-CLI:
     wp rapls-passkey list --user=admin
     wp rapls-passkey remove <id>
 
-In an emergency, add the following to wp-config.php to temporarily disable passkey enforcement (remove it once you have recovered):
+In an emergency, add the following to wp-config.php. It switches off every passkey requirement and second-factor check this plugin applies; remove it once you have recovered:
 
     define( 'RAPLS_PASSKEY_BYPASS', true );
+
+= Will passkeys made on a staging site work on the live site? =
+
+Not by default. A passkey is bound to the domain it was registered on, and that
+binding is kept inside the authenticator, not in the database — so moving the
+database to production does not carry it across. A passkey registered on
+staging.example.com is not offered on example.com.
+
+Either register again on the live site and treat staging passkeys as disposable,
+or have both sites use the parent domain before anyone registers:
+
+    add_filter( 'rapls_passkey_rp_id', function () {
+        return 'example.com';
+    } );
+
+With the second, passkeys registered on staging keep working once the database
+moves to production, including any you did not mean to keep. Passkeys made on
+localhost only ever work on localhost. The setup screen shows the relying-party
+ID in use, so this can be settled before the first passkey is registered.
 
 == External services ==
 
@@ -185,6 +208,13 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.77 =
+* The short description now leads with what decides whether a site can try this safely: your password still works, so a lost device does not lock you out, and the Japanese interface is fully translated.
+* New FAQ entry: why passkeys registered on a staging site do not work on the live one, and the two ways to handle it. The lost-passkey entry now says what the emergency constant actually switches off.
+* A video walkthrough is linked from the description.
+* The changelog had lost 0.13.46–0.13.62. When 0.13.71 trimmed this readme it deleted those entries and pointed to changelog.txt for them, but they were never added there. They are restored from history, and this readme now carries only the latest releases.
+* No functional change.
+
 = 0.13.76 =
 * Packaging fix: in the released package, and only there, every certificate signature check failed. Building this plugin rewrites the bundled libraries into a private namespace so that another plugin carrying the same library cannot collide with ours, and that step rewrites any text shaped like a namespaced class name. One piece of text has that shape without being a class name: `ymdHis\Z`, the format a certificate's validity dates are written in. Certificates were then rewritten with those dates expanded into something else, the bytes stopped matching what the certificate authority had signed, and every certificate was reported as not verifying. Sign-in and registration verify no certificates, so passkeys themselves were unaffected; the Pro add-on's FIDO metadata refresh does, and it reported "Certificate chain does not validate to a trusted FIDO root" while naming trust anchors that had been correct all along.
 * The check that would have caught this was being skipped. Running the suite against the built package excused it as needing the bundled libraries under their original names — it does not; it reaches them only through the plugin's own code. It runs against the package now, and the packaging step's rewrites are exercised directly as well, so a string it should not touch failing to survive is a test failure rather than a release.
@@ -198,50 +228,7 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * A challenge can no longer be spent twice on such a host. Single use was enforced with an atomic add on the object cache, which decides a winner only among callers the cache actually serializes; where it does not, two requests could both be told they had won. It is now decided by the database.
 * Site Health reports an object cache that does not return what an earlier request wrote. It affects far more than this plugin, and nothing else says so.
 
-= 0.13.72 =
-* Signing in with a passkey no longer fails at random. The browser allows one credential request at a time, and the page keeps a background one open so passkeys appear in the username field. Pressing the button while that one was still being cancelled was answered with "a request is already pending", which is why the same passkey worked one moment and failed the next; the button now waits for the background request to actually be released, and cannot be pressed twice into the same prompt.
-* A passkey chosen from the username field's autofill list no longer fails silently. Once the authenticator has answered, the sign-in is finished and reported instead of being cancelled halfway or abandoned without a word — the case where touching the sensor appeared to do nothing at all.
-* A login page left open for a long time still works. The sign-in attempt the page holds open is refreshed before the server stops recognising it, rather than failing the next time a passkey is picked.
-* Failures now say what went wrong: a connection problem, a cancelled prompt, or a site that is not on HTTPS each get their own message instead of a single "authentication failed", and internal browser text is no longer shown.
-
-= 0.13.71 =
-* Display name updated: the plugin is listed as "Rapls Passkey – Passwordless Login with WebAuthn" so that the directory search finds it by what it does, not only by its brand name. The short description on the Plugins screen now names Touch ID, Windows Hello and security keys instead of repeating the title. No functional change.
-
-= 0.13.70 =
-* **Fixed: on PHP older than 8.2 the whole site went down, front end included.** The bundled dependencies require 8.2, and Composer's platform check throws the moment the autoloader is read — inside WordPress's plugin loading, where nothing catches it. The plugin now checks the version first and steps aside with an admin notice, leaving the rest of the site alone. The `Requires PHP` header does not cover this on its own: WordPress reads it when activating and when offering an update, so a server whose PHP is lowered afterwards, or a WP-CLI running an older PHP than the web server, went straight past it.
-
-= 0.13.69 =
-* The Rapls Passkey Pro panel moved into a sidebar that follows the page down. It sat at the very bottom of a single column, below the audit table, where nobody scrolls. It also says what the add-on is for rather than listing features, the Plugins screen gains "Settings" and "Go Pro" row links, and the adoption figure names what closes the gap. Nothing on the page is gated: the readme now has a Pro section and an FAQ entry saying plainly that the free version has no cap, trial or licence key.
-* Asks for a WordPress.org review, once. After a week of use, and only if a passkey has actually been registered, a notice on this plugin's own two screens asks for one. Every button — including the close button — settles it for good, and rapls_passkey/show_review_prompt turns it off entirely. It never appears anywhere else in wp-admin and never comes back.
-* Corrected: the readme claimed a bundled Japanese translation, which has not been true since 0.13.62. Translations come from translate.wordpress.org.
-
-= 0.13.68 =
-* Screenshots for the plugin directory listing, and the readme section that names them. No change to the plugin.
-
-= 0.13.67 =
-* Tests only, and one that was worth finding: nothing asserted that registering a passkey for another user is on by default. The stub in the enrolment test answered the filter itself, so the shipped default was never read — flip it back to off and every test still passed. The default is now under test, on both call sites, and the source is checked for wording that ties the feature to the paid add-on.
-
-= 0.13.66 =
-* **Registering a passkey for another user is on by default.** It was implemented but switched off, and the Pro add-on turned it on — which made a built-in feature depend on a licence, and that is not allowed here. The capability check was always the real bound and it has not changed: only someone who can already edit that user, and could therefore reset their password and sign in as them, can enrol for them. Pro's setting now only turns the feature off.
-* The second-factor screen filters the markup its 2FA provider prints, to the form controls such a screen needs. The two bundled adapters are unaffected, byte for byte; inline JavaScript from a provider is dropped, and a provider that needs it should enqueue it.
-* The package no longer carries the Japanese catalogue or `load_plugin_textdomain()`. WordPress.org builds translations for every locale from translate.wordpress.org and loads them on demand, and a bundled copy would only shadow that.
-* Dropped two test-only directories that Composer installs inside third-party packages (`doctrine/deprecations`, `symfony/clock`).
-
-= 0.13.65 =
-* Clears the last of the WordPress Plugin Check warnings against the shipped package. `$_SERVER['REQUEST_METHOD']`, a `redirect_to` from the query string and the "seen device" cookie are now unslashed and sanitised on the way in rather than only validated afterwards; the uninstall script's two loop variables are prefixed, since a file that runs at global scope defines globals; and the exemption on the DROP TABLE in uninstall named the wrong rule.
-* `composer.json` ships with the package again. WordPress.org's scan asks for it wherever a `vendor/` directory is present, and it is the manifest that says what is in there. `composer.lock` stays out. Note for anyone reading the package: `vendor/` has already been namespace-prefixed by the build, so do not run `composer install` inside an installed copy.
-* No functional change.
-
-= 0.13.64 =
-* Readme only: `Tested up to` named a patch release (7.0.2). WordPress.org's automated scan requires the major version alone, and rejected the upload over it. It reads 7.0 now; the plugin is unchanged and was tested against 7.0.2.
-
-= 0.13.63 =
-* **Direct-access protection was missing from every file in the distributed package.** The plugin guards each file with `if ( ! defined( 'ABSPATH' ) )`, which the build rewrites to `if ( ! \defined( 'ABSPATH' ) )` — a form the WordPress Plugin Check tool does not recognise. Every shipped file therefore read as unprotected to the tooling, while the repository looked correct. The guard is now written in the form that survives the build.
-* **The code-standard exemptions in the shipped files were pointing at the wrong lines.** They were written at the end of the line they applied to, and the build moves a trailing comment onto the following line — so each one silenced the line after the one it was meant to cover. All of them are now written above the line they apply to.
-* Fixes the findings these two hid: an unescaped exception message, a missing translators comment, a database call whose exemption named the wrong rule, and the CSV export's file handle. Behaviour is unchanged; the audit-log CSV, the two-factor integrations and the passkey cap all work exactly as before.
-* Also: `Plugin URI` pointed at this plugin's WordPress.org page, which the plugin header documentation does not allow, and `Author URI` was missing. The readme's external-service disclosure (optional reCAPTCHA) is now its own section, and releases older than 0.13.46 have moved to changelog.txt.
-
-For the change history of 0.13.62 and earlier releases, see changelog.txt.
+For the change history of 0.13.72 and earlier releases, see changelog.txt.
 
 == Upgrade Notice ==
 

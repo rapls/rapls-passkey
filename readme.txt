@@ -4,18 +4,18 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.77
+Stable tag: 0.13.78
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Touch ID, Windows Hello or a security key signs you in. Your password still works, so a lost device won't lock you out. Japanese UI fully translated.
+Passwordless login with passkeys (WebAuthn). Nothing to configure, no external service, and password sign-in keeps working.
 
 == Description ==
 
 Rapls Passkey adds passkey sign-in to WordPress. Touch ID, Windows Hello, Face
 ID or a security key takes the place of the password, and your server never
-holds a shared secret — only a public key, which is useless to anyone who
-steals it.
+holds a shared secret. It stores only a public key, which is useless to anyone
+who steals it.
 
 A video walkthrough (in Japanese):
 
@@ -23,7 +23,7 @@ https://www.youtube.com/watch?v=6qeKYlZrh1M
 
 It is built to run where most WordPress sites actually run:
 
-* **No PHP extension to install.** Nothing beyond what WordPress itself already needs. In particular `gmp` is not required, so there is nothing to ask your shared host for and nothing that stops working when the server's PHP is upgraded.
+* **Fewer moving parts.** Nothing to configure before the first passkey, and no `gmp` to ask your host for: the large-number maths WebAuthn needs uses `gmp` or `bcmath` when one is installed and plain PHP when neither is. Signatures are checked with OpenSSL, one of the modules WordPress's Site Health already looks for.
 * **Nothing leaves your site.** The passkey ceremony happens between the browser and your own server. No account, no API key, no third-party service in the login path.
 * **Passwords keep working.** Password login is never switched off in the free plugin. Nobody gets locked out while a site moves across.
 * **Japanese UI included.** Fully translated, alongside the English source.
@@ -86,9 +86,10 @@ relying-party ID, the WebAuthn library) so you can see the site is ready.
 
 = Does this need any PHP extensions? =
 
-No. It runs on what WordPress itself already requires. Some WebAuthn plugins
-need `gmp` compiled into PHP, which is not present on every shared host and can
-disappear when the host upgrades PHP; this plugin does not use it.
+It needs OpenSSL, which checks the passkey signatures and is one of the modules
+WordPress's Site Health already looks for. It does not need `gmp`: the
+large-number maths WebAuthn needs uses `gmp` or `bcmath` when one is installed,
+and plain PHP when neither is.
 
 = Does it work on shared hosting? =
 
@@ -113,11 +114,15 @@ described above to work.
 
 = Does it work with my security plugin? =
 
-It is built to sit alongside them rather than replace them. Plugins that change
-the login URL or add an image CAPTCHA keep doing so; the passkey button appears
-on whatever login screen your site actually serves. With Wordfence Login
-Security or Two-Factor, a passkey satisfies the second factor, and a weaker
-alternative login still has to pass the site's own 2FA.
+It is built to sit alongside them rather than replace them. A plugin that
+changes the login URL keeps doing so, and the passkey button appears on
+whatever login screen your site actually serves; the developer's own site runs
+it this way with CloudSecure WP Security. If your security plugin restricts the
+REST API to logged-in users, turn on "Passkey login when REST is restricted"
+under Settings → Rapls Passkey → REST API, so the sign-in can start before
+anyone is logged in. With Wordfence Login Security or Two-Factor, a passkey
+satisfies the second factor, and a weaker alternative login still has to pass
+the site's own 2FA.
 
 = Is the plugin available in Japanese? =
 
@@ -208,6 +213,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.78 =
+* The short description now says what the plugin is in the words people search for, that there is nothing to set up, and that password sign-in keeps working.
+* Corrected: the readme said `gmp` is often missing on shared hosts and that nothing beyond WordPress's own requirements is needed. The first was never measured, and the second overlooked OpenSSL. `gmp` is optional — the maths uses it or `bcmath` when one is present and plain PHP otherwise — and OpenSSL is what checks the signatures. The description and the FAQ now say exactly that.
+* The security-plugin FAQ now says what has been checked, a login URL changed by CloudSecure WP Security, and what a REST API restricted to logged-in users needs: one option in the settings. The claim about image CAPTCHAs, which had not been checked, is gone.
+* No functional change.
+
 = 0.13.77 =
 * The short description now leads with what decides whether a site can try this safely: your password still works, so a lost device does not lock you out, and the Japanese interface is fully translated.
 * New FAQ entry: why passkeys registered on a staging site do not work on the live one, and the two ways to handle it. The lost-passkey entry now says what the emergency constant actually switches off.
@@ -223,12 +234,7 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 * Translation only: the Japanese catalogue now follows the WordPress Japanese style guide where it had drifted from it. A half-width number takes no space around it in Japanese, so "0 は無制限です" becomes "0は無制限です"; and the glossary settles ブラウザー, サーバー and ユーザー over the shorter forms the 長音 rule would otherwise produce. 293 strings, no code change.
 * tests/smoke-ja-style.php now checks both, and one more thing: translate.wordpress.org warns when a translation opens in a different letter case from the original. Japanese word order produces that on its own — "Enable reCAPTCHA" becomes "reCAPTCHA を有効にする" — so it is worth catching here rather than at upload time.
 
-= 0.13.74 =
-* Passkey sign-in no longer depends on the object cache. A sign-in is two requests — the browser asks for a challenge, then sends back the answer — and the challenge was kept in a transient, which WordPress stores in the object cache whenever one is installed. WordPress then assumes the cache will hand the second request what the first one wrote, and that is up to the host, not the plugin: separate PHP-FPM instances and separate servers do not share an APCu segment, and any cache can evict an entry or lose the counter a drop-in namespaces its keys by. Seen on a live site, the challenge was not what came back seconds later, and a correct passkey was refused as expired — which is why the same passkey worked, then did not, then worked again. Challenges and parked two-factor logins now go straight to the database.
-* A challenge can no longer be spent twice on such a host. Single use was enforced with an atomic add on the object cache, which decides a winner only among callers the cache actually serializes; where it does not, two requests could both be told they had won. It is now decided by the database.
-* Site Health reports an object cache that does not return what an earlier request wrote. It affects far more than this plugin, and nothing else says so.
-
-For the change history of 0.13.72 and earlier releases, see changelog.txt.
+For the change history of 0.13.74 and earlier releases, see changelog.txt.
 
 == Upgrade Notice ==
 

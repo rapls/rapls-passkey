@@ -198,7 +198,7 @@ final class SetupWizard {
 							<td>
 								<?php echo esc_html( implode( ', ', $detected ) ); ?>
 								<p class="description" style="margin-top:4px">
-									<?php esc_html_e( 'Detected and coexisted with: this plugin adds no CSP header, uses only standard login hooks, and keeps its REST routes reachable where a plugin locks the REST API down to logged-in users.', 'rapls-passkey' ); ?>
+									<?php esc_html_e( 'Detected and coexisted with: this plugin adds no CSP header and uses only standard login hooks. If one of these restricts the REST API to logged-in users, passkey sign-in needs "Passkey login when REST is restricted" turned on in the REST API section of the Rapls Passkey settings. It is off by default.', 'rapls-passkey' ); ?>
 								</p>
 							</td>
 						</tr>

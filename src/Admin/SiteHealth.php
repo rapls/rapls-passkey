@@ -182,7 +182,7 @@ final class SiteHealth {
 			? __( 'No known login-security plugins are detected.', 'rapls-passkey' )
 			: sprintf(
 				/* translators: %s: comma-separated plugin names. */
-				__( 'Detected security plugins: %s. The plugin adapts automatically to work even when the REST API is restricted.', 'rapls-passkey' ),
+				__( 'Detected security plugins: %s. If one of them restricts the REST API to logged-in users and passkey sign-in stops working, turn on "Passkey login when REST is restricted" in the REST API section of the Rapls Passkey settings. It is off by default.', 'rapls-passkey' ),
 				implode( ', ', $detected )
 			);
 

@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.78
+Stable tag: 0.13.79
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,10 +66,10 @@ way in when a device goes missing.
 * **A way back in that is not a password** — one-time recovery codes and email magic-link sign-in
 * **Roll out by role** — require passkeys for the roles you choose, with a grace period, then turn password login off once everyone is across
 * **Adaptive step-up** — ask for a passkey again after a password sign-in from somewhere unfamiliar
-* **Authenticator policy** — FIDO Metadata Service checks, AAGUID allow and deny lists, trusted-device management
+* **Authenticator policy** — FIDO Metadata Service checks, an AAGUID denylist, trusted-device management
 * **Operations** — security webhooks, adoption reports, multisite network settings, WP-CLI
 
-One-time purchase, no subscription, with a year of updates and a 14-day refund.
+One-time purchase, no subscription: updates with no time limit, a year of support, and a 14-day refund.
 [Details and pricing](https://raplsworks.com/rapls-passkey-pro/)
 
 == Installation ==
@@ -212,6 +212,11 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.79 =
+* Corrected: Site Health and the setup check said passkey sign-in copes by itself when a security plugin restricts the REST API. It does not: that needs the "Passkey login when REST is restricted" option in the REST API section of the settings, which is off by default. Both now say so.
+* Corrected: the readme said the Pro add-on has AAGUID allow and deny lists. It has a denylist.
+* The Pro add-on's line in the readme says updates have no time limit and support is included for a year.
 
 = 0.13.78 =
 * The short description now says what the plugin is in the words people search for, that there is nothing to set up, and that password sign-in keeps working.

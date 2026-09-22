@@ -946,13 +946,17 @@ msgstr "セキュリティプラグイン"
 
 #: src/Admin/SetupWizard.php:201
 msgid ""
-"Detected and coexisted with: this plugin adds no CSP header, uses only "
-"standard login hooks, and keeps its REST routes reachable where a plugin "
-"locks the REST API down to logged-in users."
+"Detected and coexisted with: this plugin adds no CSP header and uses only "
+"standard login hooks. If one of these restricts the REST API to logged-in "
+"users, passkey sign-in needs \"Passkey login when REST is restricted\" turned "
+"on in the REST API section of the Rapls Passkey settings. It is off by "
+"default."
 msgstr ""
 "検出し、共存しています。本プラグインは CSP ヘッダーを追加せず、標準のログイン"
-"フックのみを使い、REST API がログイン済みユーザーに限定されている場合でも自身"
-"のルートは通れるようにします。"
+"フックのみを使います。これらのプラグインが REST API をログイン済みユーザーに"
+"限定している場合、パスキーでサインインするには Rapls Passkey 設定の「REST "
+"API」セクションで「REST API が制限されている場合のパスキーログイン」を有効に"
+"する必要があります。既定はオフです。"
 
 #: src/Admin/SetupWizard.php:209
 msgid "Step 2: register your own passkey"
@@ -1074,11 +1078,15 @@ msgstr "既知のログイン系セキュリティプラグインは検出され
 #. translators: %s: comma-separated plugin names.
 #: src/Admin/SiteHealth.php:176
 msgid ""
-"Detected security plugins: %s. The plugin adapts automatically to work even "
-"when the REST API is restricted."
+"Detected security plugins: %s. If one of them restricts the REST API to "
+"logged-in users and passkey sign-in stops working, turn on \"Passkey login "
+"when REST is restricted\" in the REST API section of the Rapls Passkey "
+"settings. It is off by default."
 msgstr ""
-"セキュリティプラグインを検出しました: %s。REST API 制限環境でも動作するよう自"
-"動対応しています。"
+"セキュリティプラグインを検出しました: %s。そのいずれかが REST API をログイン"
+"済みユーザーに限定していてパスキーでサインインできなくなった場合は、Rapls "
+"Passkey 設定の「REST API」セクションで「REST API が制限されている場合のパス"
+"キーログイン」を有効にしてください。既定はオフです。"
 
 #. translators: 1: RP ID, 2: site host.
 #: src/Admin/SiteHealth.php:182

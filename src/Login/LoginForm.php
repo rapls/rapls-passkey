@@ -18,6 +18,13 @@ defined( 'ABSPATH' ) || exit;
 final class LoginForm {
 
 	/**
+	 * Whether the button has been put on a front-end form this request.
+	 *
+	 * @var bool
+	 */
+	private $front_rendered = false;
+
+	/**
 	 * Hook the login screen.
 	 */
 	public function register(): void {
@@ -27,8 +34,13 @@ final class LoginForm {
 
 	/**
 	 * Enqueue the login script and its config.
+	 *
+	 * @param bool $front_end True when a front-end form (not wp-login.php) asked
+	 *                        for the button. Its sign-in then returns to the page
+	 *                        it started on rather than the dashboard.
 	 */
-	public function enqueue(): void {
+	public function enqueue( $front_end = false ): void {
+		$front_end = true === $front_end;
 		wp_enqueue_script(
 			'rapls-passkey-webauthn',
 			RAPLS_PASSKEY_URL . 'assets/webauthn.js',
@@ -53,6 +65,7 @@ final class LoginForm {
 			array(
 				'restUrl'    => esc_url_raw( rest_url( 'rapls-passkey/v1/' ) ),
 				'redirectTo' => $redirect_to,
+				'frontEnd'   => $front_end ? 1 : 0,
 				'i18n'       => array(
 					'authenticating' => __( 'Authenticating...', 'rapls-passkey' ),
 					'failed'         => __( 'Passkey authentication failed.', 'rapls-passkey' ),
@@ -71,6 +84,18 @@ final class LoginForm {
 	 * Output the passkey button inside the login form.
 	 */
 	public function render_button(): void {
+		// Other login forms fire login_form too -- WP-Members, bbPress, LearnDash
+		// -- on ordinary front-end pages, where login_enqueue_scripts never runs.
+		// The button used to be printed there without its script: it showed, and
+		// did nothing when pressed. Load the script here instead, and print the
+		// button only once, since the script binds to it by id.
+		if ( ! did_action( 'login_enqueue_scripts' ) ) {
+			if ( $this->front_rendered || is_user_logged_in() ) {
+				return;
+			}
+			$this->front_rendered = true;
+			$this->enqueue( true );
+		}
 		?>
 		<div style="margin:0 0 16px">
 			<button type="button" class="button button-secondary" id="rapls-passkey-login-btn" style="width:100%">

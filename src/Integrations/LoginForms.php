@@ -23,10 +23,11 @@ defined( 'ABSPATH' ) || exit;
  * that merely restyle wp-login.php are already covered by the core login button.
  *
  * Only hooks distinct from the core `login_form` action are wired here: plugins
- * whose forms reuse `login_form` (e.g. bbPress, LearnDash's wp_login_form-based
- * forms) are already served by the core login button, and re-hooking it would
- * double-render on wp-login.php. Add any other form via the
- * `rapls_passkey_login_form_hooks` filter.
+ * whose forms fire `login_form` themselves (WP-Members, bbPress) are served by
+ * the core login button, which loads its own script on such a front-end page
+ * (LoginForm::render_button()); re-hooking it would double-render on
+ * wp-login.php. Add any other form via the `rapls_passkey_login_form_hooks`
+ * filter.
  */
 final class LoginForms {
 

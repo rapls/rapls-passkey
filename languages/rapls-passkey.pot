@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later license.
 msgid ""
 msgstr ""
-"Project-Id-Version: Rapls Passkey – Passwordless Login with WebAuthn 0.13.79\n"
+"Project-Id-Version: Rapls Passkey – Passwordless Login with WebAuthn 0.13.80\n"
 "Report-Msgid-Bugs-To: https://github.com/rapls/rapls-passkey/issues\n"
-"POT-Creation-Date: 2026-09-22 10:17+0000\n"
+"POT-Creation-Date: 2026-11-02 07:01+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -251,7 +251,7 @@ msgid "Failed to register the passkey."
 msgstr ""
 
 #: src/Admin/ProfileUi.php:76 src/Frontend/Shortcodes.php:100
-#: src/Login/LoginForm.php:59 src/Login/UpgradePrompt.php:129
+#: src/Login/LoginForm.php:72 src/Login/UpgradePrompt.php:129
 msgid "This browser does not support passkeys."
 msgstr ""
 
@@ -954,20 +954,20 @@ msgstr ""
 msgid "The operation was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:102 src/Login/LoginForm.php:61
+#: src/Frontend/Shortcodes.php:102 src/Login/LoginForm.php:74
 msgid "Another sign-in attempt is still running. Wait a moment and try again."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:103 src/Login/LoginForm.php:62
+#: src/Frontend/Shortcodes.php:103 src/Login/LoginForm.php:75
 msgid "Could not reach the site. Check your connection and try again."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:104 src/Login/LoginForm.php:63
+#: src/Frontend/Shortcodes.php:104 src/Login/LoginForm.php:76
 msgid "Passkeys need a secure (HTTPS) connection on this site's own address."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:131 src/Integrations/LoginForms.php:111
-#: src/Integrations/WooCommerce.php:63 src/Login/LoginForm.php:77
+#: src/Frontend/Shortcodes.php:131 src/Integrations/LoginForms.php:112
+#: src/Integrations/WooCommerce.php:63 src/Login/LoginForm.php:102
 msgid "Sign in with a passkey"
 msgstr ""
 
@@ -983,11 +983,11 @@ msgstr ""
 msgid "Please sign in to manage your passkeys."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:95 src/Login/LoginForm.php:57
+#: src/Frontend/Shortcodes.php:95 src/Login/LoginForm.php:70
 msgid "Authenticating..."
 msgstr ""
 
-#: src/Frontend/Shortcodes.php:96 src/Login/LoginForm.php:58
+#: src/Frontend/Shortcodes.php:96 src/Login/LoginForm.php:71
 #: src/Rest/Endpoints.php:1010
 msgid "Passkey authentication failed."
 msgstr ""
@@ -1004,19 +1004,19 @@ msgstr ""
 msgid "Or sign in with a password"
 msgstr ""
 
-#: src/Login/LoginForm.php:60
+#: src/Login/LoginForm.php:73
 msgid "Authentication was cancelled or timed out. Please try again."
 msgstr ""
 
-#: src/Login/LoginForm.php:64
+#: src/Login/LoginForm.php:77
 msgid "Please enter your username or email address."
 msgstr ""
 
-#: src/Login/Recaptcha.php:109
+#: src/Login/Recaptcha.php:124
 msgid "reCAPTCHA could not be verified. Reload the page and try again."
 msgstr ""
 
-#: src/Login/Recaptcha.php:112
+#: src/Login/Recaptcha.php:127
 msgid "reCAPTCHA verification failed."
 msgstr ""
 

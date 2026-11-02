@@ -195,7 +195,9 @@
 		const result = await postJson( 'login/verify', {
 			state: options.state,
 			credential: wa.assertionToJson( assertion ),
-			redirect_to: cfg.redirectTo || '',
+			// On a front-end form (WP-Members and the like) the member stays on the
+			// page they signed in from; the server still validates the address.
+			redirect_to: cfg.redirectTo || ( cfg.frontEnd ? window.location.href : '' ),
 			rememberme: rememberEl && rememberEl.checked ? 1 : 0,
 		}, null );
 

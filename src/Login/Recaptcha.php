@@ -23,6 +23,13 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Recaptcha {
 
+	/**
+	 * Whether the script has been loaded for a front-end form this request.
+	 *
+	 * @var bool
+	 */
+	private $front_rendered = false;
+
 	/** Hidden field / POST key carrying the token. */
 	private const FIELD = 'rapls_passkey_recaptcha_token';
 
@@ -80,7 +87,15 @@ final class Recaptcha {
 	 * Hidden field the token is written into before the form submits.
 	 */
 	public function render_field(): void {
-		echo '<input type="hidden" name="' . esc_attr( self::FIELD ) . '" id="' . esc_attr( self::FIELD ) . '" value="">';
+		// A front-end form that fires login_form (WP-Members, bbPress) never ran
+		// login_enqueue_scripts: the field went out empty with nothing to fill
+		// it, and verify() refused every password sign-in from that form.
+		// Every form gets its own field; the script is loaded once.
+		if ( ! did_action( 'login_enqueue_scripts' ) && ! $this->front_rendered ) {
+			$this->front_rendered = true;
+			$this->enqueue();
+		}
+		echo '<input type="hidden" name="' . esc_attr( self::FIELD ) . '" value="">';
 	}
 
 	/**

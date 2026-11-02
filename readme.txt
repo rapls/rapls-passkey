@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.79
+Stable tag: 0.13.80
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -124,6 +124,17 @@ anyone is logged in. With Wordfence Login Security or Two-Factor, a passkey
 satisfies the second factor, and a weaker alternative login still has to pass
 the site's own 2FA.
 
+= Does it work with membership plugins such as WP-Members? =
+
+Yes. The passkey button appears on the login form by itself on WP-Members,
+bbPress and other forms that fire WordPress's own `login_form` hook, and on
+WooCommerce, Ultimate Member, MemberPress, Easy Digital Downloads, Theme My
+Login, LifterLMS and BuddyPress. A member who signs in from such a form comes
+back to the page they were on. Place `[rapls_passkey_register]` on the members'
+account page so they can register their own passkeys; members who register one
+sign in with the button, and the others keep using their password. For a form
+that shows no button, place `[rapls_passkey_login]` on its page.
+
 = Is the plugin available in Japanese? =
 
 Yes. The Japanese translation is complete, and WordPress.org serves it as a
@@ -212,6 +223,12 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 8. Every registration, sign-in and removal, exportable as CSV.
 
 == Changelog ==
+
+= 0.13.80 =
+* Fixed: login forms that fire WordPress's own login_form hook on an ordinary page -- WP-Members, bbPress -- showed the "Sign in with a passkey" button without its script, so pressing it did nothing. The button now brings its script, appears once per page, and returns the member to the page they signed in from.
+* Fixed: with reCAPTCHA v3 on, password sign-in from those same forms was always refused, because the token field was printed with nothing to fill it. Each form now gets its own field and the script is loaded for it.
+* The FAQ now says how the plugin works with membership plugins such as WP-Members.
+* If you use a page cache, clear it after updating: pages cached before carry the old button.
 
 = 0.13.79 =
 * Corrected: Site Health and the setup check said passkey sign-in copes by itself when a security plugin restricts the REST API. It does not: that needs the "Passkey login when REST is restricted" option in the REST API section of the settings, which is off by default. Both now say so.

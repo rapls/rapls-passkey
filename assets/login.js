@@ -197,7 +197,10 @@
 			credential: wa.assertionToJson( assertion ),
 			// On a front-end form (WP-Members and the like) the member stays on the
 			// page they signed in from; the server still validates the address.
-			redirect_to: cfg.redirectTo || ( cfg.frontEnd ? window.location.href : '' ),
+			// wp_localize_script() hands every value over as a string, and "0" is
+			// truthy: compare against '1', or wp-login.php sends the member back to
+			// the login page they just used (0.13.80).
+			redirect_to: cfg.redirectTo || ( '1' === String( cfg.frontEnd ) ? window.location.href : '' ),
 			rememberme: rememberEl && rememberEl.checked ? 1 : 0,
 		}, null );
 

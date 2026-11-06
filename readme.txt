@@ -4,7 +4,7 @@ Tags: passkey, passwordless, webauthn, login, two-factor
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.13.80
+Stable tag: 0.13.81
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,6 +224,10 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 
 == Changelog ==
 
+= 0.13.81 =
+* Fixed: since 0.13.80 a passkey sign-in on the normal login page succeeded but went back to the login page instead of the dashboard, so it looked as if nothing had happened. It goes to the dashboard (or the page you asked for) again.
+* If you use a page cache, clear it after updating. The server now also sends you to the dashboard when a page cached under 0.13.80 asks to go back to the login page.
+
 = 0.13.80 =
 * Fixed: login forms that fire WordPress's own login_form hook on an ordinary page -- WP-Members, bbPress -- showed the "Sign in with a passkey" button without its script, so pressing it did nothing. The button now brings its script, appears once per page, and returns the member to the page they signed in from.
 * Fixed: with reCAPTCHA v3 on, password sign-in from those same forms was always refused, because the token field was printed with nothing to fill it. Each form now gets its own field and the script is loaded for it.
@@ -259,6 +263,9 @@ This plugin does not use cookies for tracking. It sets only short-lived, functio
 For the change history of 0.13.74 and earlier releases, see changelog.txt.
 
 == Upgrade Notice ==
+
+= 0.13.81 =
+Fixes 0.13.80: after a passkey sign-in on the login page you were sent back to the login page instead of the dashboard.
 
 = 0.13.70 =
 On PHP older than 8.2 the previous release took the whole site down, front end included. The plugin now steps aside with an admin notice instead.

@@ -130,5 +130,27 @@ check( 'recaptcha front: a second form still gets its own field', false !== strp
 check( 'recaptcha front: script loaded only once', count( $GLOBALS['__enqueued'] ) === $count );
 check( 'recaptcha: field carries no duplicate id', false === strpos( $html . $html2, 'id="rapls_passkey_recaptcha_token"' ) );
 
+// ── 0.13.81: wp-login.php must not send the member back to the login page ────
+// wp_localize_script() turns 0 into the string "0", which JavaScript treats as
+// true. login.js must compare against '1', never test the value for truthiness.
+$js = (string) file_get_contents( dirname( __DIR__ ) . '/assets/login.js' );
+check( "login.js: frontEnd compared with '1'", false !== strpos( $js, "'1' === String( cfg.frontEnd )" ) );
+check( 'login.js: frontEnd never tested for truthiness', ! preg_match( '/\(\s*cfg\.frontEnd\s*\?/', $js ) );
+
+// The server falls back to the dashboard when asked to return to the login page
+// (a page cache can keep serving the 0.13.80 script).
+$GLOBALS['__login_url'] = 'https://example.test/login';
+function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $component ); }
+function untrailingslashit( $s ) { return rtrim( $s, '/\\' ); }
+function wp_login_url() { return $GLOBALS['__login_url']; }
+$is_login = new ReflectionMethod( 'RaplsPasskey\\Rest\\Endpoints', 'is_login_page_url' );
+$is_login->setAccessible( true );
+check( 'redirect: wp-login.php is the login page', true === $is_login->invoke( null, 'https://example.test/wp-login.php?loggedout=true' ) );
+check( 'redirect: a moved login page (/login) is the login page', true === $is_login->invoke( null, 'https://example.test/login?loggedout=true&wp_lang=ja' ) );
+check( 'redirect: /login/ with a trailing slash too', true === $is_login->invoke( null, 'https://example.test/login/' ) );
+check( 'redirect: the WP-Members page is not', false === $is_login->invoke( null, 'https://example.test/members/' ) );
+check( 'redirect: /login-help is not', false === $is_login->invoke( null, 'https://example.test/login-help/' ) );
+check( 'redirect: the dashboard is not', false === $is_login->invoke( null, 'https://example.test/wp-admin/' ) );
+
 echo "\n  {$pass} passed, {$failc} failed\n";
 exit( $failc ? 1 : 0 );

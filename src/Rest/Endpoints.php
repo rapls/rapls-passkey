@@ -630,6 +630,12 @@ final class Endpoints {
 			// returns it unchanged, so guard against an empty result explicitly.
 			$redirect = admin_url();
 		}
+		// Sending a member who has just signed in back to the login page looks like
+		// a failed sign-in. 0.13.80's login.js did exactly that on wp-login.php, and
+		// a page cache can keep serving that script after the update.
+		if ( self::is_login_page_url( $redirect ) ) {
+			$redirect = admin_url();
+		}
 
 		return rest_ensure_response(
 			array(
@@ -996,6 +1002,26 @@ final class Endpoints {
 			error_log( '[rapls-passkey] ' . $code . ' — ' . $reason );
 		}
 		return new WP_Error( $code, $message, array( 'status' => $status ) );
+	}
+
+	/**
+	 * Whether a URL is this site's login page: wp-login.php, or the address
+	 * wp_login_url() gives when a plugin has moved it (e.g. /login).
+	 *
+	 * @param string $url Absolute or relative URL.
+	 * @return bool
+	 */
+	private static function is_login_page_url( string $url ): bool {
+		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+		if ( '' === $path ) {
+			return false;
+		}
+		$path = untrailingslashit( $path );
+		if ( 'wp-login.php' === basename( $path ) ) {
+			return true;
+		}
+		$login = untrailingslashit( (string) wp_parse_url( wp_login_url(), PHP_URL_PATH ) );
+		return '' !== $login && $login === $path;
 	}
 
 	/**
